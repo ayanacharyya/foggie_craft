@@ -81,9 +81,7 @@ pd.set_option('display.max_columns', 50)
 pd.set_option('display.width', 1000)
 
 import yt
-#yt.toggle_interactivity()
 from yt.units import *
-#import yt.visualization.eps_writer as eps
 
 from utils.get_run_loc_etc import *
 from utils.consistency import *

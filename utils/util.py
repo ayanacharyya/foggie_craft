@@ -8,7 +8,6 @@
     Started :    March 2021
 
 """
-from foggie.gas_metallicity.header import *
 
 # ----------------------------------------------------------------
 import fnmatch

@@ -14,8 +14,6 @@ import numpy as np
 import glob, os
 import astropy.units as u
 import argparse
-from foggie.utils.consistency import phase_color_labels, metal_labels, \
-    categorize_by_temp, categorize_by_metals
 from astropy.table import Table
 
 CORE_WIDTH = 20.
@@ -91,34 +89,6 @@ def get_ray_axis(ray_start, ray_end):
     else:
         print('Your ray is bogus, try again!')
         return False
-
-
-def parse_args():
-    '''
-    Parse command line arguments.  Returns args object.
-    '''
-    parser = argparse.ArgumentParser(
-        description="extracts spectra from refined region")
-
-    parser.add_argument('--run', metavar='run', type=str, action='store',
-                        help='which run? default is nref9f')
-    parser.set_defaults(run="nref9f")
-
-    parser.add_argument('--output', metavar='output', type=str, action='store',
-                        help='which output? default is RD0020')
-    parser.set_defaults(output="RD0020")
-
-    parser.add_argument('--system', metavar='system', type=str, action='store',
-                        help='which system are you on? default is oak')
-    parser.set_defaults(system="oak")
-
-    parser.add_argument('--fitsfile', metavar='fitsfile', type=str,
-                        action='store',
-                        help='what fitsfile would you like to read in? \
-                                this does not work yet')
-
-    args = parser.parse_args()
-    return args
 
 
 def get_path_info(args):
