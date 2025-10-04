@@ -278,11 +278,11 @@ if __name__ == '__main__':
 
         # --------determining corresponding text suffixes and figname-------------
         #args.fig_dir = args.output_dir + 'figs/'
-        args.fig_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE-Curtin/plots/'
+        args.fig_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/plots/'
         Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
         #args.fits_dir = args.output_dir + 'txtfiles/'
-        args.fits_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE-Curtin/data/'
+        args.fits_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/data/'
         Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
         outfile_rootname = '%s_%s_FRB_%s%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text, args.res_text)

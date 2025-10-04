@@ -1,6 +1,6 @@
-DIRECTORY: `electron_density`
-AUTHOR: Ayan Acharyya
-LAST UPDATED: 12/12/2024
+DIRECTORY: `foggie_craft`
+AUTHORS: Apurba Bera, Ayan Acharyya
+LAST UPDATED: 04/10/2025
 
 This directory is meant to contain a set of python scripts to analyse electron density profile,s projections etc. in the FOGGIE simulations.
 These scripts were triggered by the FOGGIE-Curtin collaboration.
