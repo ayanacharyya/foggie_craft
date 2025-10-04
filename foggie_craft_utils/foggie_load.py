@@ -4,13 +4,13 @@ from yt import YTArray
 from astropy.table import Table
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 
-from consistency import *
-from get_halo_center import get_halo_center
-from get_proper_box_size import get_proper_box_size
-from get_run_loc_etc import get_run_loc_etc
-from yt_fields import *
-from foggie_utils import filter_particles
-import get_refine_box as grb
+from foggie_craft_utils.consistency import *
+from foggie_craft_utils.get_halo_center import get_halo_center
+from foggie_craft_utils.get_proper_box_size import get_proper_box_size
+from foggie_craft_utils.get_run_loc_etc import get_run_loc_etc
+from foggie_craft_utils.yt_fields import *
+from foggie_craft_utils.foggie_utils import filter_particles
+import foggie_craft_utils.get_refine_box as grb
 
 def load_sim(args, **kwargs):
     '''Loads the specified simulation dataset, where the required arguments are:

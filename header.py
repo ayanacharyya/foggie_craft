@@ -83,12 +83,12 @@ pd.set_option('display.width', 1000)
 import yt
 from yt.units import *
 
-from utils.get_run_loc_etc import *
-from utils.consistency import *
-from utils.yt_fields import *
-from utils.foggie_load import *
-from utils.get_proper_box_size import get_proper_box_size
-from utils.util import *
+from foggie_craft_utils.get_run_loc_etc import *
+from foggie_craft_utils.consistency import *
+from foggie_craft_utils.yt_fields import *
+from foggie_craft_utils.foggie_load import *
+from foggie_craft_utils.get_proper_box_size import get_proper_box_size
+from foggie_craft_utils.util import *
 
 from datetime import timedelta, datetime
 
