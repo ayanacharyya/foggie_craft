@@ -1,7 +1,14 @@
-#
+#	-------------------------------------------------------------------------------
 #	Script for estimating FRB host galaxy DM from simulated electron density cubes
 #
 #								AB, August 2024
+#
+#	Usage --
+#			python3 gethostdm.py <FITS file name> <mode> <nfixpts> <scale/kpc>
+#
+#	See github wiki page for details
+#
+#	-------------------------------------------------------------------------------
 
 #	--------------------------	Import modules	---------------------------
 
