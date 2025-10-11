@@ -1,3 +1,8 @@
+#	----------------------------------------------------------------------------------
+#	Auxiliary function to calculate DM related quantities
+#	Author -- A B
+#	----------------------------------------------------------------------------------
+
 import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,8 +10,6 @@ from astropy.io import fits
 import pickle as pkl
 from collections import namedtuple
 from globalpars import *
-
-#	Auxiliary function to calculate DM related quantities
 
 #	A named tuple to store various parameters related to radial ne profile
 neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','radkpc','theta','phi','inclination','neincrad'])
