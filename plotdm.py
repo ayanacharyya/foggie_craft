@@ -102,13 +102,13 @@ def plot_neimp(imfarr0, incarr0, losdm0, impbins, implim, fsize):
 		binned	= np.array(binned)
 		#print(binned)
 		
-		#popt,pcov	= curve_fit(radialexp, binned[:,0], binned[:,1], sigma=binned[:,2], absolute_sigma=True)
+		#popt,pcov	= curve_fit(radialexpower, binned[:,0], np.log(binned[:,1]), sigma=binned[:,2]/binned[:,1], absolute_sigma=True)
 		#perr 		= np.sqrt(np.diag(pcov))
 		#print(popt, perr)
 
 		ax2.fill_between(binned[:,0], binned[:,1]-binned[:,2], binned[:,1]+binned[:,2], color=shlist[incindx%len(shlist)],alpha=0.2)
 		ax2.plot(binned[:,0], binned[:,1], clist[incindx%len(clist)]+lslist[incindx%len(lslist)], label=str((ceninc - dinc/2.0))+"$^{\circ}$ < $i$ < "+str((ceninc + dinc/2.0))+"$^{\circ}$")	
-		#plt.plot(binned[:,0], radialexp(binned[:,0], *popt), clist[incindx%len(clist)]+':')
+		#plt.plot(binned[:,0], np.e**radialexpower(binned[:,0], *popt), clist[incindx%len(clist)]+':')
 
 		ax1.plot(binned[:,0], binned[:,2]/binned[:,1], clist[incindx%len(clist)]+lslist[incindx%len(lslist)])
 	
@@ -116,7 +116,8 @@ def plot_neimp(imfarr0, incarr0, losdm0, impbins, implim, fsize):
 	ax2.set_yscale('log')
 	ax1.set_xscale('log')
 	ax2.set_xscale('log')
-	ax2.set_ylim([0.8,1500])
+	ax2.set_ylim([0.6,350])
+	ax1.set_ylim([0.0,0.95])
 	ax1.set_xticks(xtcarr)
 	ax2.set_xticks(xtcarr)
 	ax1.set_xticklabels(xtcarr)
@@ -135,7 +136,70 @@ def plot_neimp(imfarr0, incarr0, losdm0, impbins, implim, fsize):
 
 
 
+def plot_dmfixinc(imfarr0, incarr0, dmajax0, losdm0, impbins, implim, inclim, fsize, stat):
+	#	Plot LoSDM vs impact factor and distance from major axis for a given inclination range
+	
+	fig 	= plt.figure(figsize=(1.2*fsize,fsize))
+	ax1	 	= fig.add_axes([0.15,0.12,0.84,0.86])
+	xtcarr	= [0.1,0.2,0.5,1,2,5,10,20,50,100]
 
+	inincra	= np.where((incarr0 - inclim[0])*(incarr0 - inclim[1]) < 0.0)
+	imfarr	= imfarr0[inincra]
+	dmajax	= dmajax0[inincra]
+	losdm	= losdm0[inincra]
+	print("Plotting DMs within inclination ",inclim)
+	
+	binned	= np.zeros((impbins, impbins),dtype=float)
+	impbineg= np.linspace(0.0, implim, impbins+1, dtype=float)	
+	
+	for i in range(0,impbins):
+		bini	= np.where((imfarr - impbineg[i])*(imfarr - impbineg[i+1]) < 0)[0]
+		for j in range(0,impbins):
+			#bincen	= 10.0**((impbineg[i]+impbineg[i+1])/2)
+			binj	= np.where((dmajax - impbineg[j])*(dmajax - impbineg[j+1]) < 0)[0]
+			bindm	= losdm[np.intersect1d(bini, binj)]
+			medm	= np.nanmedian(bindm)
+			#medm	= np.nanmedian(np.abs(bindm - np.nanmedian(bindm)))
+			binned[i,j]	= medm
+
+	plt.imshow(binned.T, origin='lower', interpolation='none', aspect='auto')
+	plt.colorbar()
+	plt.show()
+	'''
+		binned	= np.array(binned)
+		#print(binned)
+		
+		#popt,pcov	= curve_fit(radialexp, binned[:,0], binned[:,1], sigma=binned[:,2], absolute_sigma=True)
+		#perr 		= np.sqrt(np.diag(pcov))
+		#print(popt, perr)
+
+		ax2.fill_between(binned[:,0], binned[:,1]-binned[:,2], binned[:,1]+binned[:,2], color=shlist[incindx%len(shlist)],alpha=0.2)
+		ax2.plot(binned[:,0], binned[:,1], clist[incindx%len(clist)]+lslist[incindx%len(lslist)], label=str((ceninc - dinc/2.0))+"$^{\circ}$ < $i$ < "+str((ceninc + dinc/2.0))+"$^{\circ}$")	
+		#plt.plot(binned[:,0], radialexp(binned[:,0], *popt), clist[incindx%len(clist)]+':')
+
+		ax1.plot(binned[:,0], binned[:,2]/binned[:,1], clist[incindx%len(clist)]+lslist[incindx%len(lslist)])
+	
+	plt.legend(loc="upper right",frameon=False)	
+	ax2.set_yscale('log')
+	ax1.set_xscale('log')
+	ax2.set_xscale('log')
+	ax2.set_ylim([0.6,350])
+	ax1.set_ylim([0.0,0.95])
+	ax1.set_xticks(xtcarr)
+	ax2.set_xticks(xtcarr)
+	ax1.set_xticklabels(xtcarr)
+	ax2.set_xticklabels([])
+	#ax.set_yticks([1,10,100,1000])
+	#ax.set_yticklabels([1,10,100,1000])
+	ax1.set_xlabel('Impact parameter / $R_{eff}$')
+	ax2.set_ylabel('Maximum DM (pc cm$^{-3}$)')
+	ax1.set_ylabel('$\Delta$ DM / Maximum DM')
+	#plt.savefig("../plots/ne_radial_inc_"+str(inclim[0])+"_"+str(inclim[1])+".png",format='png',transparent=True)
+	'''	
+	plt.show(block=False)
+	
+	return(0)
+#	----------------------------------------------------------------------------------------------------------
 
 
 

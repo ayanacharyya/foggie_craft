@@ -1,8 +1,3 @@
-#	----------------------------------------------------------------------------------
-#	Auxiliary function to calculate DM related quantities
-#	Author -- A B
-#	----------------------------------------------------------------------------------
-
 import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +5,8 @@ from astropy.io import fits
 import pickle as pkl
 from collections import namedtuple
 from globalpars import *
+
+#	Auxiliary function to calculate DM related quantities
 
 #	A named tuple to store various parameters related to radial ne profile
 neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','radkpc','theta','phi','inclination','neincrad'])
@@ -72,8 +69,35 @@ def radialexp (x, x0, a0):
 
 
 
+def radialexpower (x, x0, a0, power):
+#   Return a radial powered exponential
+#	Arguments:	Radius, normalization, exponent
+
+	radexp	= np.log(a0) - ((x/x0)**power)
+
+	return (radexp)
+#	------------------------------------------------------------------------------------------------------
 
 
+
+
+
+def distfrmajorax (theta0, phi0, pt1, pt2):
+#   Return the projected distance of the LoS from the apparent major axis
+#	Arguments:	LoS vector, Normal vector
+    
+	normvec		= np.array([ np.sin(theta0) * np.cos(phi0), np.sin(theta0) * np.sin(phi0), np.cos(theta0)])
+
+	losvec		= pt2 - pt1
+
+	majaxpt		= np.array([0.0, 0.0, 0.0])
+	majaxvec	= np.cross(losvec, normvec)
+
+	crpdct		= np.cross(majaxvec, losvec)
+	mindist		= np.abs( np.dot(crpdct, (pt1 - majaxpt)) ) / np.sqrt(np.dot(crpdct, crpdct))
+	
+	return (mindist)
+#	------------------------------------------------------------------------------------------------------
 
 
 

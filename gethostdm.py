@@ -1,14 +1,7 @@
-#	-------------------------------------------------------------------------------
+#
 #	Script for estimating FRB host galaxy DM from simulated electron density cubes
 #
 #								AB, August 2024
-#
-#	Usage --
-#			python3 gethostdm.py <FITS file name> <mode> <nfixpts> <scale/kpc>
-#
-#	See github wiki page for details
-#
-#	-------------------------------------------------------------------------------
 
 #	--------------------------	Import modules	---------------------------
 
@@ -29,6 +22,7 @@ def print_instructions():
 	print(" Supported Modes are --- profile        (calculate electron density profiles)")
 	print("                     --- losdm          (calculate LoS DMs)")
 	print("                     --- pltdm          (Plot LoS DMs)")
+	print("                     --- dmscat         (Plot LoS DMs)")
 	
 	print("\n            Now let's try again!\n")
 	
@@ -71,6 +65,10 @@ elif (exmode=='losdm'):
 elif (exmode=='pltdm'):
 	print("\nPloting LoS DMs...\n")
 	plotdms(fitsname,nfixpts,1.0,1.0,1.0,scalekpc)
+
+elif (exmode=='dmscat'):
+	print("\nPloting LoS DMs...\n")
+	plotdm2d(fitsname,nfixpts,1.0,1.0,1.0,scalekpc)
 
 else:
 	print("\nHmm...What mode is that again...?\n")

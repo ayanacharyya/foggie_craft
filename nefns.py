@@ -144,9 +144,10 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift):
 				vec		= pt2 - pt1
 				incdeg	= inclinvec(vec, theta0, phi0)
 				impf 	= impactfac(pt1, pt2)*np.mean(dkpc)
+				mindmaj = distfrmajorax (theta0, phi0, pt1, pt2)*np.mean(dkpc)
 				dmlos	= intnelos(necube,dkpc,pt1,pt2)
 				#print(vec, incdeg, impf, dmlos)
-				dmarr.append([incdeg, impf, dmlos])
+				dmarr.append([incdeg, impf, mindmaj, dmlos])
     
 	dmarr	= np.array(dmarr)
 	
@@ -165,7 +166,7 @@ def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):
 	dmarr	= np.load(losdir+fitsname+"_"+str(nfixpts)+".npy")	
 	print("Total number of LoS = ",dmarr.shape[0])	
 	
-	plot_neimp(dmarr[:,1]/scalekpc, dmarr[:,0], dmarr[:,2], impbins, maximpa, 3.2)
+	plot_neimp(dmarr[:,1]/scalekpc, dmarr[:,0], dmarr[:,3], impbins, maximpa, 3.2)
 
 	return(0)
 #	------------------------------------------------------------------------------------------------------
@@ -173,7 +174,16 @@ def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):
 
 
 
+def plotdm2d(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):	
+#	Plots maximum DMs along different LoSs
+	
+	dmarr	= np.load(losdir+fitsname+"_"+str(nfixpts)+".npy")	
+	print("Total number of LoS = ",dmarr.shape[0])	
+	
+	plot_dmfixinc(dmarr[:,1], dmarr[:,0], dmarr[:,2], dmarr[:,3], impbins, maximpa, [80,90], 3.2, 'stat')
 
+	return(0)
+#	------------------------------------------------------------------------------------------------------
 
 
 
