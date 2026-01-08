@@ -7,10 +7,10 @@
     Output :     3D data cube as fits file, and optionally png figures
     Author :     Ayan Acharyya
     Started :    Aug 2024
-    Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --docomoving --do_all_sims
-                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --docomoving --clobber --plot_3d
-                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --docomoving --clobber
-                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d
+    Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --docomoving --do_all_sims --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --docomoving --clobber --plot_3d --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --docomoving --clobber --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d --use_cen_smoothed
 """
 from header import *
 from yt.visualization.fits_image import FITSImageData
@@ -215,6 +215,23 @@ if __name__ == '__main__':
     if type(args_tuple) is tuple: args, ds, refine_box = args_tuple # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
     else: args = args_tuple
     if not args.keep: plt.close('all')
+
+    # # ----------start test code block (comment out later)----------------------
+    # halos = [8508, 2392, 5016, 5036, 4123, 2878]
+    # redshift_list = [4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
+
+    # for halo in halos:
+    #     df = pd.read_csv(f'/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/halo_infos/{halo:06d}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
+    #     df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
+    #     df_sub = pd.DataFrame(columns=['snap', 'redshift'])
+    #     for redshift in redshift_list:
+    #         idx = (df['redshift'] - redshift).abs().idxmin()
+    #         df_sub = df_sub.append({'snap':df.loc[idx, 'snap'], 'redshift':df.loc[idx, 'redshift']}, ignore_index=True)
+    #     print(f'Halo {halo}, df=\n{df_sub}\n')
+   
+    # sys.exit()
+
+    # --------------end test code block--------------------------
 
     quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map], 'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
     quant_arr = ['el_density']#, 'density']

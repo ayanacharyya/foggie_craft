@@ -6,14 +6,13 @@
     Notes :      Python wrapper to create and submit one or more jobs on pleiades
     Author :     Ayan Acharyya
     Started :    July 2021
-    Example :    run submit_jobs.py --call filter_star_properties --nnodes 50 --ncores 4 --prefix fsp --halo 8508 --dryrun --opt_args "--do_sll_sims"
-    OR :         run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --halo 8508 --queue ldan --mem 1500GB --prefix cmzs --opt_args "--res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d --use_cen_smoothed"
-                 run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --opt_args "--res 1 --upto_kpc 10 --output RD0027,RD0042 --docomoving --use_cen_smoothed"
+    Example :    run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 1 --upto_kpc 10 --docomoving --use_cen_smoothed"
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
 from util import get_all_sims_for_this_halo
 import numpy as np
+import pandas as pd
 
 # ------------------------------------------------------
 def execute_command(command, is_dry_run=False):
@@ -56,6 +55,7 @@ def parse_args():
     parser.add_argument('--galrad', metavar='galrad', type=str, action='store', default=None)
     parser.add_argument('--snapstart', metavar='snapstart', type=int, action='store', default=30)
     parser.add_argument('--snapstop', metavar='snapstop', type=int, action='store', default=30)
+    parser.add_argument('--do_redshifts', metavar='do_redshifts', type=str, action='store', default=None)
     args, leftovers = parser.parse_known_args()
 
     return args
@@ -64,6 +64,7 @@ def parse_args():
 if __name__ == '__main__':
     time_of_begin = datetime.datetime.now()
     args = parse_args()
+    args.do_redshifts = [float(item) for item in args.do_redshifts.split(',')]
 
     # ----------special settings for ldan queue--------
     if args.queue == 'ldan':
@@ -125,11 +126,24 @@ if __name__ == '__main__':
         if jobname[:3] != args.proc: jobname = args.proc + '_' + jobname
         if args.nevery > 1: jobname += '_ne' + str(args.nevery)
 
+        # ---------determining which RD/DD outputs to run on----------------
+        if args.do_redshits is None:
+            outputs = args.output
+        else:
+            df = pd.read_csv(args.code_dir + f'/foggie/foggie/halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
+            df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
+            output_list = []
+            for redshift in args.do_redshits:
+                idx = (df['redshift'] - redshift).abs().idxmin()
+                output_list.append(df.loc[idx, 'snap'])
+            outputs = ','.join(output_list)
+        print(f'Halo {thishalo}: Going to submit jobs for {len(outputs.split(','))} outputs: {outputs}..')
+
         # ----------replacing keywords in jobscript template to make the actual jobscript---------
         out_jobscript = workdir + '/' + jobarray_or_jobscript + '_' + jobname + '.sh'
 
         replacements = {'PROJ_CODE': args.proj, 'RUN_NAME': jobname, 'NHOURS': nhours, 'NMINS': args.nmins, 'CALLFILE': callfile, 'WORKDIR': workdir, \
-                        'JOBSCRIPT_PATH': jobscript_path, 'DRYRUNFLAG': dryrunflag, 'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag,\
+                        'DRYRUNFLAG': dryrunflag, 'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': outputs, \
                         'SYSTEMFLAG': systemflag, 'NCPUS': str(ncpus), 'HALOFLAG': haloflag, 'NSECONDS':str(int(nhours) * 3600), 'OPT_ARGS': args.opt_args} # keywords to be replaced in template jobscript
 
         with open(jobscript_path + jobscript_template) as infile, open(out_jobscript, 'w') as outfile:
