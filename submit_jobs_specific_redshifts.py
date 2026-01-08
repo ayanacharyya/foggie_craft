@@ -63,7 +63,7 @@ def parse_args():
 if __name__ == '__main__':
     time_of_begin = datetime.datetime.now()
     args = parse_args()
-    args.do_redshifts = [float(item) for item in args.do_redshifts.split(',')]
+    if args.do_redshifts is not None: args.do_redshifts = [float(item) for item in args.do_redshifts.split(',')]
 
     # ----------special settings for ldan queue--------
     if args.queue == 'ldan':
@@ -124,13 +124,13 @@ if __name__ == '__main__':
         if jobname[:3] != args.proc: jobname = args.proc + '_' + jobname
 
         # ---------determining which RD/DD outputs to run on----------------
-        if args.do_redshits is None:
+        if args.do_redshifts is None:
             outputs = args.output
         else:
             df = pd.read_csv(args.code_dir + f'/foggie/foggie/halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
             output_list = []
-            for redshift in args.do_redshits:
+            for redshift in args.do_redshifts:
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
             outputs = ','.join(output_list)
