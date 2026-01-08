@@ -105,7 +105,11 @@ if __name__ == '__main__':
 
     # ----------determining what resource request goes into the job script, based on queues, procs, etc.---------
     nhours = args.nhours if args.nhours is not None else '01' if args.dryrun or args.queue == 'devel' else '%02d' % (max_hours_dict[args.queue])
-    ncpus = nnodes * ncores if args.ncpus is None else args.ncpus
+    if args.ncpus is None:
+        if args.do_redshifts is None: ncpus = nnodes * ncores
+        else: ncpus = min(len(args.do_redshifts), nnodes * ncores)
+    else:
+        ncpus = args.ncpus
 
     resources = 'select=' + str(nnodes) + ':ncpus=' + str(ncores)
 
