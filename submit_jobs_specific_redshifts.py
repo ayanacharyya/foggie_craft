@@ -81,7 +81,6 @@ if __name__ == '__main__':
     #----------setting different variables based on args--------
     systemflag = ' --system ' + args.system
     runsimflag = ' --run ' + args.run
-    dryrunflag = ' --dryrun ' if args.dryrun else ''
     prefixtext = 'frb_'
 
     if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/foggie_craft/foggie_craft/'
@@ -148,7 +147,7 @@ if __name__ == '__main__':
         out_jobscript = workdir + '/jobscript_' + jobname + '.sh'
 
         replacements = {'PROJ_CODE': args.proj, 'RUN_NAME': jobname, 'NHOURS': nhours, 'NMINS': args.nmins, 'CALLFILE': callfile, 'WORKDIR': workdir, \
-                        'DRYRUNFLAG': dryrunflag, 'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': outputs, \
+                        'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': outputs, \
                         'SYSTEMFLAG': systemflag, 'NCPUS': str(ncpus), 'HALOFLAG': haloflag, 'NSECONDS':str(int(nhours) * 3600), 'OPT_ARGS': args.opt_args} # keywords to be replaced in template jobscript
 
         with open(jobscript_path + jobscript_template) as infile, open(out_jobscript, 'w') as outfile:
