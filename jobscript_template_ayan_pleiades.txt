@@ -20,6 +20,11 @@
 #PBS -j oe
 #PBS -o pbs_RUN_NAME.out
 
+###### Load necessary modules #########
+module purge
+module load mpi-hpe/mpt.2.30
+module load python3/3.9.12
+
 ##### Change to current working directory #####
 cd WORKDIR
 
