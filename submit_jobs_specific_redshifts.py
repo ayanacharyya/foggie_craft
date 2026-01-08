@@ -149,7 +149,7 @@ if __name__ == '__main__':
         out_jobscript = workdir + '/jobscript_' + jobname + '.sh'
 
         replacements = {'PROJ_CODE': args.proj, 'RUN_NAME': jobname, 'NHOURS': nhours, 'NMINS': args.nmins, 'CALLFILE': callfile, 'WORKDIR': workdir, \
-                        'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': outputs, \
+                        'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': '--output ' + outputs, \
                         'SYSTEMFLAG': systemflag, 'NCPUS': str(ncpus), 'HALOFLAG': haloflag, 'NSECONDS':str(int(nhours) * 3600), 'OPT_ARGS': args.opt_args} # keywords to be replaced in template jobscript
 
         with open(jobscript_path + jobscript_template) as infile, open(out_jobscript, 'w') as outfile:
