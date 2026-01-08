@@ -31,6 +31,7 @@ export PYTHONPATH=$PYTHONPATH:/home5/aachary2/miniconda3/envs/py380/bin/python
 # --- PRE-FLIGHT CHECK ---
 echo "Checking Python path actual..."
 ls -l /home5/aachary2/miniconda3/envs/py380/bin/python
+echo $PYTHONPATH
 echo "Checking Python path fetched..."
 which python
 
