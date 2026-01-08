@@ -49,7 +49,6 @@ def parse_args():
     parser.add_argument('--prefix', metavar='prefix', type=str, action='store', default=None)
     parser.add_argument('--callfunc', metavar='callfunc', type=str, action='store', default='filter_star_properties')
     parser.add_argument('--dryrun', dest='dryrun', action='store_true', default=False)
-    parser.add_argument('--jobarray', dest='jobarray', action='store_true', default=False)
     parser.add_argument('--do_all_sims', dest='do_all_sims', action='store_true', default=False)
     parser.add_argument('--do_all_halos', dest='do_all_halos', action='store_true', default=False)
     parser.add_argument('--galrad', metavar='galrad', type=str, action='store', default=None)
@@ -84,9 +83,8 @@ if __name__ == '__main__':
     if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/ayan_codes/foggie_craft/'
     elif args.system == 'ayan_local': jobscript_path = os.getenv('HOME') + '/Work/astro/ayan_codes/foggie_craft/'
 
-    jobarray_or_jobscript = 'jobarray' if args.jobarray else 'jobscript'
-    if args.system == 'ayan_local': jobscript_template = jobarray_or_jobscript + '_template_ayan_pleiades.txt'
-    else: jobscript_template = jobarray_or_jobscript + '_template_' + args.system + '.txt'
+    if args.system == 'ayan_local': jobscript_template = 'jobscript_template_ayan_pleiades.txt'
+    else: jobscript_template = 'jobscript_template_' + args.system + '.txt'
 
     callfile = jobscript_path + args.callfunc + '.py'
 
@@ -124,7 +122,6 @@ if __name__ == '__main__':
         haloflag = ' --halo ' + thishalo
         jobname = prefixtext + thishalo
         if jobname[:3] != args.proc: jobname = args.proc + '_' + jobname
-        if args.nevery > 1: jobname += '_ne' + str(args.nevery)
 
         # ---------determining which RD/DD outputs to run on----------------
         if args.do_redshits is None:
@@ -140,7 +137,7 @@ if __name__ == '__main__':
         print(f'Halo {thishalo}: Going to submit jobs for {len(outputs.split(","))} outputs: {outputs}..')
 
         # ----------replacing keywords in jobscript template to make the actual jobscript---------
-        out_jobscript = workdir + '/' + jobarray_or_jobscript + '_' + jobname + '.sh'
+        out_jobscript = workdir + '/jobscript_' + jobname + '.sh'
 
         replacements = {'PROJ_CODE': args.proj, 'RUN_NAME': jobname, 'NHOURS': nhours, 'NMINS': args.nmins, 'CALLFILE': callfile, 'WORKDIR': workdir, \
                         'DRYRUNFLAG': dryrunflag, 'QNAME': qname, 'RESOURCES': resources, 'RUNSIMFLAG': runsimflag, 'OUTPUT_FLAG': outputs, \
