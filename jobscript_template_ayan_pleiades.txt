@@ -25,15 +25,7 @@ module purge
 module load mpi-hpe/mpt.2.30
 source /home5/aachary2/miniconda3/etc/profile.d/conda.sh
 conda activate py380
-
 export PYTHONPATH=$PYTHONPATH:/home5/aachary2/miniconda3/envs/py380/bin/
-
-# --- PRE-FLIGHT CHECK ---
-echo "Checking Python path actual..."
-ls -l /home5/aachary2/miniconda3/envs/py380/bin/python
-echo $PYTHONPATH
-echo "Checking Python path fetched..."
-which python
 
 # ------------------------
 
