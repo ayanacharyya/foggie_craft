@@ -277,12 +277,10 @@ if __name__ == '__main__':
         log_mstar = np.log10(get_disk_stellar_mass(args))
 
         # --------determining corresponding text suffixes and figname-------------
-        if 'pleiades' in args.system: args.fig_dir = args.output_dir + 'figs/'
-        else: args.fig_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/plots/'
+        args.fig_dir = args.output_dir + 'plots/'
         Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
-        if 'pleiades' in args.system: args.fits_dir = args.output_dir + 'txtfiles/'
-        else: args.fits_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/data/'
+        args.fits_dir = args.output_dir + 'data/'
         Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
         outfile_rootname = '%s_%s_FRB_%s%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text, args.res_text)
