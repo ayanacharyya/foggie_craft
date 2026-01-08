@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument('--prefix', metavar='prefix', type=str, action='store', default=None)
     parser.add_argument('--callfunc', metavar='callfunc', type=str, action='store', default='filter_star_properties')
     parser.add_argument('--dryrun', dest='dryrun', action='store_true', default=False)
+    parser.add_argument('--jobarray', dest='jobarray', action='store_true', default=False)
     parser.add_argument('--do_all_sims', dest='do_all_sims', action='store_true', default=False)
     parser.add_argument('--do_all_halos', dest='do_all_halos', action='store_true', default=False)
     parser.add_argument('--galrad', metavar='galrad', type=str, action='store', default=None)
