@@ -1759,7 +1759,7 @@ def parse_args(haloname, RDname, fast=False):
         pass
 
     instrument_dummy = telescope(args) # declare a dummy instrument; just to set proper paths
-    args.cube_output_path = get_cube_output_path(args)
+    #args.cube_output_path = get_cube_output_path(args)
 
     args.idealcube_filename = args.cube_output_path + 'ideal_ifu' + args.mergeHII_text + '.fits'
     args.smoothed_cube_filename = args.cube_output_path + instrument_dummy.path + 'smoothed_ifu' + '_z' + str(args.z) + args.mergeHII_text + '_ppb' + str(args.pix_per_beam) + '.fits'
