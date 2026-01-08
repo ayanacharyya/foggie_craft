@@ -384,7 +384,7 @@ if __name__ == '__main__':
                 continue
             '''
         else:
-            print('Skipping snapshot %s as %s already exists. Use --clobber_plot to remake figure.' %(args.output, fitsname))
+            print('Skipping snapshot %s as %s already exists. Use --clobber to remake figure.' %(args.output, fitsname))
             continue
 
     # -----------------------------------------------------------------------------------
