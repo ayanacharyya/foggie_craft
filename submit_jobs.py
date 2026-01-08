@@ -82,7 +82,7 @@ if __name__ == '__main__':
     dryrunflag = ' --dryrun ' if args.dryrun else ''
     prefixtext = 'frb_'
 
-    if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/ayan_codes/foggie_craft/foggie_craft/'
+    if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/foggie_craft/foggie_craft/'
     elif args.system == 'ayan_local': jobscript_path = os.getenv('HOME') + '/Work/astro/ayan_codes/foggie_craft/'
 
     jobarray_or_jobscript = 'jobarray' if args.jobarray else 'jobscript'
