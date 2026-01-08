@@ -36,7 +36,7 @@ def get_run_loc_etc(args):
         else:
             run_loc = "halo_00" + args.halo + "/" + runname + "/"
 
-        #output_dir = output_path + "plots_" + run_loc
+        output_dir = output_path #+ "plots_" + run_loc
         spectra_dir = output_dir + "spectra/"
 
         if args.system=='cassiopeia' or args.system=='pleiades_cassi':
