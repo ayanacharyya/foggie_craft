@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if 'pleiades' in args.system or args.system == 'ayan_local':
         procs_dir = {'san':(16, 32), 'ivy':(20, 64), 'has':(24, 128), 'bro':(28, 128), 'bro_ele':(28, 128), 'sky_ele':(40, 192), 'cas_ait':(40, 192), 'ldan':(16, 750), 'cas_end':(28, 185)} # (nnodes, mem) for each proc, from https://www.nas.nasa.gov/hecc/support/kb/pbs-resource-request-examples_188.html
         max_hours_dict = defaultdict(lambda: 120, low=4, normal=8, long=120, e_long=72, e_normal=8, e_vlong=600, e_debug=2, debug=2, devel=2, ldan=72) # from https://www.nas.nasa.gov/hecc/support/kb/pbs-job-queue-structure_187.html
-        if 'pleiades' in args.system: workdir = '/nobackupp19/aachary2/foggie_outputs/pleiades_workdir' # for pleiades
+        if 'pleiades' in args.system: workdir = '/nobackupp19/aachary2/foggie_craft/pleiades_workdir' # for pleiades
         elif args.system == 'ayan_local': workdir = '.'
         nnodes = args.nnodes
         ncores = args.ncores if args.ncores is not None else procs_dir[args.proc][0]
