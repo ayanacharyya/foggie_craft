@@ -57,6 +57,7 @@ def parse_args():
     parser.add_argument('--galrad', metavar='galrad', type=str, action='store', default=None)
     parser.add_argument('--snapstart', metavar='snapstart', type=int, action='store', default=30)
     parser.add_argument('--snapstop', metavar='snapstop', type=int, action='store', default=30)
+    parser.add_argument('--opt_args', metavar='opt_args', type=str, action='store', default='')
     args, leftovers = parser.parse_known_args()
 
     return args
