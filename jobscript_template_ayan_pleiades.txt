@@ -23,7 +23,7 @@
 ###### Load necessary modules #########
 module purge
 module load mpi-hpe/mpt.2.30
-module load python3/3.9.12
+source /home5/aachary2/miniconda3/etc/profile.d/conda.sh
 source activate py380
 
 ##### Change to current working directory #####
