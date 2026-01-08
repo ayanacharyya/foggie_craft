@@ -129,7 +129,7 @@ if __name__ == '__main__':
         if args.do_redshifts is None:
             outputs = args.output
         else:
-            df = pd.read_csv(args.code_dir + f'/foggie/foggie/halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
+            df = pd.read_csv(args.code_dir + f'halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
             output_list = []
             for redshift in args.do_redshifts:
