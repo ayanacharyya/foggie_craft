@@ -7,8 +7,10 @@ from collections import namedtuple
 
 #	Globally defined parameters which should not be frequently modified
 
-datadir     =   "../datacubes/"     #   Location of the FITS cubes
-losdir      =   "../losdms/"        #   Location of the LoS DMs
+#datadir     =   "../datacubes/"     #   Location of the FITS cubes
+datadir     =   "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/data/"     #   Location of the FITS cubes
+#losdir      =   "../losdms/"        #   Location of the LoS DMs
+losdir      =   "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/losdms/"        #   Location of the LoS DMs
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff
 incvals     =   [15.0,45.0,75.0]    #   Central values of inclination bins in deg

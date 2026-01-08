@@ -10,6 +10,7 @@
     Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --docomoving --do_all_sims
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --docomoving --clobber --plot_3d
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --docomoving --clobber
+                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d
 """
 from header import *
 from yt.visualization.fits_image import FITSImageData
@@ -220,7 +221,7 @@ if __name__ == '__main__':
 
     # ------------reading SFR and mstar df-----------------
     mstar_df = get_mstar_df(args)
-    sfr_df  =get_sfr_df(args)
+    sfr_df  = get_sfr_df(args)
 
     # --------domain decomposition; for mpi parallelisation-------------
     if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
@@ -273,16 +274,15 @@ if __name__ == '__main__':
         try: sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
         except: sfr = -99
 
-        try: log_mstar = mstar_df[mstar_df['output'] == args.output]['log_mass'].values[0]
-        except: log_mstar = np.log10(get_disk_stellar_mass(args))
+        log_mstar = np.log10(get_disk_stellar_mass(args))
 
         # --------determining corresponding text suffixes and figname-------------
-        #args.fig_dir = args.output_dir + 'figs/'
-        args.fig_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/plots/'
+        if 'pleiades' in args.system: args.fig_dir = args.output_dir + 'figs/'
+        else: args.fig_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/plots/'
         Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
-        #args.fits_dir = args.output_dir + 'txtfiles/'
-        args.fits_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/data/'
+        if 'pleiades' in args.system: args.fits_dir = args.output_dir + 'txtfiles/'
+        else: args.fits_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/data/'
         Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
         outfile_rootname = '%s_%s_FRB_%s%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text, args.res_text)
@@ -338,6 +338,8 @@ if __name__ == '__main__':
 
                 header[f'LOG_MSTAR'] = log_mstar
                 header[f'MSTARUNIT'] = 'Msun'
+
+                header[f'REDSHIFT'] = args.current_redshift
 
                 img_hdu_list.append(img_hdu)
 
