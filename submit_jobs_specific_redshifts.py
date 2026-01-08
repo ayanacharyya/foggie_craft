@@ -64,6 +64,8 @@ if __name__ == '__main__':
     time_of_begin = datetime.datetime.now()
     args = parse_args()
     if args.do_redshifts is not None: args.do_redshifts = [float(item) for item in args.do_redshifts.split(',')]
+    if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
+    else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
 
     # ----------special settings for ldan queue--------
     if args.queue == 'ldan':
