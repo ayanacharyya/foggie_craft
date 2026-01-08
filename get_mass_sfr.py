@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # ---------looping over halos-----------
     for thishalo in halos:
-        print(f'Starting halo {thishalo}..')
+        print(f'\nStarting halo {thishalo}..')
         args.halo = thishalo
         sfr_df  = get_sfr_df(args) # reading SFR df
         
@@ -61,31 +61,31 @@ if __name__ == '__main__':
 
         # ---------looping over snapshots-----------
         for thisoutput in output_list:
-            print(f'Starting snapshot {thishalo}:{thisoutput}..')
+            print(f'\nStarting snapshot {thishalo}:{thisoutput}..')
             args.output = thisoutput
 
             # -----------determining SFR and redshift--------------------
-            try:
+            if args.output in sfr_df['output'].values:
                 sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
-                args.current_redshift = sfr_df[sfr_df['output'] == args.output]['z'].values[0]
-            except:
-                sfr = -99
-                args.current_redshift = -99
+                args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
-            # ------determining stellar mass--------
-            if args.upto_kpc is not None:
-                if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
-                else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+                # ------determining stellar mass--------
+                if args.upto_kpc is not None:
+                    if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+                    else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+                else:
+                    args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
+                    args.galrad = args.re * args.upto_re  # kpc
+
+                log_mstar = np.log10(get_disk_stellar_mass(args))
+
+                # ------appending to dataframe----------
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, log_mstar, sfr]
             else:
-                args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
-                args.galrad = args.re * args.upto_re  # kpc
-
-            log_mstar = np.log10(get_disk_stellar_mass(args))
-
-            # ------appending to dataframe----------
-            df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, log_mstar, sfr]
+                print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99]
 
     # -----------saving dataframe---------------
     df_out.to_csv(output_dfname, index=None, mode='a', header=not os.path.exists(output_dfname))
     print(f'Saved dataframe as {output_dfname}')
-    print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
+    print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
