@@ -12,7 +12,6 @@ import subprocess, argparse, datetime, os
 from collections import defaultdict
 import numpy as np
 import pandas as pd
-import os
 
 # ------------------------------------------------------
 def execute_command(command, is_dry_run=False):
@@ -103,7 +102,7 @@ if __name__ == '__main__':
         qname = args.queue
         if args.queue[:2] == 'e_':  qname += '@pbspl4' # add this for endeavour nodes
 
-    os.chidr(workdir)
+    os.chdir(workdir)
 
     # ----------determining what resource request goes into the job script, based on queues, procs, etc.---------
     nhours = args.nhours if args.nhours is not None else '01' if args.dryrun or args.queue == 'devel' else '%02d' % (max_hours_dict[args.queue])
