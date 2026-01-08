@@ -10,7 +10,6 @@
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
-from util import get_all_sims_for_this_halo
 import numpy as np
 import pandas as pd
 
