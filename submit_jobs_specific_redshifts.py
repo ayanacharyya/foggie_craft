@@ -102,6 +102,8 @@ if __name__ == '__main__':
         qname = args.queue
         if args.queue[:2] == 'e_':  qname += '@pbspl4' # add this for endeavour nodes
 
+    os.chidr(workdir)
+    
     # ----------determining what resource request goes into the job script, based on queues, procs, etc.---------
     nhours = args.nhours if args.nhours is not None else '01' if args.dryrun or args.queue == 'devel' else '%02d' % (max_hours_dict[args.queue])
     if args.ncpus is None:
