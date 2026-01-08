@@ -6,7 +6,7 @@
     Notes :      Python wrapper to create and submit one or more jobs on pleiades
     Author :     Ayan Acharyya
     Started :    July 2021
-    Example :    run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 1 --upto_kpc 10 --docomoving --use_cen_smoothed"
+    Example :    run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs_specific_redshifts.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 1 --upto_kpc 10 --docomoving --use_cen_smoothed"
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
