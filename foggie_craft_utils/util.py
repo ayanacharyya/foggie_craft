@@ -1023,7 +1023,7 @@ def get_cube_output_path(args):
     '''
     cube_output_path = args.output_dir + 'fits/' + args.output + '/diagnostic_' + args.diag + '/Om_' + str(args.Om) + '/proj_los_' + args.projection + '/boxsize_' + str(2*args.galrad) + \
         '/inc_' + str(args.inclination) + '/base_spectral_res_' + str(args.base_spec_res) + '/base_spatial_res_' + str(args.base_spatial_res) + '/'
-    Path(cube_output_path).mkdir(parents=True, exist_ok=True) # creating the directory structure, if doesn't exist already
+    #Path(cube_output_path).mkdir(parents=True, exist_ok=True) # creating the directory structure, if doesn't exist already
 
     return cube_output_path
 
@@ -1759,7 +1759,7 @@ def parse_args(haloname, RDname, fast=False):
         pass
 
     instrument_dummy = telescope(args) # declare a dummy instrument; just to set proper paths
-    #args.cube_output_path = get_cube_output_path(args)
+    args.cube_output_path = get_cube_output_path(args)
 
     args.idealcube_filename = args.cube_output_path + 'ideal_ifu' + args.mergeHII_text + '.fits'
     args.smoothed_cube_filename = args.cube_output_path + instrument_dummy.path + 'smoothed_ifu' + '_z' + str(args.z) + args.mergeHII_text + '_ppb' + str(args.pix_per_beam) + '.fits'
