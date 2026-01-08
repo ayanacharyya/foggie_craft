@@ -7,7 +7,7 @@
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    Jan 2026
-    Examples :   run get_mass_sfr.py --system ayan_pleiades
+    Examples :   run get_mass_sfr.py --system ayan_pleiades --upto_kpc 200 --docomoving
 """
 from header import *
 start_time = datetime.now()
@@ -64,17 +64,26 @@ if __name__ == '__main__':
             print(f'Starting snapshot {thishalo}:{thisoutput}..')
             args.output = thisoutput
 
-            # -----------determining SFR amd stellar mass and redshift--------------------
-            log_mstar = np.log10(get_disk_stellar_mass(args))
+            # -----------determining SFR and redshift--------------------
             try:
                 sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
-                redshift = sfr_df[sfr_df['output'] == args.output]['z'].values[0]
+                args.current_redshift = sfr_df[sfr_df['output'] == args.output]['z'].values[0]
             except:
                 sfr = -99
-                redshift = -99
+                args.current_redshift = -99
+
+            # ------determining stellar mass--------
+            if args.upto_kpc is not None:
+                if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+                else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+            else:
+                args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
+                args.galrad = args.re * args.upto_re  # kpc
+
+            log_mstar = np.log10(get_disk_stellar_mass(args))
 
             # ------appending to dataframe----------
-            df_out.loc[len(df_out)] = [thishalo, thisoutput, redshift, log_mstar, sfr]
+            df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, log_mstar, sfr]
 
     # -----------saving dataframe---------------
     df_out.to_csv(output_dfname, index=None, mode='a', header=not os.path.exists(output_dfname))
