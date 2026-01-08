@@ -33,6 +33,7 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description="calling plotobservables for full parameter space")
     parser.add_argument('--system', metavar='system', type=str, action='store', default='ayan_pleiades')
+    parser.add_argument('--proj', metavar='proj', type=str, action='store', default='s2358')
     parser.add_argument('--queue', metavar='queue', type=str, action='store', default='long')
     parser.add_argument('--nnodes', metavar='nnodes', type=int, action='store', default=1)
     parser.add_argument('--ncores', metavar='ncores', type=int, action='store', default=None)
