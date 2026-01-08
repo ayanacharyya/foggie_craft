@@ -34,6 +34,8 @@ if __name__ == '__main__':
     if type(args_tuple) is tuple: args, ds, refine_box = args_tuple # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
     else: args = args_tuple
     if not args.keep: plt.close('all')
+    if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
+    else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
 
    # ---------initialising output dataframe-------------
     output_dfname = args.output_dir + 'data/mass_sfr_table.txt'
