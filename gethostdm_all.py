@@ -88,7 +88,8 @@ if __name__ == '__main__':
     incranges	=	np.array([[0,20],[40,50],[80,90]])
 
     # --------domain decomposition; for mpi parallelisation-------------
-    list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+    #list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+    list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
     comm = MPI.COMM_WORLD
@@ -115,15 +116,17 @@ if __name__ == '__main__':
         start_time_this_snapshot = datetime.now()
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
+        if fitsname[-3:] == str(nfixpts): fitsname = fitsname[:-4]
         this_sim = fitsname.split('_')[:2]
         print_mpi('Doing snapshot ' + this_sim[0] + ' of halo ' + this_sim[1] + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...')
 
         #	-------------------------	Load the fits file	---------------------------
-        print_mpi("Reading "+fitsname)
-        necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
-        print_mpi(f"Ne cube dimensions {necub.shape}")
-        print_mpi(f"Spatial resolutions (kpc) {dkpc}")
-        print_mpi(f"Orientation (deg) {np.rad2deg(theta0)},{np.rad2deg(phi0)}")
+        if exmode in ['losdm', 'profile']:
+            print_mpi("Reading "+fitsname)
+            necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
+            print_mpi(f"Ne cube dimensions {necub.shape}")
+            print_mpi(f"Spatial resolutions (kpc) {dkpc}")
+            print_mpi(f"Orientation (deg) {np.rad2deg(theta0)},{np.rad2deg(phi0)}")
 
         #	-------------------------	Execute tasks	-------------------------------
 
