@@ -118,7 +118,7 @@ def load_df(args):
     return df
 
 # -----------------------------------------------------------------------------
-def get_disk_stellar_mass(args):
+def get_disk_stellar_mass(args, quant='stars'):
     '''
     Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     '''
@@ -149,7 +149,7 @@ def get_disk_stellar_mass(args):
                 print('Smallest shell avialable in mass profile is too small compared to args.galrad. Returning bogus mass')
                 return -999
         else:
-            mstar = thisshell['stars_mass'].values[-1] # radius is in kpc, mass in Msun
+            mstar = thisshell[f'{quant}_mass'].values[-1] # radius is in kpc, mass in Msun
     else:
         print('File not found:', mass_filename)
         mstar = -999

@@ -131,7 +131,7 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_proj_frb_diskrel(box, field, box_width_kpc, norm_L, args, unit='', clim=None,  cmap='viridis'):
+def plot_proj_frb_diskrel(box, field, box_width, norm_L, args, unit='', clim=None,  cmap='viridis'):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
