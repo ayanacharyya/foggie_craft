@@ -93,8 +93,8 @@ if __name__ == '__main__':
     df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'log_star_mass', 'sfr', 'log_gas_mass'])
 
     # ----------getting list of snapshots-----------
-    halos = ['8508'] # ['8508', '5036', '5016', '4123', '2392', '2878']
-    redshift_list = [1.]# [4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
+    halos = ['8508', '5036', '5016', '4123', '2392', '2878']
+    redshift_list = [4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
 
     # ---------looping over halos-----------
     for thishalo in halos:
