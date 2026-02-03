@@ -63,21 +63,22 @@ def get_mass_profile(args):
 # -----------------------------------------------------------------------------
 def get_masses_and_re(args, get_re_using='gas_HI_mass'):
     '''
-    Function to determine the disk stellar and gas mass, for a given snapshot, which is defined as the mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
+    Function to determine the stellar, gas, and halo (total) mass, for a given snapshot, which is defined as the mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     Also determines the effective radius of stellar disk, based on the stellar mass profile
-    Returns gas mass, stellar mass, and stellar half-light radius
+    Returns halo mass, gas mass, stellar mass, and stellar half-light radius
     '''
 
     mass_profile = get_mass_profile(args)
     mass_profile = mass_profile.sort_values('radius')
 
+    mhalo = mass_profile['total_mass'].iloc[-1] # radius is in kpc, mass in Msun
     mgas = mass_profile['gas_mass'].iloc[-1] # radius is in kpc, mass in Msun
     mstar = mass_profile['stars_mass'].iloc[-1] # radius is in kpc, mass in Msun
 
     total_mass = mass_profile[get_re_using].iloc[-1]
     half_mass_radius = mass_profile[mass_profile[get_re_using] <= total_mass/2]['radius'].iloc[-1]
 
-    return mgas, mstar, half_mass_radius
+    return mhalo, mgas, mstar, half_mass_radius
 
 # -----main code-----------------
 if __name__ == '__main__':
@@ -87,14 +88,14 @@ if __name__ == '__main__':
     if not args.keep: plt.close('all')
     if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
-
+    
    # ---------initialising output dataframe-------------
     output_dfname = args.output_dir + 'data/mass_sfr_table.txt'
-    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'log_star_mass', 'sfr', 'log_gas_mass'])
+    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'log_star_mass', 'sfr', 'log_gas_mass', 'log_halo_mass'])
 
     # ----------getting list of snapshots-----------
-    halos = ['8508', '5036', '5016', '4123', '2392', '2878']
-    redshift_list = [4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
+    halos = ['8508']#, '5036', '5016', '4123', '2392', '2878']
+    redshift_list = [1.]#[4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
 
     # ---------looping over halos-----------
     for thishalo in halos:
@@ -124,15 +125,16 @@ if __name__ == '__main__':
                 if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
                 else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
 
-                mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
+                mhalo, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
+                log_mhalo = np.log10(mhalo)
                 log_mstar = np.log10(mstar)
                 log_mgas = np.log10(mgas)
 
                 # ------appending to dataframe----------
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, log_mstar, sfr, log_mgas]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, log_mstar, sfr, log_mgas, log_mhalo]
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99]
 
     # -----------saving dataframe---------------
     df_out.to_csv(output_dfname, index=None, mode='a', header=not os.path.exists(output_dfname))
