@@ -7,8 +7,8 @@
     Output :     Combined plots as png files
     Author :     Ayan Acharyya
     Started :    03 Feb 2026
-    Examples :   run plot_projected_gas_density.py --system ayan_pleiades --halo 8508 --upto_kpc 200 --res 0.5 --docomoving --do_all_sims
-                 run plot_projected_gas_density.py --system ayan_local --halo 8508 --upto_kpc 200 --res 0.5 --output RD0027 --docomoving
+    Examples :   run plot_projected_gas_density.py --system ayan_pleiades --halo 8508 --upto_kpc 200 --docomoving --do_all_sims
+                 run plot_projected_gas_density.py --system ayan_local --halo 8508 --upto_kpc 200 --output RD0027 --docomoving
 """
 from header import *
 from make_3D_FRB_electron_density import get_AM_vector
@@ -109,7 +109,6 @@ if __name__ == '__main__':
     quant_dict = {'density':['density', 'Gas density', 'Msun/pc**2', -2.5, 2.5, 'cornflowerblue', density_color_map], 'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
     quant_arr = ['density']
     args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
-    args.res_text = '_res%.1Fckpchinv' % float(args.res) if args.docomoving else '_res%.1Fkpc' % float(args.res)
     
     # --------domain decomposition; for mpi parallelisation-------------
     if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
@@ -140,52 +139,43 @@ if __name__ == '__main__':
         this_sim = list_of_sims[index]
         print_mpi('Doing snapshot ' + this_sim[1] + ' of halo ' + this_sim[0] + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...', args)
 
-        # -------loading in snapshot-------------------
-        halos_df_name = args.code_path + 'halo_infos/00' + this_sim[0] + '/' + args.run + '/'
-        halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
-        if len(list_of_sims) > 1 or args.do_all_sims: args = parse_args(this_sim[0], this_sim[1])
-        if type(args) is tuple: args, ds, refine_box = args  # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
-        else: ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
+        try:
+            # -------loading in snapshot-------------------
+            halos_df_name = args.code_path + 'halo_infos/00' + this_sim[0] + '/' + args.run + '/'
+            halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
+            if len(list_of_sims) > 1 or args.do_all_sims: args = parse_args(this_sim[0], this_sim[1])
+            if type(args) is tuple: args, ds, refine_box = args  # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
+            else: ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
-        norm_L = get_AM_vector(ds) #np.array([-0.64498829, -0.5786498 , -0.49915379]) #computing disk orientation #
+            norm_L = get_AM_vector(ds) #np.array([-0.64498829, -0.5786498 , -0.49915379]) #computing disk orientation #
 
-        # --------assigning additional keyword args-------------
-        args.current_redshift = ds.current_redshift
-        args.current_time = ds.current_time.in_units('Gyr').tolist()
-        args.res = args.res_arr[0]
-        if args.docomoving: args.res = args.res / (1 + args.current_redshift) / 0.695  # converting from comoving kcp h^-1 to physical kpc
-        args.fontsize = 15
+            # --------assigning additional keyword args-------------
+            args.current_redshift = ds.current_redshift
+            args.current_time = ds.current_time.in_units('Gyr').tolist()
+            args.fontsize = 15
 
-        # --------determining corresponding text suffixes and figname-------------
-        args.fig_dir = args.output_dir + 'plots/'
-        Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
+            # --------determining corresponding text suffixes and figname-------------
+            args.fig_dir = args.output_dir + 'plots/'
+            Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
-        outfile_rootname = '%s_%s_FRB_%s%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text, args.res_text)
-        figname = args.fig_dir + outfile_rootname
+            # ------tailoring the simulation box for individual snapshot analysis--------
+            if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+            else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
 
-        #try:
-        # ------tailoring the simulation box for individual snapshot analysis--------
-        if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
-        else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+            # extract the required box
+            box_width = args.galrad * 2  # in kpc
+            box_width_kpc = ds.arr(box_width, 'kpc')
+            box_center = ds.halo_center_kpc
+            box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
 
-        # extract the required box
-        box_width = args.galrad * 2  # in kpc
-        box_width_kpc = ds.arr(box_width, 'kpc')
-        args.ncells = int(box_width / args.res)
-        box_center = ds.halo_center_kpc
-        box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+            # ------making the plots-----------
+            for index, quant in enumerate(quant_arr):
+                myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
+                fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
 
-        central_pixel = args.ncells / 2
-        args.kpc_per_pix = 2 * args.galrad / args.ncells
-
-        # ------making the plots-----------
-        for index, quant in enumerate(quant_arr):
-            myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
-            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
-
-        # except Exception as e:
-        #     print_mpi('Skipping ' + this_sim[1] + ' because ' + str(e), args)
-        #     continue
+        except Exception as e:
+            print_mpi('Skipping ' + this_sim[1] + ' because ' + str(e), args)
+            continue
 
         if len(list_of_sims) < 10: plt.show(block=False)
         else: plt.close()
