@@ -7,8 +7,8 @@
     Author :     Ayan Acharyya
     Started :    July 2021
     Example :    run submit_jobs.py --call filter_star_properties --nnodes 50 --ncores 4 --prefix fsp --halo 8508 --dryrun --opt_args "--do_sll_sims"
-    OR :         run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --halo 8508 --queue ldan --mem 1500GB --prefix cmzs --opt_args "--res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d --use_cen_smoothed"
-                 run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --opt_args "--res 1 --upto_kpc 10 --output RD0027,RD0042 --docomoving --use_cen_smoothed"
+    OR :         run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --halo 8508 --queue ldan --mem 1500GB --prefix frb --opt_args "--res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d --use_cen_smoothed"
+                 run /nobackupp19/aachary2/ayan_codes/foggie_craft/submit_jobs.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix frb --opt_args "--res 1 --upto_kpc 10 --output RD0027,RD0042 --docomoving --use_cen_smoothed"
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #----------setting different variables based on args--------
     systemflag = ' --system ' + args.system
     runsimflag = ' --run ' + args.run
-    prefixtext = 'frb_'
+    prefixtext = args.prefix + '_' if args.prefix is not None else ''
 
     if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/foggie_craft/foggie_craft/'
     elif args.system == 'ayan_local': jobscript_path = os.getenv('HOME') + '/Work/astro/ayan_codes/foggie_craft/'

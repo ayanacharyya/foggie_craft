@@ -6,8 +6,8 @@
     Notes :      Python wrapper to create and submit one or more jobs on pleiades
     Author :     Ayan Acharyya
     Started :    July 2021
-    Example :    run submit_jobs_specific_redshifts.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
-                 run submit_jobs_specific_redshifts.py --call plot_projected_gas_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix cmzs --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
+    Example :    run submit_jobs_specific_redshifts.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix m3fed --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
+                 run submit_jobs_specific_redshifts.py --call plot_projected_gas_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix ppgd --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     #----------setting different variables based on args--------
     systemflag = ' --system ' + args.system
     runsimflag = ' --run ' + args.run
-    prefixtext = 'frb_'
+    prefixtext = args.prefix + '_' if args.prefix is not None else ''
 
     if 'pleiades' in args.system: jobscript_path = '/nobackupp19/aachary2/foggie_craft/foggie_craft/'
     elif args.system == 'ayan_local': jobscript_path = os.getenv('HOME') + '/Work/astro/ayan_codes/foggie_craft/'
