@@ -108,7 +108,6 @@ if __name__ == '__main__':
     # --------getting path names, etc.-----------------
     quant_dict = {'density':['density', 'Gas density', 'Msun/pc**2', -2.5, 2.5, 'cornflowerblue', density_color_map], 'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
     quant_arr = ['density']
-    args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
     
     # --------domain decomposition; for mpi parallelisation-------------
     if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
@@ -153,6 +152,7 @@ if __name__ == '__main__':
             args.current_redshift = ds.current_redshift
             args.current_time = ds.current_time.in_units('Gyr').tolist()
             args.fontsize = 15
+            args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
 
             # --------determining corresponding text suffixes and figname-------------
             args.fig_dir = args.output_dir + 'plots/'
