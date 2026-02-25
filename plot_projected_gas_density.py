@@ -92,7 +92,14 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
     figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
-    plt.savefig(figname, dpi=800)
+    if args.fortalk:
+        mplcyberpunk.add_glow_effects()
+        try: mplcyberpunk.make_lines_glow()
+        except: pass
+        try: mplcyberpunk.make_scatter_glow()
+        except: pass
+
+    plt.savefig(figname, dpi=800, transparent=args.fortalk)
     myprint('Saved figure ' + figname, args)
     plt.show()
 

@@ -27,8 +27,11 @@ import collections, itertools
 
 from matplotlib import pyplot as plt
 #plt.style.use('seaborn-whitegrid')
-plt.rcParams['axes.edgecolor'] = 'black'
-plt.rcParams['axes.linewidth'] = 2
+plt.rcParams['ytick.direction'] = 'in'
+plt.rcParams['ytick.right'] = True
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['xtick.top'] = True
+
 from matplotlib import colors as mplcolors
 from matplotlib import patheffects as fx
 from matplotlib.colors import LogNorm
