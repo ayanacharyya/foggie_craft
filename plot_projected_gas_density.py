@@ -92,7 +92,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, unit='', clim=N
     if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
     figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
-    plt.savefig(figname)
+    plt.savefig(figname, dpi=800)
     myprint('Saved figure ' + figname, args)
     plt.show()
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     # --------getting path names, etc.-----------------
     quant_dict = {'density':['density', 'Gas density', 'Msun/pc**2', -2.5, 2.5, 'cornflowerblue', density_color_map], 'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
-    quant_arr = ['density']
+    quant_arr = ['density', 'el_density']
     
     # --------domain decomposition; for mpi parallelisation-------------
     if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
