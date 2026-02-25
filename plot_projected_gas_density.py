@@ -19,7 +19,7 @@ plt.rcParams['axes.linewidth'] = 1
 start_time = datetime.now()
 
 # --------------------------------------------------------------------------
-def plot_projection_diskrel(box, field, box_width, norm_L, args, unit='', clim=None,  cmap='viridis'):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis'):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
@@ -88,7 +88,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, unit='', clim=N
     axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
 
     # ---------------saving fig------------------------
-    outfile_rootname = '%s_%s_diskrel_%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text)
+    outfile_rootname = '%s_%s_diskrel_%s%s.png' % (args.output, args.halo, quant_label, args.upto_text)
     if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
     figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
@@ -171,7 +171,7 @@ if __name__ == '__main__':
             # ------making the plots-----------
             for index, quant in enumerate(quant_arr):
                 myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
-                fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+                fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
 
         except Exception as e:
             print_mpi('Skipping ' + this_sim[1] + ' because ' + str(e), args)
