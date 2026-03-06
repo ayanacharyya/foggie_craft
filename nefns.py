@@ -126,7 +126,7 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift):
 
 	dmarr	= []
 
-	ptpairs	= np.random.uniform(-necube.shape[0]/2, necube.shape[0]/2, size=(6,2,nfixpts))
+	ptpairs	= np.random.triangular(-necube.shape[0]/2, 0.0, necube.shape[0]/2, size=(6,2,nfixpts))
 	
 	ptsxl	= np.array([-(necube.shape[0]/2)*np.ones(nfixpts,dtype=int), ptpairs[0,0], ptpairs[0,1]]).T
 	ptsxr	= np.array([ (necube.shape[0]/2)*np.ones(nfixpts,dtype=int), ptpairs[1,0], ptpairs[1,1]]).T
