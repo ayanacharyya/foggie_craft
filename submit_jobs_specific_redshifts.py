@@ -8,6 +8,8 @@
     Started :    July 2021
     Example :    run submit_jobs_specific_redshifts.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix m3fed --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
                  run submit_jobs_specific_redshifts.py --call plot_projected_gas_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix ppgd --do_redshifts 4,3,2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0 --opt_args "--upto_kpc 200 --docomoving --use_cen_smoothed"
+                 run submit_jobs_specific_redshifts.py --call make_3D_FRB_electron_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix m3fed --do_redshifts 5,4.8,4.6,4.4,4.2,3.8,3.6,3.4,3.2,2.8,2.6,2.4,2.2,1.8,1.6,1.4,1.2 --opt_args "--res 0.5 --upto_kpc 200 --docomoving --use_cen_smoothed"
+                 run submit_jobs_specific_redshifts.py --call plot_projected_gas_density --system ayan_pleiades --do_all_halos --queue ldan --mem 1500GB --prefix ppgd --do_redshifts 5,4.8,4.6,4.4,4.2,3.8,3.6,3.4,3.2,2.8,2.6,2.4,2.2,1.8,1.6,1.4,1.2 --opt_args "--upto_kpc 200 --docomoving --use_cen_smoothed"
 """
 import subprocess, argparse, datetime, os
 from collections import defaultdict
