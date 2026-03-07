@@ -149,6 +149,8 @@ if __name__ == '__main__':
                 
                 with open(profile_pkl_filename, 'wb') as file_obj:
                     pkl.dump(cubene, file_obj) # dump the pickle file
+            else:
+                print_mpi(f"\nUsing existing radial electron density profile {profile_pkl_filename}\n")
             
             print_mpi("\nPlotting radial electron density profiles...\n")            
             with open(profile_pkl_filename, 'rb') as file_obj:
