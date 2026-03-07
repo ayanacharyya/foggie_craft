@@ -127,6 +127,7 @@ if __name__ == '__main__':
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
         profile_pkl_filename = datadir + fitsname + '_radprof.pkl'
+        
         if fitsname[-3:] == str(nfixpts): fitsname = fitsname[:-4]
         this_sim = fitsname.split('_')[:2]
         print_mpi('Doing snapshot ' + this_sim[0] + ' of halo ' + this_sim[1] + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...')
@@ -142,13 +143,13 @@ if __name__ == '__main__':
         #	-------------------------	Execute tasks	-------------------------------
 
         if (exmode=='profile'):
-            print_mpi("\nGenerating radial electron density profiles...\n")
-            cubene	= neprofinc(necub,dkpc,1.0,theta0,phi0,1.0,1.0,1.0)
+            if not os.path.exists(profile_pkl_filename):
+                print_mpi("\nGenerating radial electron density profiles...\n")
+                cubene	= neprofinc(necub,dkpc,1.0,theta0,phi0,1.0,1.0,1.0)
+                
+                with open(profile_pkl_filename, 'wb') as file_obj:
+                    pkl.dump(cubene, file_obj) # dump the pickle file
             
-            with open(profile_pkl_filename, 'wb') as file_obj:
-                pkl.dump(cubene, file_obj) # dump the pickle file
-            
-        elif (exmode=='plot_profile'):
             print_mpi("\nPlotting radial electron density profiles...\n")            
             with open(profile_pkl_filename, 'rb') as file_obj:
                 cubene = pkl.load(file_obj) # load the pickle file
