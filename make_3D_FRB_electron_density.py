@@ -7,10 +7,10 @@
     Output :     3D data cube as fits file, and optionally png figures
     Author :     Ayan Acharyya
     Started :    Aug 2024
-    Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --docomoving --do_all_sims --use_cen_smoothed
-                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --docomoving --clobber --plot_3d --use_cen_smoothed
-                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --docomoving --clobber --use_cen_smoothed
-                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --docomoving --clobber --plot_3d --use_cen_smoothed
+    Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --do_all_sims --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --clobber --plot_3d --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --clobber --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --clobber --plot_3d --use_cen_smoothed
 """
 from header import *
 from yt.visualization.fits_image import FITSImageData
