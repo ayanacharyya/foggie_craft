@@ -384,7 +384,7 @@ if __name__ == '__main__':
                     fig.savefig(figname)
                     myprint('Saved plot as ' + figname, args)
 
-                plt.show(block=False)
+                if not ('pleiades' in args.system or args.hide_plot): plt.show(block=False)
                 print_mpi('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds), args)
 
             except Exception as e:
