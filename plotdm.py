@@ -21,6 +21,7 @@ import pickle as pkl
 from collections import namedtuple
 from globalpars import *
 from nefns import *
+from scipy.stats import binned_statistic
 
 mpl.rcParams['pdf.fonttype']	= 42
 mpl.rcParams['ps.fonttype'] 	= 42
@@ -44,15 +45,22 @@ def plot_nerad(radne,inclims, plot_name):
 	for i in range(0,len(inclims)):
 		inclim	= inclims[i]
 		relinds	= np.where((radne.inclination - np.deg2rad(inclim[0]))*(radne.inclination - np.deg2rad(inclim[1])) <= 0.0)	
-		relincs	= radne.inclination[relinds]
-		relne	= radne.neincrad[relinds]	
+		relne	= radne.neincrad[relinds]
+		binned_ne	= np.zeros((len(radbins)-1, 6), dtype=np.float32)
+		#	The ugly binning in radius
+		for k in range (0,len(radbins)-1):
+			rel2inds		= np.where((radne.radkpc - radbins[k])*(radne.radkpc - radbins[k+1]) <= 0.0)
+			binned_ne[k,0]	= (radbins[k]+radbins[k+1])/2.0
+			binned_ne[k,1:6]= np.percentile(relne[:,rel2inds], (16, 25, 50, 75, 84))
+		'''
 		medne	= np.nanmedian(relne, axis=0)
-		meane	= np.nanmean(relne, axis=0)
 		per16	= np.percentile(relne, 16.0, axis=0)
 		per84	= np.percentile(relne, 84.0, axis=0)		
 		plt.fill_between(radne.radkpc, per16, per84, color=shlist[i],alpha=0.2)
 		plt.plot(radne.radkpc, medne, c=colist[i], ls='-', markersize=2, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
-		#plt.plot(radne.radkpc, meane, c=colist[i], ls='--', markersize=2, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
+		'''
+		plt.fill_between(binned_ne[:,0], binned_ne[:,1], binned_ne[:,5], color=shlist[i],alpha=0.2)
+		plt.plot(binned_ne[:,0], binned_ne[:,3], c=colist[i], marker='s', markersize=6, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
 	
 	plt.legend(loc="upper right",frameon=False)
 	#plt.xlim([-1,205])

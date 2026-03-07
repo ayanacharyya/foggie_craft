@@ -64,7 +64,7 @@ def print_instructions():
 	Print instructions to terminal
 	'''
     print("\n            You probably need some assistance here!\n")
-    print("\n Arguments are       --- <mode> <nfixpts> <extent/ckpc> <scale/kpc>\n")
+    print("\n Arguments are       --- <mode> <nfixpts> <extent/ckpc> <scale/kpc> <filename/optional>\n")
     print(" Supported Modes are --- profile        (calculate electron density profiles)")
     print("                     --- plot_profile          (plot electron density profiles)")
     print("                     --- losdm          (calculate LoS DMs)")
@@ -85,13 +85,21 @@ if __name__ == '__main__':
     nfixpts     =   int(sys.argv[2])            #   Number of fixed points on each face to simulate LoSs
     extent     =   float(sys.argv[3])             #   Extent of datacube on either side of the center, in units of comoving kpc (to pick the right cubes from datadir)
     scalekpc	=	float(sys.argv[4])			#	Scale radius in kpc
+    try: 
+        filename	=	sys.argv[5]			#	Individual fits filename
+    except:
+        filename = ''
+        pass
 
     #incranges	=	np.array([[0,20],[40,50],[80,90]])
     incranges	=	np.array([[item - dinc/2, item + dinc/2] for item in incvals])
 
     # --------domain decomposition; for mpi parallelisation-------------
-    list_of_fits = glob.glob(datadir + f'*8508*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
-    #list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
+    if filename != '':
+        list_of_fits = glob.glob(datadir + f'{filename.replace(".fits", "")}.fits')
+    else:
+        list_of_fits = glob.glob(datadir + f'*8508*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+        #list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
     comm = MPI.COMM_WORLD
