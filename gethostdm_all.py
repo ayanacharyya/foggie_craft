@@ -66,6 +66,7 @@ def print_instructions():
     print("\n            You probably need some assistance here!\n")
     print("\n Arguments are       --- <mode> <nfixpts> <extent/ckpc> <scale/kpc>\n")
     print(" Supported Modes are --- profile        (calculate electron density profiles)")
+    print("                     --- plot_profile          (plot electron density profiles)")
     print("                     --- losdm          (calculate LoS DMs)")
     print("                     --- pltdm          (Plot LoS DMs)")
     print("                     --- dmscat         (Plot LoS DMs)")
@@ -85,7 +86,8 @@ if __name__ == '__main__':
     extent     =   float(sys.argv[3])             #   Extent of datacube on either side of the center, in units of comoving kpc (to pick the right cubes from datadir)
     scalekpc	=	float(sys.argv[4])			#	Scale radius in kpc
 
-    incranges	=	np.array([[0,20],[40,50],[80,90]])
+    #incranges	=	np.array([[0,20],[40,50],[80,90]])
+    incranges	=	np.array([[item - dinc/2, item + dinc/2] for item in incvals])
 
     # --------domain decomposition; for mpi parallelisation-------------
     list_of_fits = glob.glob(datadir + f'*8508*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
@@ -116,6 +118,7 @@ if __name__ == '__main__':
         start_time_this_snapshot = datetime.now()
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
+        profile_pkl_filename = datadir + fitsname + '_radprof.pkl'
         if fitsname[-3:] == str(nfixpts): fitsname = fitsname[:-4]
         this_sim = fitsname.split('_')[:2]
         print_mpi('Doing snapshot ' + this_sim[0] + ' of halo ' + this_sim[1] + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...')
@@ -133,7 +136,16 @@ if __name__ == '__main__':
         if (exmode=='profile'):
             print_mpi("\nGenerating radial electron density profiles...\n")
             cubene	= neprofinc(necub,dkpc,1.0,theta0,phi0,1.0,1.0,1.0)
-            plot_nerad(cubene, incranges)
+            
+            with open(profile_pkl_filename, 'wb') as file_obj:
+                pkl.dump(cubene, file_obj) # dump the pickle file
+            
+        elif (exmode=='plot_profile'):
+            print_mpi("\nPlotting radial electron density profiles...\n")            
+            with open(profile_pkl_filename, 'rb') as file_obj:
+                cubene = pkl.load(file_obj) # load the pickle file
+            
+            plot_nerad(cubene, incranges, plotdir + fitsname)
 
         elif (exmode=='losdm'):
             print_mpi("\nEstimating LoS DMs...\n")

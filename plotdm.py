@@ -33,7 +33,7 @@ mpl.rcParams['font.size']		= 8
 
 #	----------------------------------------------------------------------------------------------------------
 
-def plot_nerad(radne,inclims):
+def plot_nerad(radne,inclims, plot_name):
 	#	Plot Radial profile of ne within the inclination range
 	
 	fig 	= plt.figure(figsize=(6.0,4.5))
@@ -52,17 +52,17 @@ def plot_nerad(radne,inclims):
 		per84	= np.percentile(relne, 84.0, axis=0)		
 		plt.fill_between(radne.radkpc, per16, per84, color=shlist[i],alpha=0.2)
 		plt.plot(radne.radkpc, medne, c=colist[i], ls='-', markersize=2, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
-		plt.plot(radne.radkpc, meane, c=colist[i], ls='--', markersize=2, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
+		#plt.plot(radne.radkpc, meane, c=colist[i], ls='--', markersize=2, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
 	
 	plt.legend(loc="upper right",frameon=False)
 	#plt.xlim([-1,205])
-	plt.ylim([3.5e-7,1.5e-1])
+	#plt.ylim([3.5e-7,1.5e-1])
 	
-	#plt.yscale('log')
-	#plt.xscale('log')
+	plt.yscale('log')
+	plt.xscale('log')
 	plt.xlabel('Radius (kpc)')
 	plt.ylabel('$n_e$ (cm$^{-3}$)')
-	plt.savefig("../plots/ne_radial_inc_"+str(inclim[0])+"_"+str(inclim[1])+".png",format='png',transparent=True)
+	plt.savefig(plot_name + '_radprof.pdf', transparent=True)
 		
 	plt.show(block=False)
 	

@@ -12,6 +12,7 @@ from collections import namedtuple
 root_dir = "/nobackupp19/aachary2/foggie_craft/"
 datadir     =   root_dir + "data/"     #   Location of the FITS cubes
 losdir      =   root_dir + "losdms/"        #   Location of the LoS DMs
+plotdir      =   root_dir + "plots/"        #   Location of the LoS DMs
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff
 incvals     =   [15.0,45.0,75.0]    #   Central values of inclination bins in deg

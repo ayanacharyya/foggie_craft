@@ -76,7 +76,7 @@ def neprofinc(necube,dkpc,dangdeg,theta0,phi0,logsm,logsfr,redshift):
 	
 	dangrad	= np.deg2rad(dangdeg)
 	cenpx	= np.array(necube.shape)/2
-	radius	= np.arange(0,np.amin(cenpx),np.amax(dkpc),dtype=np.float32)
+	radius	= np.arange(0, np.amin(cenpx), 1, dtype=np.float32) * np.amax(dkpc)
 	thetas	= np.linspace(-(np.pi/2.0), (np.pi/2.0), int(np.rint(np.pi/dangrad)), dtype=np.float32)
 	angls	= []
 	for theta in thetas:
