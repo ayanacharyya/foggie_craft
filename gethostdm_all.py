@@ -134,11 +134,12 @@ if __name__ == '__main__':
 
         #	-------------------------	Load the fits file	---------------------------
         if exmode in ['losdm', 'profile']:
-            print_mpi("Reading "+fitsname)
-            necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
-            print_mpi(f"Ne cube dimensions {necub.shape}")
-            print_mpi(f"Spatial resolutions (kpc) {dkpc}")
-            print_mpi(f"Orientation (deg) {np.rad2deg(theta0)},{np.rad2deg(phi0)}")
+            if not (exmode == 'profile' and os.path.exists(profile_pkl_filename)):
+                print_mpi("Reading "+fitsname)
+                necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
+                print_mpi(f"Ne cube dimensions {necub.shape}")
+                print_mpi(f"Spatial resolutions (kpc) {dkpc}")
+                print_mpi(f"Orientation (deg) {np.rad2deg(theta0)},{np.rad2deg(phi0)}")
 
         #	-------------------------	Execute tasks	-------------------------------
 
