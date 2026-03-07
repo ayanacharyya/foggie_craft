@@ -8,8 +8,8 @@ from collections import namedtuple
 #	Globally defined parameters which should not be frequently modified
 
 #root_dir = "../"
-root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/"
-#root_dir = "/nobackupp19/aachary2/foggie_craft/"
+#root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/"
+root_dir = "/nobackupp19/aachary2/foggie_craft/"
 datadir     =   root_dir + "data/"     #   Location of the FITS cubes
 losdir      =   root_dir + "losdms/"        #   Location of the LoS DMs
 impbins     =   20                  #   Number of bins in impact factor

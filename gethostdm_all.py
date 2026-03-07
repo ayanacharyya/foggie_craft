@@ -88,7 +88,7 @@ if __name__ == '__main__':
     incranges	=	np.array([[0,20],[40,50],[80,90]])
 
     # --------domain decomposition; for mpi parallelisation-------------
-    list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+    list_of_fits = glob.glob(datadir + f'*8508*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
     #list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}ckpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
