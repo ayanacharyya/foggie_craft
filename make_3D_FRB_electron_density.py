@@ -213,7 +213,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
 
     plt.savefig(figname, dpi=800, transparent=args.fortalk)
     myprint('Saved figure ' + figname, args)
-    plt.show()
+    if not ('pleiades' in args.system or args.hide_plot): plt.show()
 
     return fig
 
