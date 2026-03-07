@@ -131,7 +131,7 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_proj_frb_diskrel(box, field, box_width, norm_L, args, unit='', clim=None,  cmap='viridis'):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis'):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
@@ -146,8 +146,8 @@ def plot_proj_frb_diskrel(box, field, box_width, norm_L, args, unit='', clim=Non
     fontsize = args.fontsize
 
     # ---------------making face on and edge on projections------------------------
-    p_faceon = yt.OffAxisProjectionPlot(box.ds, ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field='density', center=box.ds.halo_center_kpc, north_vector=ds.arr(x))
-    p_edgeon = yt.OffAxisProjectionPlot(box.ds, ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field='density', center=box.ds.halo_center_kpc, north_vector=ds.arr(norm_L))
+    p_faceon = yt.OffAxisProjectionPlot(box.ds, ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=ds.arr(x))
+    p_edgeon = yt.OffAxisProjectionPlot(box.ds, ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=ds.arr(norm_L))
 
     # ---------------setting up units, colormaps, etc------------------------
     p_faceon.set_log(field, True)
@@ -167,12 +167,13 @@ def plot_proj_frb_diskrel(box, field, box_width, norm_L, args, unit='', clim=Non
     p_faceon._setup_plots()
     p_edgeon.plots[field].axes = axes[1]
     p_edgeon._setup_plots()
-    divider = make_axes_locatable(axes[1])
 
-    fig.subplots_adjust(right=0.87, top=0.98, bottom=0.1, left=0.1, wspace=0.1)
+    right, top, bottom, left, wspace = 0.85, 0.98, 0.1, 0.12, 0.0
+    fig.subplots_adjust(right=right, top=top, bottom=bottom, left=left, wspace=wspace)
 
     # ---------------making colorbar------------------------
-    cax = divider.append_axes('right', size='5%', pad=0.05)
+    offset, width = 0.075, 0.02
+    cax = fig.add_axes([right, bottom + offset, width, top - bottom - 2 * offset])
     cbar = fig.colorbar(p_edgeon.plots[field].cb.mappable, orientation='vertical', cax=cax)
     cbar.ax.tick_params(labelsize=fontsize, width=2.5, length=5)
     cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
@@ -199,11 +200,18 @@ def plot_proj_frb_diskrel(box, field, box_width, norm_L, args, unit='', clim=Non
     axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
 
     # ---------------saving fig------------------------
-    outfile_rootname = '%s_%s_diskrel_%s%s.png' % (args.output, args.halo, quant_dict[quant_arr[0]][0], args.upto_text)
+    outfile_rootname = '%s_%s_diskrel_%s%s.png' % (args.output, args.halo, quant_label, args.upto_text)
     if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
     figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
-    plt.savefig(figname)
+    if args.fortalk:
+        mplcyberpunk.add_glow_effects()
+        try: mplcyberpunk.make_lines_glow()
+        except: pass
+        try: mplcyberpunk.make_scatter_glow()
+        except: pass
+
+    plt.savefig(figname, dpi=800, transparent=args.fortalk)
     myprint('Saved figure ' + figname, args)
     plt.show()
 
@@ -364,7 +372,7 @@ if __name__ == '__main__':
                     if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
                     elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
 
-                fig_diskrel = plot_proj_frb_diskrel(box, quant_dict[quant][0], box_width_kpc, norm_L, args, unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+                fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
 
             # ------saving fits file------------------
             combined_img_hdu = FITSImageData.from_images(img_hdu_list)
