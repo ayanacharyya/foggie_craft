@@ -314,83 +314,82 @@ if __name__ == '__main__':
         fitsname = args.fits_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift)).replace('.png', '.fits')
 
         if not os.path.exists(fitsname) or args.clobber:
-            #try:
-            # ------tailoring the simulation box for individual snapshot analysis--------
-            if args.upto_kpc is not None:
-                if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
-                else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
-            else:
-                args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
-                args.galrad = args.re * args.upto_re  # kpc
+            try:
+                # ------tailoring the simulation box for individual snapshot analysis--------
+                if args.upto_kpc is not None:
+                    if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+                    else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+                else:
+                    args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
+                    args.galrad = args.re * args.upto_re  # kpc
 
-            # extract the required box
-            box_width = args.galrad * 2  # in kpc
-            box_width_kpc = ds.arr(box_width, 'kpc')
-            args.ncells = int(box_width / args.res)
-            box_center = ds.halo_center_kpc
-            box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+                # extract the required box
+                box_width = args.galrad * 2  # in kpc
+                box_width_kpc = ds.arr(box_width, 'kpc')
+                args.ncells = int(box_width / args.res)
+                box_center = ds.halo_center_kpc
+                box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
 
-            central_pixel = args.ncells / 2
-            args.kpc_per_pix = 2 * args.galrad / args.ncells
+                central_pixel = args.ncells / 2
+                args.kpc_per_pix = 2 * args.galrad / args.ncells
 
-            # -------setting up fig--------------
-            if args.plot_3d or args.plot_proj:
-                fig = plt.figure(figsize=(2 + 4 * len(quant_arr), 5))
-                fig.subplots_adjust(top=0.88, bottom=0.12, left=0.07, right=0.92, wspace=0.4 if args.plot_3d else 0.02, hspace=0.)
-
-            # -------making and plotting the 3D FRBs--------------
-            all_data = ds.arbitrary_grid(left_edge=box.left_edge, right_edge=box.right_edge, dims=[args.ncells, args.ncells, args.ncells])
-            img_hdu_list = []
-
-            for index, quant in enumerate(quant_arr):
-                myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
-
-                # --------making the 3D FRB------------
-                FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
-
-                # --------making the FITS ImageHDU---------------
-                img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
-                header = img_hdu[0].header
-                for ind in range(3):
-                    header[f'CDELT{ind+1}'] = args.kpc_per_pix
-                    header[f'CUNIT{ind+1}'] = 'kpc'
-                    header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
-
-                header[f'SFR'] = sfr
-                header[f'SFRUNIT'] = 'Msun/yr'
-
-                header[f'LOG_MSTAR'] = log_mstar
-                header[f'MSTARUNIT'] = 'Msun'
-
-                header[f'REDSHIFT'] = args.current_redshift
-
-                img_hdu_list.append(img_hdu)
-
-                # ------making the plots-----------
+                # -------setting up fig--------------
                 if args.plot_3d or args.plot_proj:
-                    ax = fig.add_subplot(1, len(quant_arr), index + 1, projection='3d' if args.plot_3d else None)
-                    if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
-                    elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
+                    fig = plt.figure(figsize=(2 + 4 * len(quant_arr), 5))
+                    fig.subplots_adjust(top=0.88, bottom=0.12, left=0.07, right=0.92, wspace=0.4 if args.plot_3d else 0.02, hspace=0.)
 
-                fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+                # -------making and plotting the 3D FRBs--------------
+                all_data = ds.arbitrary_grid(left_edge=box.left_edge, right_edge=box.right_edge, dims=[args.ncells, args.ncells, args.ncells])
+                img_hdu_list = []
 
-            # ------saving fits file------------------
-            combined_img_hdu = FITSImageData.from_images(img_hdu_list)
-            combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
-            myprint('Saved fits file as ' + fitsname, args)
+                for index, quant in enumerate(quant_arr):
+                    myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
 
-            # ------saving fig------------------
-            if args.plot_3d or args.plot_proj:
-                fig.savefig(figname)
-                myprint('Saved plot as ' + figname, args)
+                    # --------making the 3D FRB------------
+                    FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
 
-            plt.show(block=False)
-            print_mpi('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds), args)
-            '''
+                    # --------making the FITS ImageHDU---------------
+                    img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
+                    header = img_hdu[0].header
+                    for ind in range(3):
+                        header[f'CDELT{ind+1}'] = args.kpc_per_pix
+                        header[f'CUNIT{ind+1}'] = 'kpc'
+                        header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
+
+                    header[f'SFR'] = sfr
+                    header[f'SFRUNIT'] = 'Msun/yr'
+
+                    header[f'LOG_MSTAR'] = log_mstar
+                    header[f'MSTARUNIT'] = 'Msun'
+
+                    header[f'REDSHIFT'] = args.current_redshift
+
+                    img_hdu_list.append(img_hdu)
+
+                    # ------making the plots-----------
+                    if args.plot_3d or args.plot_proj:
+                        ax = fig.add_subplot(1, len(quant_arr), index + 1, projection='3d' if args.plot_3d else None)
+                        if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
+                        elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
+
+                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+
+                # ------saving fits file------------------
+                combined_img_hdu = FITSImageData.from_images(img_hdu_list)
+                combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
+                myprint('Saved fits file as ' + fitsname, args)
+
+                # ------saving fig------------------
+                if args.plot_3d or args.plot_proj:
+                    fig.savefig(figname)
+                    myprint('Saved plot as ' + figname, args)
+
+                plt.show(block=False)
+                print_mpi('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds), args)
+
             except Exception as e:
                 print_mpi('Skipping ' + this_sim[1] + ' because ' + str(e), args)
                 continue
-            '''
         else:
             print('Skipping snapshot %s as %s already exists. Use --clobber to remake figure.' %(args.output, fitsname))
             continue
