@@ -30,16 +30,6 @@ export PYTHONPATH=$PYTHONPATH:/home5/aachary2/miniconda3/envs/py380/bin/
 
 # ------------------------
 
-###### Load necessary modules #########
-module purge
-module load mpi-hpe/mpt.2.30
-source /home5/aachary2/miniconda3/etc/profile.d/conda.sh
-conda activate py380
-
-export PYTHONPATH=$PYTHONPATH:/home5/aachary2/miniconda3/envs/py380/bin/
-
-# ------------------------
-
 ##### Change to current working directory #####
 cd /nobackupp19/aachary2/foggie_craft/pleiades_workdir
 
