@@ -65,7 +65,7 @@ def get_AM_vector(ds):
     '''
     start_time = datetime.now()
 
-    print('Staring to derive angular momentum vector. This can take a while..')
+    print('Starting to derive angular momentum vector. This can take a while..')
     sphere = ds.sphere(ds.halo_center_kpc, (15., 'kpc'))
     L = sphere.quantities.angular_momentum_vector(use_gas=False, use_particles=True, particle_type='young_stars')
     print('Completed deriving angular momentum vector, in %s'% timedelta(seconds=(datetime.now() - start_time).seconds))
