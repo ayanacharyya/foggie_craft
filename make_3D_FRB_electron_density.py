@@ -146,8 +146,8 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     fontsize = args.fontsize
 
     # ---------------making face on and edge on projections------------------------
-    p_faceon = yt.OffAxisProjectionPlot(box.ds, ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=ds.arr(x))
-    p_edgeon = yt.OffAxisProjectionPlot(box.ds, ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=ds.arr(norm_L))
+    p_faceon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(x))
+    p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
 
     # ---------------setting up units, colormaps, etc------------------------
     p_faceon.set_log(field, True)
