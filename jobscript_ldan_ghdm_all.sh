@@ -35,5 +35,5 @@ cd /nobackupp19/aachary2/foggie_craft/pleiades_workdir
 
 ##### Execute Program #####
 top -b -u $USER -n 259200 1>top_ldan_ghdm_all.out &
-mpiexec -n 16 python /nobackupp19/aachary2/foggie_craft/foggie_craft/gethostdm_all.py losdm 150 200 0.5 1>output_ldan_ghdm_all.out 2>&1
+mpiexec -n 16 python /nobackupp19/aachary2/foggie_craft/foggie_craft/gethostdm_all.py profile 150 200 0.5 1>output_ldan_ghdm_all.out 2>&1
 killall 'top'

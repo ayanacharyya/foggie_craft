@@ -98,7 +98,7 @@ if __name__ == '__main__':
     if filename != '':
         list_of_fits = glob.glob(datadir + f'{filename.replace(".fits", "")}.fits')
     else:
-        list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}kpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+        list_of_fits = glob.glob(datadir + f'*FRB_density*{extent:.1f}kpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
         #list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}kpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
