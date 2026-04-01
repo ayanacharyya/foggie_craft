@@ -12,7 +12,7 @@
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --clobber --use_cen_smoothed
                  run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --clobber --plot_3d --use_cen_smoothed
 """
-from header import *
+from foggie_header import *
 from yt.visualization.fits_image import FITSImageData
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 plt.rcParams['axes.linewidth'] = 1

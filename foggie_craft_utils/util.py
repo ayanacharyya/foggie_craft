@@ -8,7 +8,7 @@
     Started :    March 2021
 
 """
-from header import *
+from foggie_header import *
 
 # ----------------------------------------------------------------
 import fnmatch
@@ -1725,6 +1725,8 @@ def parse_args(haloname, RDname, fast=False):
 
     # ------- args added for make_3D_FRB_electron_density.py ------------------------------
     parser.add_argument('--plot_3d', dest='plot_3d', action='store_true', default=False, help='Plot 3D FRB?, default is no')
+
+    # ------- args added for plots_for_frb_paper.py ------------------------------
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()

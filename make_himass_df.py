@@ -10,7 +10,7 @@
     Examples :   run make_himass_df.py --system ayan_hd --Zgrad_den kpc --upto_kpc 10 --forpaper --halo 8508,5036,5016,4123,2878,2392 --output RD0030,RD0042 --write_file
                  run make_himass_df.py --system ayan_hd --Zgrad_den kpc --upto_kpc 10 --forpaper --halo 8508 --output RD0042 --write_file
 """
-from header import *
+from foggie_header import *
 
 start_time = time.time()
 

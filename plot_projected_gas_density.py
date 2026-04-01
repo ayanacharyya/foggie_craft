@@ -10,7 +10,7 @@
     Examples :   run plot_projected_gas_density.py --system ayan_pleiades --halo 8508 --upto_kpc 200 --docomoving --do_all_sims
                  run plot_projected_gas_density.py --system ayan_local --halo 8508 --upto_kpc 200 --output RD0027 --docomoving
 """
-from header import *
+from foggie_header import *
 from make_3D_FRB_electron_density import get_AM_vector, plot_projection_diskrel
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 

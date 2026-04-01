@@ -10,7 +10,7 @@
     Examples :   run electron_density_spherical.py --system ayan_pleiades --halo 8508 --upto_kpc 50 --docomoving --do_all_sims --write_file
                  run electron_density_spherical.py --system ayan_hd --halo 4123 --upto_kpc 10 --output RD0038 --docomoving --nbins 100 --clobber_plot --dont_use_wider_file
 """
-from header import *
+from foggie_header import *
 plt.rcParams['axes.linewidth'] = 1
 from datashader_movie import field_dict, unit_dict, islog_dict, get_correct_tablename, get_text_between_strings
 from mpl_toolkits.axes_grid1 import make_axes_locatable

@@ -10,7 +10,7 @@
     Examples :   run electron_density_projections.py --system ayan_pleiades --halo 8508 --upto_kpc 50 --res 0.2 --docomoving --do_all_sims --write_file
                  run electron_density_projections.py --system ayan_hd --halo 4123 --upto_kpc 50 --res 0.2 --output RD0038 --docomoving --nbins 100 --clobber_plot
 """
-from header import *
+from foggie_header import *
 plt.rcParams['axes.linewidth'] = 1
 
 start_time = datetime.now()

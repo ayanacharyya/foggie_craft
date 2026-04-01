@@ -9,7 +9,7 @@
     Started :    Jan 2026
     Examples :   run get_mass_sfr.py --system ayan_pleiades --upto_kpc 200
 """
-from header import *
+from foggie_header import *
 start_time = datetime.now()
 
 # -----------------------------------------------------------------------------

@@ -1,17 +1,6 @@
-import os, sys
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.io import fits
-import pickle as pkl
-from collections import namedtuple
-from globalpars import *
+from craft_utils import *
 
 #	Auxiliary function to calculate DM related quantities
-
-#	A named tuple to store various parameters related to radial ne profile
-neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','radkpc','theta','phi','inclination','neincrad'])
-
-
 
 
 #	----------------------------------------------------------------------------------------------------------
@@ -56,6 +45,49 @@ def impactfac (pt1, pt2):
     
 
 
+def logradialexp (x, x0, a0):
+#   Return a radial exponential
+#	Arguments:	Radius, scale radius, normalization
+
+	radexp	= np.log10(a0 * np.exp(-x/x0))
+
+	return (radexp)
+#	------------------------------------------------------------------------------------------------------
+
+
+
+def logradialgaus (x, x0, a0):
+#   Return a radial exponential
+#	Arguments:	Radius, scale radius, normalization
+
+	radexp	= np.log10(a0 * np.exp(-(x/x0)**2))
+
+	return (radexp)
+#	------------------------------------------------------------------------------------------------------
+
+
+
+
+def logradialexp3 (x, x0, a0):
+#   Return a radial exponential
+#	Arguments:	Radius, scale radius, normalization
+
+	radexp	= np.log10(a0 * np.exp(-(x/x0)**0.33))
+
+	return (radexp)
+#	------------------------------------------------------------------------------------------------------
+
+
+
+def logbeselk (x, x0, a0):
+#   Return a radial Bessel k
+#	Arguments:	Radius, scale radius, normalization
+
+	radexp	= np.log10(a0 * special.kn(0.5,x/x0))
+
+	return (radexp)
+#	------------------------------------------------------------------------------------------------------
+
 
 def radialexp (x, x0, a0):
 #   Return a radial exponential
@@ -97,6 +129,16 @@ def distfrmajorax (theta0, phi0, pt1, pt2):
 	mindist		= np.abs( np.dot(crpdct, (pt1 - majaxpt)) ) / np.sqrt(np.dot(crpdct, crpdct))
 	
 	return (mindist)
+#	------------------------------------------------------------------------------------------------------
+
+
+def linearxy (xy, a, b, c):
+#	Retruns a linear function of two independent variables
+# 	z	=	ax + by + c	
+
+	z	= a*xy[0] + b*xy[1] + c 
+
+	return (z)
 #	------------------------------------------------------------------------------------------------------
 
 

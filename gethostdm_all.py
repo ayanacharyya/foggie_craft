@@ -6,17 +6,11 @@
 
 #	--------------------------	Import modules	---------------------------
 
-import os, sys, glob
-import numpy as np
-import pickle as pkl
-from collections import namedtuple
+from craft_header import *
 from globalpars import *
 from nefns import *
 from plotdm import *
-import subprocess
-from mpi4py import MPI
-from pathlib import Path
-from datetime import timedelta, datetime
+
 start_time = datetime.now()
 
 # -------------------------------------------------------------------------------------------

@@ -10,7 +10,7 @@
     Examples :   run plot_spherical_electron_density.py --system ayan_pleiades --upto_kpc 50 --docomoving --do_all_halos
                  run plot_spherical_electron_density.py --system ayan_hd --do_all_halos --upto_kpc 50 --docomoving --nbins 100 --nocolorcoding
 """
-from header import *
+from foggie_header import *
 plt.rcParams['axes.linewidth'] = 1
 from datetime import datetime, timedelta
 

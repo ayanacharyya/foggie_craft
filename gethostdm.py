@@ -5,10 +5,7 @@
 
 #	--------------------------	Import modules	---------------------------
 
-import os, sys
-import numpy as np
-import pickle as pkl
-from collections import namedtuple
+from craft_header import *
 from globalpars import *
 from nefns import *
 from plotdm import *

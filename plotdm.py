@@ -8,32 +8,11 @@
 #
 #	--------------------------	Import modules	---------------------------
 
-import os, sys
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.ticker import FormatStrFormatter
-from matplotlib.ticker import FuncFormatter
-import matplotlib.colors as mpc
-import matplotlib.ticker as ticker
-from scipy.optimize import curve_fit
-import pickle as pkl
-from collections import namedtuple
+from header import *
 from globalpars import *
 from nefns import *
-from scipy.stats import binned_statistic
-
-mpl.rcParams['pdf.fonttype']	= 42
-mpl.rcParams['ps.fonttype'] 	= 42
-mpl.rcParams['savefig.dpi'] 	= 600
-mpl.rcParams['font.family'] 	= 'sans-serif'
-mpl.rcParams['font.size']		= 8
-
-#	ne profiles for a given cube -- inclinatio, radius, density
-#neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','radkpc','theta','phi','inclination','neincrad'])
 
 #	----------------------------------------------------------------------------------------------------------
-
 def plot_nerad(radne,inclims, plot_name):
 	#	Plot Radial profile of ne within the inclination range
 	
@@ -75,10 +54,8 @@ def plot_nerad(radne,inclims, plot_name):
 	plt.show(block=False)
 	
 	return(0)
+
 #	----------------------------------------------------------------------------------------------------------	
-
-
-
 def plot_neimp(imfarr0, incarr0, losdm0, impbins, implim, fsize):
 	#	Plot LoSDM vs impact factor for a given inclination range
 	
@@ -140,10 +117,8 @@ def plot_neimp(imfarr0, incarr0, losdm0, impbins, implim, fsize):
 	plt.show(block=False)
 	
 	return(0)
+
 #	----------------------------------------------------------------------------------------------------------	
-
-
-
 def plot_dmfixinc(imfarr0, incarr0, dmajax0, losdm0, impbins, implim, inclim, fsize, stat):
 	#	Plot LoSDM vs impact factor and distance from major axis for a given inclination range
 	
@@ -207,6 +182,7 @@ def plot_dmfixinc(imfarr0, incarr0, dmajax0, losdm0, impbins, implim, inclim, fs
 	plt.show(block=False)
 	
 	return(0)
+
 #	----------------------------------------------------------------------------------------------------------
 
 

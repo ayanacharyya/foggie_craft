@@ -10,7 +10,7 @@
     Examples :   run plot_projected_electron_density.py --system ayan_pleiades --upto_kpc 10 --res 0.2 --docomoving --do_all_halos
                  run plot_projected_electron_density.py --system ayan_hd --do_all_halos --upto_kpc 10 --res 0.2 --docomoving --nbins 100 --nocolorcoding
 """
-from header import *
+from foggie_header import *
 plt.rcParams['axes.linewidth'] = 1
 from datetime import datetime, timedelta
 

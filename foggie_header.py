@@ -25,6 +25,11 @@ import glob
 import random
 import collections, itertools
 
+import pickle as pkl
+from collections import namedtuple
+
+import subprocess
+
 from matplotlib import pyplot as plt
 #plt.style.use('seaborn-whitegrid')
 plt.rcParams['ytick.direction'] = 'in'
@@ -55,6 +60,7 @@ from scipy.interpolate import LinearNDInterpolator as LND
 from scipy.special import erf
 from scipy.optimize import curve_fit, fminbound
 from scipy.ndimage import gaussian_filter
+from scipy.stats import binned_statistic
 
 from astropy.io import ascii, fits
 from astropy.table import Table

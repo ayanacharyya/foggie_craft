@@ -13,22 +13,11 @@
 #	
 #	--------------------------	Import modules	---------------------------
 
-import os, sys
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.io import fits
-import pickle as pkl
-from collections import namedtuple
-from itertools import combinations
+from craft_header import *
+
 from globalpars import *
 from auxfns import *
 from plotdm import *
-
-mpl.rcParams['pdf.fonttype']	= 42
-mpl.rcParams['ps.fonttype'] 	= 42
-mpl.rcParams['savefig.dpi'] 	= 600
-mpl.rcParams['font.family'] 	= 'sans-serif'
-mpl.rcParams['font.size']		= 8
 
 #	----------------------------------------------------------------------------------------------------------
 def fitld(fitsname, fsize):	
