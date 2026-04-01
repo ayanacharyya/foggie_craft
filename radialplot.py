@@ -44,7 +44,7 @@ def execute_mode_indi(df_snap, incranges, args):
     print("\nPloting individual snaps...\n")
 
     for i, snap in df_snap.iterrows():
-        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
+        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB{args.quant_text}_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
         with open(thisfile, 'rb') as file_obj: cube	= pkl.load(file_obj)
 
         title	= r"log ($M_* / M_{\odot}$) = %.2f, SFR = %.2f $M_{\odot} yr^{-1}$"%(snap["lsm"], snap["sfr"])
@@ -63,7 +63,7 @@ def execute_mode_halo(df_snap, incranges, args):
     df_snap = df_snap[df_snap["halo"].astype(str) == args.halo]
     
     for i, snap in df_snap.iterrows():
-        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
+        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB{args.quant_text}_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
         with open(thisfile, 'rb') as file_obj: cube	= pkl.load(file_obj)
 
         title	= r"log ($M_* / M_{\odot}$) = %.2f, SFR = %.2f $M_{\odot} yr^{-1}$"%(snap["lsm"], snap["sfr"])
@@ -83,7 +83,7 @@ def execute_mode_lsmzsfr(df_snap, incranges, args):
     cubes = []
 
     for i, snap in df_snap.iterrows():
-        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
+        thisfile = args.radial_data_dir / f'{snap["snap"]}_{snap["halo"]}_FRB{args.quant_text}_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_radprof.pkl'
         with open(thisfile, 'rb') as file_obj: cube	= pkl.load(file_obj)
         cubes.append(cube)
 
@@ -107,6 +107,7 @@ if __name__ == '__main__':
     args = parse_args()
     args.radial_data_dir = args.data_dir / f'radial_profiles_{args.quant}_density'
     args.radial_plot_dir = args.plot_dir / f'{args.quant}_density_profiles'
+    args.quant_text = '_El_number' if args.quant == 'electron' else ''
     incranges	=	np.array([[item - dinc/2, item + dinc/2] for item in incvals])
 
     # ------------looping over stellar mass bins----------
