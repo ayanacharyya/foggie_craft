@@ -6,6 +6,7 @@
     Author :     Ayan Acharyya
     Started :    31-03-26
     Examples :   run plots_for_frb_paper.py --plot_dm_lsm --lsm 9.5,9.75
+                 run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90
                  run plots_for_frb_paper.py --plot_radprof
                  run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
@@ -18,13 +19,13 @@ import plotfns as pfns
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------------------------------
-def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin']):
+def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
     '''
     Function to read txt file as pandas dataframe and properly parse intervals
     Returns dataframe
     '''
     df = pd.read_csv(filename, sep='\t')
-    df = df.drop_duplicates(subset=['lsm_bin', 'lsfr_bin'], keep='last')
+    df = df.drop_duplicates(subset=interval_cols, keep='last')
 
     for col in interval_cols:
         temp_df = df[col].str.strip('()[]').str.split(',', expand=True).astype(float)
@@ -41,28 +42,57 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args):
     '''
     # ---------setup figure---------------
     fig, ax = plt.subplots(1, figsize=(5, 4), layout='constrained')
+    face_col_arr = ['b', 'lightblue', 'cornflowerblue']
+    plot_col_arr =  ['k', 'grey', 'lightgreen']
+    fit_col_arr = ['r', 'salmon', 'sienna']
 
-    # -----------get required bin--------------------
-    dmpars = df_dmpars[(df_dmpars['lsm_bin'] == pd.Interval(args.lsm_range[0], args.lsm_range[1])) & 
-                       (df_dmpars['lsfr_bin'] == pd.Interval(args.lsfr_range[0], args.lsfr_range[1]))].iloc[0]
-    infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
+    # --------loop over inclination bins--------------
+    for index, this_inc_bin in enumerate(args.inc_bins):
+        print(f'\t\nRunning ({index + 1}/{len(args.inc_bins)}) for inclination bin {this_inc_bin}..\n')
+        args.inc_range = this_inc_bin
 
-    data_arr = np.load(infile)
+        # -----------get required bin--------------------
+        df_dmpars_sub = df_dmpars[(df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])) &
+                                  (df_dmpars['lsm_bin'] == pd.Interval(args.lsm_range[0], args.lsm_range[1])) & 
+                                  (df_dmpars['lsfr_bin'] == pd.Interval(args.lsfr_range[0], args.lsfr_range[1]))]
+        if len(df_dmpars_sub) == 0:
+            print(f'\tNo entries found for inclination range {args.inc_range}, continuing..')
+            continue
+        
+        dmpars = df_dmpars_sub.iloc[0]
+        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
 
-    ax.errorbar(data_arr[0], data_arr[1], fmt='bo', yerr=[data_arr[2], data_arr[3]], lw=1, ls='dashed')
-    dm_arr = 10 ** logradialexp3(data_arr[0], dmpars['r0'], dmpars['D0'])
-    ax.plot(data_arr[0], dm_arr, color='r', lw=1, ls='dotted')
+        data_arr = np.load(infile)
+
+        ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], fmt='o', mfc=face_col_arr[index], mec=face_col_arr[index], ecolor=face_col_arr[index], lw=1, markersize=8, capsize=4)
+        
+        dm_arr = 10 ** logradialexp3(data_arr[0], dmpars['r0'], dmpars['D0'])
+        ax.plot(data_arr[0], dm_arr, color=face_col_arr[index], lw=1, ls='dashed')
+        
+        dm_expected_arr = 10 ** logradialexp3(data_arr[0], 10.0 ** (0.61 -0.53 * (dmpars['medlsm'] - 10)), 10.0 ** (2.15 + 0.24 * (dmpars['medlsm'] - 10)))
+        ax.plot(data_arr[0], dm_expected_arr, color=fit_col_arr[index], lw=1, ls='dotted')
     
+        if len(args.inc_bins) > 1:
+            ax.text(x=0.4 * impbinegs[1], y=3.0 + index * 0.8, s=f'{args.inc_range[0]} < inc < {args.inc_range[1]}', fontsize=args.fontsize / args.fontfactor, color=face_col_arr[index])
+
     ax.set_xscale("log")
     ax.set_xticks(impbinegs[1:],impbinegs[1:])
+    ax.set_xlim([0.25 * impbinegs[1], 1.5 * impbinegs[-1]])
 
     if not args.set_ylin:
         ax.set_yscale("log")
         ax.set_yticks(dm_ticks, dm_ticks)
+        ax.set_ylim([0.5, 3 * maxdmcol])
     
     ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, set_ticks=False)
-        
-    save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{args.inc_range[0]}-{args.inc_range[1]}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
+
+    ax.text(x=0.4*impbinegs[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f"%(dmpars['lsm_bin'].left, dmpars['lsm_bin'].right), fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=0.4*impbinegs[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"% dmpars['medlsm'], fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=0.4*impbinegs[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"% dmpars['medsfr'], fontsize=args.fontsize / args.fontfactor)	
+    ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(dmpars['D0'], dmpars['eD0']), fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(dmpars['r0'], dmpars['er0']), fontsize=args.fontsize / args.fontfactor)
+
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
     plt.show(block=False)
 
     return fig
@@ -128,7 +158,7 @@ if __name__ == '__main__':
     args.fig_dir.mkdir(exist_ok=True, parents=True)
 
     # -------------determining directories------------------
-    catalog_name = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}.txt'
+    catalog_name = f'{args.resfile_prefix}_allinc.txt'
     df_dmpars = read_dataframe(catalog_name)
 
     # -------------calling plotting functions------------------
@@ -138,8 +168,10 @@ if __name__ == '__main__':
             args.lsm_range = this_lsm_bin
             fig = plot_dm_impfac_one_lsm_bin(df_dmpars, args)
     if args.plot_dm_all_lsm:
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
         fig = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
     if args.plot_dm_fit:
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
         fig = plot_dm_fit(df_dmpars, args)
     
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

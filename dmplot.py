@@ -11,6 +11,8 @@
 #   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
 #   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
 #   run dmplot.py --mode lsmzsfr --lsm all
+#   run dmplot.py --mode lsmzsfr --lsm all --inc 0,30
+#   run dmplot.py --mode lsmzsfr --lsm all --inc 80,90
 
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
@@ -59,6 +61,7 @@ def execute_mode_indi(df_snap, args):
         # --------------initialise dataframe------------------
         df_out = pd.DataFrame({'lsm_bin': pd.Interval(args.lsm_range[0], args.lsm_range[1]),
                             'lsfr_bin': pd.Interval(args.lsfr_range[0], args.lsfr_range[1]),
+                            'inc_bin': pd.Interval(args.inc_range[0], args.inc_range[1]),
                             'medlsm': snap["log_star_mass"],
                             'medsfr': snap["sfr"],
                             'medlgm': snap["log_gas_mass"],
@@ -72,7 +75,7 @@ def execute_mode_indi(df_snap, args):
                             'eD0': epars[1],
                             }, index=[0])
         
-        outfile = f'{args.resfile_prefix}_indiv_inc_{args.inc_range[0]}_{args.inc_range[1]}.txt'
+        outfile = f'{args.resfile_prefix}_indiv_allinc.txt'
         df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
 
     return
@@ -134,6 +137,7 @@ def execute_mode_lsmzsfr(df_snap, args):
     # --------------initialise dataframe------------------
     df_out = pd.DataFrame({'lsm_bin': pd.Interval(args.lsm_range[0], args.lsm_range[1]),
                            'lsfr_bin': pd.Interval(args.lsfr_range[0], args.lsfr_range[1]),
+                           'inc_bin': pd.Interval(args.inc_range[0], args.inc_range[1]),
                            'medlsm': median_lsm,
                            'medsfr': median_sfr,
                            'medlgm': median_lgm,
@@ -147,7 +151,7 @@ def execute_mode_lsmzsfr(df_snap, args):
                            'eD0': epars[1],
                            }, index=[0])
     
-    outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}.txt'
+    outfile = f'{args.resfile_prefix}_allinc.txt'
     df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
 
     return
@@ -156,31 +160,38 @@ def execute_mode_lsmzsfr(df_snap, args):
 if __name__ == '__main__':
     #	--------------------------	Read inputs	-------------------------------
     args = parse_args()
+    out_dir = Path(f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
+    out_dir.mkdir(exist_ok=True, parents=True)
 
-    # ------------looping over stellar mass bins----------
-    for index, this_lsm_bin in enumerate(args.lsm_bins):
-        print(f'\nRunning ({index + 1}/{len(args.lsm_bins)}) for stellar mass bin {this_lsm_bin}..\n')
-        args.lsm_range = this_lsm_bin
-        #	-------------------------	Initialize	-----------------------------------
-        filespecs =	args.data_dir / "lsm_sfr.txt"
-        df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python')
-        df_snap = df_snap.rename(columns={f'{df_snap.columns[0]}':f'{df_snap.columns[0][1:]}'})
-        df_snap['log_sfr'] = np.log10(df_snap['sfr'])
-        df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
-                        (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
-                        (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))]
-        print (f'Found {len(df_snap)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
-        if (len(df_snap) < 1): sys.exit('Exiting because no snapshot found... ')
-        
-        #	-------------------------	Execute tasks	-------------------------------
-        if (args.mode=='indi'):
-            execute_mode_indi(df_snap, args)
-        elif (args.mode=='halo'):
-            execute_mode_halo(df_snap, args)            
-        elif (args.mode=='lsmzsfr'):
-            execute_mode_lsmzsfr(df_snap, args)
-        else:
-            print("\nHmm...What mode is that again...?\n")
+    # ------------looping over inclination bins----------
+    for index2, this_inc_bin in enumerate(args.inc_bins):
+        print(f'\n\nRunning ({index2 + 1}/{len(args.inc_bins)}) for inclination bin {this_inc_bin}..\n')
+        args.inc_range = this_inc_bin
+ 
+        # ------------looping over stellar mass bins----------
+        for index, this_lsm_bin in enumerate(args.lsm_bins):
+            print(f'\t\nRunning ({index + 1}/{len(args.lsm_bins)}) for stellar mass bin {this_lsm_bin}..\n')
+            args.lsm_range = this_lsm_bin
+            #	-------------------------	Initialize	-----------------------------------
+            filespecs =	args.data_dir / "lsm_sfr.txt"
+            df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python')
+            df_snap = df_snap.rename(columns={f'{df_snap.columns[0]}':f'{df_snap.columns[0][1:]}'})
+            df_snap['log_sfr'] = np.log10(df_snap['sfr'])
+            df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
+                            (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
+                            (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))]
+            print (f'\tFound {len(df_snap)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
+            if (len(df_snap) < 1): sys.exit('\tExiting because no snapshot found... ')
+            
+            #	-------------------------	Execute tasks	-------------------------------
+            if (args.mode=='indi'):
+                execute_mode_indi(df_snap, args)
+            elif (args.mode=='halo'):
+                execute_mode_halo(df_snap, args)            
+            elif (args.mode=='lsmzsfr'):
+                execute_mode_lsmzsfr(df_snap, args)
+            else:
+                print("\n\tHmm...What mode is that again...?\n")
 
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
 
