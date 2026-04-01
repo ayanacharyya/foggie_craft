@@ -12,6 +12,7 @@
                  run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
                  run plots_for_frb_paper.py --plot_dm_all_lsm
+                 run plots_for_frb_paper.py --make_latex_table
 """
 from craft_header import *
 from craft_utils import *
@@ -156,6 +157,44 @@ def plot_dm_fit(df_dmpars, args):
 
     return res
 
+# ------------------------------------------------------------------------------------------------
+def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'medlsm', 'medsfr', 'D0', 'r0']):
+    '''
+    Convert the input dataframe into a latex table
+    Saves latex table
+    Returns latex dataframe
+    '''
+    colnames_dict = {'lsm_bin':r'$\log(M_*/M_\odot$) range', 'medlsm':r'Median $\log(M_*/M_\odot$)', 'medsfr':'Median SFR', 'r0':r'$r_0$', 'D0':r'$D_0$'}
+    units_dict = {'lsm_bin':'', 'medlsm':'', 'medsfr':r' ($M_\odot\: yr^{-1}$)', 'r0':r' (kpc)', 'D0':r' ($pc\: cm^{-3}$)'}
+
+    columns_to_publish = columns
+    columns_with_err = ['r0', 'D0']
+    columns_with_interval = [item for item in columns_to_publish if item.endswith('_bin')]
+
+    df_latex = df_dmpars[np.hstack([columns_to_publish, ['e' + item for item in columns_with_err]])]
+
+    for col in columns_with_interval:
+        df_latex[col] = df_latex[col].apply(lambda x: f"{x.left:.2f} -- {x.right:.2f}")
+    
+    for col in columns_with_err:
+        if 'D0' in col: df_latex[col] = df_latex.apply(lambda x: f"{x[col]:.0f} $\pm$ {x['e' + col]:.0f}", axis=1) # 0 floating point precision for D0
+        else: df_latex[col] = df_latex.apply(lambda x: f"{x[col]:.1f} $\pm$ {x['e' + col]:.1f}", axis=1)
+        df_latex.drop(columns=['e' + col], inplace=True)
+    
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_interval]))):
+        df_latex[col] = df_latex[col].map('{:.2f}'.format)
+
+    df_latex = df_latex.rename(columns={key: colnames_dict[key] + units_dict[key] for key in colnames_dict})
+
+    outfilename = f'{args.fig_dir}/table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
+    df_latex.to_latex(outfilename, index=False, escape=False, column_format='lcccc')
+    insert_line_in_file('\\toprule\n', 1, outfilename) # to insert an additioal \toprule
+
+    print(f'Saved latex table as {outfilename}')
+    print(df_latex)
+
+    return df_latex
+
 # -----main code-----------------
 if __name__ == '__main__':
     args = parse_args()
@@ -199,4 +238,8 @@ if __name__ == '__main__':
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
         ax = plot_dm_fit(df_dmpars, args)
     
+    if args.make_latex_table:
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
+        ax = make_latex_table(df_dmpars, args)
+
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

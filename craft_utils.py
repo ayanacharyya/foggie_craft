@@ -522,6 +522,7 @@ def parse_args():
     parser.add_argument('--plot_dm_lsm', dest='plot_dm_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for a given mass range? Default is no.')
     parser.add_argument('--plot_dm_all_lsm', dest='plot_dm_all_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for ALL mass ranges? Default is no.')
     parser.add_argument('--plot_dm_fit', dest='plot_dm_fit', action='store_true', default=False, help='Plot DM0 and r0 vs log stellar mass? Default is no.')
+    parser.add_argument('--make_latex_table', dest='make_latex_table', action='store_true', default=False, help='Convert the df_dmpars to a a latex table? Default is no.')
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()
