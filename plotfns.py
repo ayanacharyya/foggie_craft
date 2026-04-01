@@ -10,12 +10,15 @@
 from craft_utils import *
 
 #	----------------------------------------------------------------------------------------------------------
-def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle=''):
+def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle='', given_ax=None):
     #	Plot Radial profile of ne within the inclination range
 
-    fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
-    ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
-
+    if given_ax is None:
+        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
+        ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
+    else:
+        ax = given_ax
+    
     # ------------loop over inclination ranges-----------------
     for i, inc_range in enumerate(inc_ranges):
         binned_ne	= np.zeros((len(radbins)-1, 6), dtype=np.float32)		
@@ -52,16 +55,17 @@ def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle
     ax.set_xlabel('Radius (kpc)')
     ax.set_ylabel('$n_e$ (cm$^{-3}$)')
 
-    fig.savefig(outfile, transparent=True)
-    print(f'Saved figure {outfile}..')
+    if given_ax is None:
+        fig.savefig(outfile, transparent=True)
+        print(f'Saved figure {outfile}..')
 
-    if hide: plt.close()
-    else: plt.show(block=False)
+        if hide: plt.close()
+        else: plt.show(block=False)
 
-    return(0)
+    return ax
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm'):
+def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=None):
 	#	Plot LoSDM vs impact factor and dmaj_proj for a given inclination range 
 
     percentiles = [16, 25, 50, 75, 84]
@@ -75,9 +79,14 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
     dmdiff	= maps['p84'] - maps['p16']
 
     # ------------plot the profile----------
-    fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
-    ax1	 	= fig.add_axes([0.07,0.15,0.40,0.83])
-
+    if given_ax is None:
+        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
+        ax1	 	= fig.add_axes([0.07,0.15,0.40,0.83])
+        ax2	 	= fig.add_axes([0.49,0.15,0.40,0.83])
+        ax3	 	= fig.add_axes([0.90,0.15,0.02,0.83])
+    else:
+        ax1, ax2, ax3 = given_ax
+    
     medim	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0, vmax=maxdmcol)
 
     ax1.text(x=0, y=len(impbinegs) - 2, s="Median")
@@ -89,7 +98,6 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
     ax1.set_xlabel("Impact factor (kpc)")
     ax1.set_ylabel("Projected distance from major axis (kpc)")
 
-    ax2	 	= fig.add_axes([0.49,0.15,0.40,0.83])
     ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0, vmax=maxdmcol)
     ax2.text(x=0, y=len(impbinegs) - 1-1, s="Scatter")
     ax2.text(x=0, y=len(impbinegs) - 1-2, s="%.1f$^{\circ}$ < i < %.1f$^{\circ}$"%(inc_range[0],inc_range[1]))
@@ -98,18 +106,18 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
     ax2.set_yticklabels([])
     ax2.set_xlabel("Impact factor (kpc)")
 
-    ax3	 	= fig.add_axes([0.90,0.15,0.02,0.83])
     fig.colorbar(medim, cax=ax3, label="DM (pc cm$^{-3}$)")	
 
-    fig.savefig(outfilename+".png")
+    if given_ax is None:
+        fig.savefig(outfilename+".png")
 
-    if hide: plt.close()
-    else: plt.show(block=False)
+        if hide: plt.close()
+        else: plt.show(block=False)
 
-    return (0)
+    return ax1, ax2, ax3
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm'):
+def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None):
 	#	Plot LoSDM vs impact factor for a given inclination range 
 			
     df['bin'] = pd.cut(df[bin_col], bins=impbinegs, include_lowest=True)
@@ -136,9 +144,12 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     np.save(outfilename + ".npy", data_arr)
 
     # ------------plot the profile----------
-    fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
-    ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
-
+    if given_ax is None:
+        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
+        ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
+    else:
+        ax = given_ax
+    
     ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='bo',lw=1,markersize=4,capsize=4)
     #ax.plot(impx, 10**logbeselk(impx,*popt),'k--',lw=1)
     ax.plot(impx, 10**logradialexp3(impx,*popt),'k--',lw=1)
@@ -158,13 +169,14 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(popt[1],perr[1]))
     ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(popt[0],perr[0]))
 
-    fig.savefig(outfilename + ".pdf")
-    print(f'Saved {outfilename} as both .pdf and .npy')
+    if given_ax is None:
+        fig.savefig(outfilename + ".pdf")
+        print(f'Saved {outfilename} as both .pdf and .npy')
 
-    if hide: plt.close()
-    else: plt.show()
+        if hide: plt.close()
+        else: plt.show()
 
-    return (popt,perr)
+    return (popt, perr, ax)
 
 
 #	----------------------------------------------------------------------------------------------------------

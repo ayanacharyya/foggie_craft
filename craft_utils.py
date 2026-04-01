@@ -456,6 +456,18 @@ def make_colorbar_top(fig, axes, clabel, cmap, cmin, cmax, ncbins, fontsize, asp
     return fig
 
 # --------------------------------------------------------------------------------------------------------------
+def get_grid_size(n_total):
+    '''
+    Function to determine an appropriate number of nrows and ncols, given a total number of subplots
+    Returns nrows, ncols
+    '''
+    # Start with the square root
+    ncols = math.ceil(math.sqrt(n_total))
+    nrows = math.ceil(n_total / ncols)
+    
+    return nrows, ncols
+
+# --------------------------------------------------------------------------------------------------------------
 def parse_args():
     '''
     Function to parse keyword arguments
@@ -487,6 +499,7 @@ def parse_args():
     parser.add_argument('--upto_kpc', metavar='upto_kpc', type=float, action='store', default=None, help='fit metallicity gradient out to what absolute kpc? default is None')
     parser.add_argument('--fortalk', dest='fortalk', action='store_true', default=False, help='Set plot labels, transparency etc for being used in a talk?, default is no')
     parser.add_argument('--forpaper', dest='forpaper', action='store_true', default=False, help='Set plot labels, transparency etc for being used in the paper?, default is no')
+    parser.add_argument('--multi_panel', dest='multi_panel', action='store_true', default=False, help='Make multi-panel figure such that all subplots are in one figure?, default is no')
 
     # ------- args added for dmplot.py ------------------------------
     parser.add_argument('--mode', metavar='mode', type=str, action='store', default='lsmzsfr', help='which mode to run dmplot.py for? default is lsmzsfr')
@@ -527,6 +540,9 @@ def parse_args():
     args.los_dir = Path(f'{losdir}{docomoving_text}')
     args.data_dir = Path(f'{datadir}{docomoving_text}')
     args.plot_dir = Path(f'{plotdir}{docomoving_text}')
+    
+    args.fig_dir = args.plot_dir / 'plots_for_paper'
+    args.fig_dir.mkdir(exist_ok=True, parents=True)
 
     args.resfile_prefix = str(args.data_dir / args.resfile_prefix)
 

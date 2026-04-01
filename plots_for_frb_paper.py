@@ -7,6 +7,7 @@
     Started :    31-03-26
     Examples :   run plots_for_frb_paper.py --plot_dm_lsm --lsm 9.5,9.75
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90
+                 run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90 --multi_panel
                  run plots_for_frb_paper.py --plot_radprof
                  run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
@@ -34,14 +35,18 @@ def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
     return df
 
 # ------------------------------------------------------------------------------------------------
-def plot_dm_impfac_one_lsm_bin(df_dmpars, args):
+def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
     '''
     Plot DM vs Impact factor in a single panel, for a given stellar mass and inclination range
     Saves plot
-    Returns figure handle
+    Returns axis handle
     '''
     # ---------setup figure---------------
-    fig, ax = plt.subplots(1, figsize=(5, 4), layout='constrained')
+    if given_ax is None:
+        fig, ax = plt.subplots(1, figsize=(5, 4), layout='constrained')
+    else:
+        ax = given_ax
+    
     face_col_arr = ['b', 'lightblue', 'cornflowerblue']
     plot_col_arr =  ['k', 'grey', 'lightgreen']
     fit_col_arr = ['r', 'salmon', 'sienna']
@@ -92,17 +97,18 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args):
     ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(dmpars['D0'], dmpars['eD0']), fontsize=args.fontsize / args.fontfactor)
     ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(dmpars['r0'], dmpars['er0']), fontsize=args.fontsize / args.fontfactor)
 
-    save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
-    plt.show(block=False)
+    if given_ax is None:
+        save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
+        plt.show(block=False)
 
-    return fig
+    return ax
 
 # ------------------------------------------------------------------------------------------------
 def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
     '''
     Plot DM vs Impact factor in a single panel, for a list of stellar mass ranges and a given inclination range
     Saves plot
-    Returns figure handle
+    Returns axis handle
     '''
     # ---------setup figure---------------
     fig, ax = plt.subplots(1, figsize=(12, 7), layout='constrained')
@@ -143,10 +149,10 @@ def plot_dm_fit(df_dmpars, args):
     '''
     Plot DM0 and r0 vs stellar mass in a single panel
     Saves plot
-    Returns figure handle
+    Returns axis handle
     '''
     outfilename = f'{args.fig_dir}/DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
-    res = pfns.plt_dmpars(df_dmpars, argsfit_lsm_range, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr')
+    res = pfns.plt_dmpars(df_dmpars, args.fit_lsm_range, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr')
 
     return res
 
@@ -154,8 +160,6 @@ def plot_dm_fit(df_dmpars, args):
 if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
-    args.fig_dir = args.plot_dir / 'plots_for_paper'
-    args.fig_dir.mkdir(exist_ok=True, parents=True)
 
     # -------------determining directories------------------
     catalog_name = f'{args.resfile_prefix}_allinc.txt'
@@ -163,15 +167,36 @@ if __name__ == '__main__':
 
     # -------------calling plotting functions------------------
     if args.plot_dm_lsm:
+
+        # ------------setup multi-panel figure if needed-------
+        if args.multi_panel:
+            nrows, ncols = 1, len(args.lsm_bins)
+            fig, axes = plt.subplots(nrows, ncols, figsize=(12, 4))
+            axes = np.atleast_2d(axes)
+            fig.subplots_adjust(left=0.1, bottom=0.15, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
+
+        # --------loop over log stellar mass bins------------
         for index, this_lsm_bin in enumerate(args.lsm_bins):
             print(f'\nRunning ({index + 1}/{len(args.lsm_bins)}) for stellar mass bin {this_lsm_bin}..\n')
             args.lsm_range = this_lsm_bin
-            fig = plot_dm_impfac_one_lsm_bin(df_dmpars, args)
+            ax = plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=axes[index // ncols][index % ncols] if args.multi_panel else None)
+    
+            if args.multi_panel:
+                if index // ncols < nrows - 1:
+                    ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)
+                    ax.set_xlabel('')
+                if index % ncols > 0:
+                    ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
+                    ax.set_ylabel('')
+        if args.multi_panel:
+            save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel.pdf', args)
+
     if args.plot_dm_all_lsm:
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
-        fig = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
+        ax = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
+    
     if args.plot_dm_fit:
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
-        fig = plot_dm_fit(df_dmpars, args)
+        ax = plot_dm_fit(df_dmpars, args)
     
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
