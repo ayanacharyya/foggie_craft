@@ -48,9 +48,9 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
     else:
         ax = given_ax
     
-    face_col_arr = ['b', 'lightblue', 'cornflowerblue']
-    plot_col_arr =  ['k', 'grey', 'lightgreen']
-    fit_col_arr = ['r', 'salmon', 'sienna']
+    face_col_arr    = ['b', 'lightblue', 'r']
+    mark_arr        = ['o', 'x', 's']
+    fill_arr        = ['full', 'full', 'none']
 
     # --------loop over inclination bins--------------
     for index, this_inc_bin in enumerate(args.inc_bins):
@@ -70,17 +70,20 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
 
         data_arr = np.load(infile)
 
-        ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], fmt='o', mfc=face_col_arr[index], mec=face_col_arr[index], ecolor=face_col_arr[index], lw=1, markersize=8, capsize=4)
+        ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], fmt=mark_arr[index], fillstyle=fill_arr[index], mfc=face_col_arr[index], mec=face_col_arr[index], ecolor=face_col_arr[index], lw=1, markersize=6, capsize=4)
         
         dm_arr = 10 ** logradialexp3(data_arr[0], dmpars['r0'], dmpars['D0'])
         ax.plot(data_arr[0], dm_arr, color=face_col_arr[index], lw=1, ls='dashed')
-        
-        dm_expected_arr = 10 ** logradialexp3(data_arr[0], 10.0 ** (0.61 -0.53 * (dmpars['medlsm'] - 10)), 10.0 ** (2.15 + 0.24 * (dmpars['medlsm'] - 10)))
-        ax.plot(data_arr[0], dm_expected_arr, color=fit_col_arr[index], lw=1, ls='dotted')
-    
+            
         if len(args.inc_bins) > 1:
-            ax.text(x=0.4 * impbinegs[1], y=3.0 + index * 0.8, s=f'{args.inc_range[0]} < inc < {args.inc_range[1]}', fontsize=args.fontsize / args.fontfactor, color=face_col_arr[index])
+            ax.text(x=0.4 * impbinegs[1], y=0.8 + index * 0.3, s=f'{args.inc_range[0]}' + r' < $i$ < ' + f'{args.inc_range[1]}', fontsize=args.fontsize / args.fontfactor, color=face_col_arr[index])
 
+    # ------------plot based on expected DM from scaling relation-----------
+    if len(args.inc_bins) < 2:
+        dm_expected_arr = 10 ** logradialexp3(data_arr[0], 10.0 ** (0.61 -0.53 * (dmpars['medlsm'] - 10)), 10.0 ** (2.15 + 0.24 * (dmpars['medlsm'] - 10)))
+        ax.plot(data_arr[0], dm_expected_arr, color='r', lw=1, ls='dotted')
+
+    # -------annotating plot----------------
     ax.set_xscale("log")
     ax.set_xticks(impbinegs[1:],impbinegs[1:])
     ax.set_xlim([0.25 * impbinegs[1], 1.5 * impbinegs[-1]])
@@ -93,10 +96,10 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
     ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, set_ticks=False)
 
     ax.text(x=0.4*impbinegs[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f"%(dmpars['lsm_bin'].left, dmpars['lsm_bin'].right), fontsize=args.fontsize / args.fontfactor)
-    ax.text(x=0.4*impbinegs[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"% dmpars['medlsm'], fontsize=args.fontsize / args.fontfactor)
-    ax.text(x=0.4*impbinegs[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"% dmpars['medsfr'], fontsize=args.fontsize / args.fontfactor)	
-    ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(dmpars['D0'], dmpars['eD0']), fontsize=args.fontsize / args.fontfactor)
-    ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(dmpars['r0'], dmpars['er0']), fontsize=args.fontsize / args.fontfactor)
+    #ax.text(x=0.4*impbinegs[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"% dmpars['medlsm'], fontsize=args.fontsize / args.fontfactor)
+    #ax.text(x=0.4*impbinegs[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"% dmpars['medsfr'], fontsize=args.fontsize / args.fontfactor)	
+    #ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(dmpars['D0'], dmpars['eD0']), fontsize=args.fontsize / args.fontfactor)
+    #ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(dmpars['r0'], dmpars['er0']), fontsize=args.fontsize / args.fontfactor)
 
     if given_ax is None:
         save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
@@ -114,6 +117,9 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
     # ---------setup figure---------------
     fig, ax = plt.subplots(1, figsize=(12, 7), layout='constrained')
     color_list = plt.get_cmap(cmap)(range(12))
+
+    # -----------get required bin--------------------
+    df_dmpars = df_dmpars[(df_dmpars['lsfr_bin'] == pd.Interval(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
 
     # -----------loop through mass bins--------------------
     for index, dmpars in df_dmpars.iterrows(): 
@@ -172,6 +178,7 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'medlsm', 'medsfr', 'D
     columns_with_interval = [item for item in columns_to_publish if item.endswith('_bin')]
 
     df_latex = df_dmpars[np.hstack([columns_to_publish, ['e' + item for item in columns_with_err]])]
+    df_mread = df_latex.copy()
 
     for col in columns_with_interval:
         df_latex[col] = df_latex[col].apply(lambda x: f"{x.left:.2f} -- {x.right:.2f}")
@@ -187,10 +194,12 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'medlsm', 'medsfr', 'D
     df_latex = df_latex.rename(columns={key: colnames_dict[key] + units_dict[key] for key in colnames_dict})
 
     outfilename = f'{args.fig_dir}/table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
+
+    df_mread.to_csv(outfilename.replace('.tex', '.txt'), index=None, sep='\t')
     df_latex.to_latex(outfilename, index=False, escape=False, column_format='lcccc')
     insert_line_in_file('\\toprule\n', 1, outfilename) # to insert an additioal \toprule
 
-    print(f'Saved latex table as {outfilename}')
+    print(f'Saved latex table as {outfilename} and as .txt')
     print(df_latex)
 
     return df_latex
@@ -210,7 +219,7 @@ if __name__ == '__main__':
         # ------------setup multi-panel figure if needed-------
         if args.multi_panel:
             nrows, ncols = 1, len(args.lsm_bins)
-            fig, axes = plt.subplots(nrows, ncols, figsize=(12, 4))
+            fig, axes = plt.subplots(nrows, ncols, figsize=(3.0*np.array([len(args.lsm_bins),1])))
             axes = np.atleast_2d(axes)
             fig.subplots_adjust(left=0.1, bottom=0.15, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
