@@ -210,7 +210,32 @@ def plt_dmpars_annotate(ax, ylabel, ylim, yticks, popt, perr, madex, yscale_log=
     return ax
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=True):
+def plt_sfms(xdata_arr, ydata_arr, outfilename):
+    '''
+    Mass vs SFR plot
+    '''
+
+    fillstyle_arr = ['none', 'full']
+
+    fig, ax = plt.subplots(1, figsize=(6, 4), layout='constrained')
+
+    for index in range(len(xdata_arr)):
+        xdata = xdata_arr[index]
+        ydata = ydata_arr[index]
+
+        ax.plot(xdata, ydata, 'bo', fillstyle=fillstyle_arr[index])
+    
+    ax = annotate_axes(ax, r"log ($M_*/M_{\odot}$)", r'$\log SFR (M_{\odot}/yr)$', fontsize=8, fontfactor=1)
+    
+    # ------------save figure-------------
+    fig.savefig(outfilename + "_sfms.pdf")
+    plt.show(block=False)
+    print(f'Saved figures {outfilename}_sfms.pdf')
+
+    return fig
+
+#	----------------------------------------------------------------------------------------------------------
+def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=True, outfilename=None):
     # Fit DM0 or r0 vs log stellar mass
 
     # ------------now fitting D0-------------
@@ -242,6 +267,11 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, yla
 
     ax = plt_dmpars_annotate(ax, ylabel, ylim, yticks, popt, perr, np.nanmedian(np.abs(df['devdex'])), coeff_label=['D', r'$\gamma$'])
 
+    # ------------plot SFMS--------------------
+    if outfilename is not None:
+        mass_col, sfr_col = 'medlsm', 'medsfr'
+        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename)
+
     # ------------now fitting r0-------------
     popt2,pcov2	= np.polyfit(df_fit[xcol] - 10, np.log10(df_fit[ycol2]), 1, cov=True)
     perr2 		= np.sqrt(np.diag(pcov2))
@@ -259,7 +289,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, yla
     return popt, perr, popt2, perr2
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True):
+def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True, outfilename=None):
     # Fit DM0 or r0 vs log stellar mass
 
     df_fit = df.copy()
@@ -291,6 +321,11 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, yco
     
     ax = plt_dmpars_annotate(ax, ylabel, ylim, yticks, popt, perr, np.nanmedian(np.abs(df['devdex'])), yscale_log=yscale_log)
 
+    # ------------plot SFMS--------------------
+    if outfilename is not None:
+        mass_col, sfr_col = 'medlsm', 'medsfr'
+        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename)
+
     # ------------now fitting r0-------------
     popt2,pcov2	= curve_fit(linearxy, lsmsfr_fit, np.log10(df_fit[ycol2]), p0=(-0.5,0.0,1.0))
     perr2 		= np.sqrt(np.diag(pcov2))
@@ -316,7 +351,7 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 
     popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, r"$D_0\:(pc \: cm^{-3})$", [40,420], [50,100,200,400], 
                                   y2col, ax2, r"$r_0$ (kpc)", None, [1,2,4,8,16,32],
-                                  fit_robust=fit_robust)
+                                  fit_robust=fit_robust, outfilename=outfilename)
     
     # ------------save figure-------------
     fig.savefig(outfilename + "_lsm.pdf")
@@ -329,7 +364,7 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 
     popt_d0, perr_d0, popt_r0, perr_r0 = plt_dmpars_fit_multipar(df, xcol, x2col, y1col, ax1, r"$\Delta \log D_0$", None, None, 
                                        y2col, ax2, r"$\Delta \log r_0$", None, None,
-                                       yscale_log=False, fit_robust=fit_robust)
+                                       yscale_log=False, fit_robust=fit_robust, outfilename=outfilename)
 
     # ------------write fit params-------------
     np.savetxt(f'{outfilename}_multifit_params.txt', np.array([popt_d0, perr_d0, popt_r0, perr_r0]), fmt='%.2f    %.2f    %.2f')
