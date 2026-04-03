@@ -462,8 +462,8 @@ def get_grid_size(n_total):
     Returns nrows, ncols
     '''
     # Start with the square root
-    ncols = math.ceil(math.sqrt(n_total))
-    nrows = math.ceil(n_total / ncols)
+    nrows = math.ceil(math.sqrt(n_total))
+    ncols = math.ceil(n_total / nrows)
     
     return nrows, ncols
 
@@ -483,8 +483,8 @@ def parse_args():
     parser.add_argument('--do_all_halos', dest='do_all_halos', action='store_true', default=False, help='loop over all available halos (and all snapshots each halo has)?, default is no')
     parser.add_argument('--silent', dest='silent', action='store_true', default=False, help='Suppress all print statements?, default is no')
     parser.add_argument('--clobber', dest='clobber', action='store_true', default=False, help='overwrite existing outputs with same name?, default is no')
-    parser.add_argument('--fontsize', metavar='fontsize', type=float, action='store', default=15, help='fontsize of plot labels, etc.; default is 20')
-    parser.add_argument('--fontfactor', metavar='fontfactor', type=float, action='store', default=1.2, help='fontsize of plot labels, etc.; default is 1.2')
+    parser.add_argument('--fontsize', metavar='fontsize', type=float, action='store', default=8, help='fontsize of plot labels, etc.; default is 20')
+    parser.add_argument('--fontfactor', metavar='fontfactor', type=float, action='store', default=1.0, help='fontsize of plot labels, etc.; default is 1.2')
     parser.add_argument('--hide', dest='hide', action='store_true', default=False, help='Hide plots from screen, i.e. close them after creation?, default is no')
     parser.add_argument('--keep', dest='keep', action='store_true', default=False, help='keep previously displayed plots on screen?, default is no')
     parser.add_argument('--debug', dest='debug', action='store_true', default=False, help='run in debug mode (lots of print checks)?, default is no')

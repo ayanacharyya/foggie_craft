@@ -36,7 +36,7 @@ plt.rcParams['xtick.top'] = True
 from pathlib import Path
 from importlib import reload
 
-from mpi4py import MPI
+#from mpi4py import MPI
 
 from scipy import optimize as op
 from scipy import stats
