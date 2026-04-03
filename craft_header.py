@@ -23,16 +23,6 @@ from matplotlib import colors as mplcolors
 from matplotlib import ticker
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-plt.rcParams['pdf.fonttype']	= 42
-plt.rcParams['ps.fonttype'] 	= 42
-plt.rcParams['savefig.dpi'] 	= 600
-plt.rcParams['font.family'] 	= 'sans-serif'
-plt.rcParams['font.size']		= 8
-plt.rcParams['ytick.direction'] = 'in'
-plt.rcParams['ytick.right'] = True
-plt.rcParams['xtick.direction'] = 'in'
-plt.rcParams['xtick.top'] = True
-
 from pathlib import Path
 from importlib import reload
 

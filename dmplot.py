@@ -20,6 +20,7 @@
 
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
+setup_plot_style()
 import plotfns as pfns
 
 start_time = datetime.now()
@@ -195,6 +196,7 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
                            'er0': epars[0],
                            'D0': pars[1],
                            'eD0': epars[1],
+                           'ngal': len(df_snap),
                            }, index=[0])
     
     outfile = f'{args.resfile_prefix}_allinc.txt'

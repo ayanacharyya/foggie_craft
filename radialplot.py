@@ -18,6 +18,7 @@
 
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
+setup_plot_style()
 import plotfns as pfns
 
 start_time = datetime.now()

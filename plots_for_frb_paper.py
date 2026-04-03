@@ -9,13 +9,16 @@
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90 --multi_panel
                  run plots_for_frb_paper.py --plot_radprof
+                 run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0 --fit_robust
                  run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
                  run plots_for_frb_paper.py --plot_dm_all_lsm
-                 run plots_for_frb_paper.py --make_latex_table
+                 run plots_for_frb_paper.py --make_latex_table --resfile_prefix binby_lsm_lsfr
+                 run plots_for_frb_paper.py --make_latex_table --resfile_prefix all_lsm
 """
 from craft_header import *
 from craft_utils import *
+setup_plot_style()
 import plotfns as pfns
 
 start_time = datetime.now()
@@ -115,7 +118,7 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
     Returns axis handle
     '''
     # ---------setup figure---------------
-    fig, ax = plt.subplots(1, figsize=(12, 7), layout='constrained')
+    fig, ax = plt.subplots(1, figsize=(8, 5), layout='constrained')
     color_list = plt.get_cmap(cmap)(range(12))
 
     # -----------get required bin--------------------
@@ -133,8 +136,8 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
         ax.plot(data_arr[0], dm_arr, color=col, lw=2, ls=lslist[index % len(lslist)], label=f'{dmpars["lsm_bin"].left:.1f}-{dmpars["lsm_bin"].right:.1f}')
         ax.fill_between(data_arr[0], data_arr[1] - data_arr[2], data_arr[1] + data_arr[3], color=col,alpha=0.1)
 		
-        if args.set_ylin: ax.text(0.98, 0.98 - index * 0.03, f'{dmpars["lsm_bin"].left:.1f}' + r' $\leq \log$ M/M$_\odot \leq$ ' + f'{dmpars["lsm_bin"].right:.1f}', c=col, ha='right', va='top', transform=ax.transAxes, fontsize=args.fontsize / args.fontfactor)
-        else: ax.text(0.02, 0.02 + index * 0.03, f'{dmpars["lsm_bin"].left:.1f}' + r' $\leq \log$ M/M$_\odot \leq$ ' + f'{dmpars["lsm_bin"].right:.1f}', c=col, ha='left', va='bottom', transform=ax.transAxes, fontsize=args.fontsize / args.fontfactor)
+        if args.set_ylin: ax.text(0.98, 0.98 - index * 0.04, f'{dmpars["lsm_bin"].left:.2f}' + r' $\leq \log$ M/M$_\odot \leq$ ' + f'{dmpars["lsm_bin"].right:.2f}', c=col, ha='right', va='top', transform=ax.transAxes, fontsize=args.fontsize / args.fontfactor)
+        else: ax.text(0.02, 0.02 + index * 0.04, f'{dmpars["lsm_bin"].left:.2f}' + r' $\leq \log$ M/M$_\odot \leq$ ' + f'{dmpars["lsm_bin"].right:.2f}', c=col, ha='left', va='bottom', transform=ax.transAxes, fontsize=args.fontsize / args.fontfactor)
 
     #ax.legend(ncol=2, loc='upper right', fontsize=args.fontsize / args.fontfactor)
     ax.set_xscale("log")
@@ -158,22 +161,32 @@ def plot_dm_fit(df_dmpars, args):
     Saves plot
     Returns axis handle
     '''
-    outfilename = f'{args.fig_dir}/DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
-    res = pfns.plt_dmpars(df_dmpars, args.fit_lsm_range, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr')
+    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=args.fit_robust)
 
     return res
 
 # ------------------------------------------------------------------------------------------------
-def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'medlsm', 'medsfr', 'D0', 'r0']):
+def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'ngal', 'medlsm', 'medsfr', 'D0', 'r0']):
     '''
     Convert the input dataframe into a latex table
     Saves latex table
     Returns latex dataframe
-    '''
-    colnames_dict = {'lsm_bin':r'$\log(M_*/M_\odot$) range', 'medlsm':r'Median $\log(M_*/M_\odot$)', 'medsfr':'Median SFR', 'r0':r'$r_0$', 'D0':r'$D_0$'}
-    units_dict = {'lsm_bin':'', 'medlsm':'', 'medsfr':r' ($M_\odot\: yr^{-1}$)', 'r0':r' (kpc)', 'D0':r' ($pc\: cm^{-3}$)'}
+    '''    
+    colnames_dict = {'lsm_bin':r'\makecell{$\log(M_*/M_\odot$)\\range}', 
+                     'lsfr_bin':r'\makecell{$\log SFR (M_\odot/yr$)\\range}', 
+                     'ngal':r'N$_{\rm snapshot}$', 
+                     'medlsm':r'\makecell{Median\\$\log(M_*/M_\odot$)}', 
+                     'medsfr':r'\makecell{Median SFR\\($M_\odot\: yr^{-1}$)}', 
+                     'r0':r'\makecell{$r_0$\\(kpc)}', 
+                     'D0':r'\makecell{$D_0$\\($pc\: cm^{-3}$)}',
+                     }
 
     columns_to_publish = columns
+    if 'lsfr_bin' in df_dmpars and len(pd.unique(df_dmpars['lsfr_bin'])) > 1:
+        try: columns_to_publish.insert(columns_to_publish.index('lsm_bin') +1, 'lsfr_bin') # if 'lsm_bin' column exists, then insert 'lsfr_bin' column immediately next to it
+        except: columns_to_publish += ['lsfr_bin'] # otherwise append 'lsfr_bin' column at the end of the table
+
     columns_with_err = ['r0', 'D0']
     columns_with_interval = [item for item in columns_to_publish if item.endswith('_bin')]
 
@@ -188,16 +201,24 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'medlsm', 'medsfr', 'D
         else: df_latex[col] = df_latex.apply(lambda x: f"{x[col]:.1f} $\pm$ {x['e' + col]:.1f}", axis=1)
         df_latex.drop(columns=['e' + col], inplace=True)
     
-    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_interval]))):
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_interval, ['ngal']]))):
         df_latex[col] = df_latex[col].map('{:.2f}'.format)
 
-    df_latex = df_latex.rename(columns={key: colnames_dict[key] + units_dict[key] for key in colnames_dict})
+    df_latex = df_latex.rename(columns=colnames_dict)
 
-    outfilename = f'{args.fig_dir}/table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
+    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
 
     df_mread.to_csv(outfilename.replace('.tex', '.txt'), index=None, sep='\t')
-    df_latex.to_latex(outfilename, index=False, escape=False, column_format='lcccc')
+    df_latex.to_latex(outfilename, index=False, escape=False, column_format='l' * 1 + 'c' * (len(df_latex.columns) - 1))
+    
+    # -----------to insert lines between SFR groups------------
     insert_line_in_file('\\toprule\n', 1, outfilename) # to insert an additioal \toprule
+    if 'lsfr_bin' in columns_to_publish:
+        pos = 4
+        for lsfr_bin in pd.unique(df_dmpars['lsfr_bin'])[:-1]:
+            df_sub = df_dmpars[df_dmpars['lsfr_bin']==lsfr_bin]
+            pos = pos + len(df_sub) + 1
+            insert_line_in_file('\\midrule\n', pos, outfilename) # to insert an additioal \midrule
 
     print(f'Saved latex table as {outfilename} and as .txt')
     print(df_latex)
@@ -240,15 +261,15 @@ if __name__ == '__main__':
             save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel.pdf', args)
 
     if args.plot_dm_all_lsm:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
         ax = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
     
     if args.plot_dm_fit:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
         ax = plot_dm_fit(df_dmpars, args)
     
     if args.make_latex_table:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])] # choosing the correct inclination bin from the dataframe
+        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
         ax = make_latex_table(df_dmpars, args)
 
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

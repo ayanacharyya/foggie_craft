@@ -5,8 +5,9 @@
 #                               Modified by AA, January 2026
 
 #	--------------------------	Import modules	---------------------------
-
 from craft_header import *
+from craft_utils import *
+setup_plot_style()
 from globalpars import *
 from nefns import *
 from plotdm import *

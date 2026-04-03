@@ -128,6 +128,21 @@ def linearxy (xy, a, b, c):
 
 ###################### Following routines are from foggie_utils.py ######################################
 # ----------------------------------------------------------------
+def setup_plot_style():
+    '''
+    Function to set default style for all plots made in this project
+    '''
+    plt.rcParams['pdf.fonttype']	= 42
+    plt.rcParams['ps.fonttype'] 	= 42
+    plt.rcParams['savefig.dpi'] 	= 600
+    plt.rcParams['font.family'] 	= 'sans-serif'
+    plt.rcParams['font.size']		= 8
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams['ytick.right'] = True
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['xtick.top'] = True
+
+# ----------------------------------------------------------------
 def findReplace(directory, find, replace, filePattern):
     '''
     Function to replace string A with string B in ALL files with filenames of a certain pattern, within a given directory
@@ -517,7 +532,7 @@ def parse_args():
     parser.add_argument('--z_range', metavar='z_range', type=str, action='store', default='0,6', help='Range of redshifts; Default is 0-6')
     parser.add_argument('--set_ylin', dest='set_ylin', action='store_true', default=False, help='Set y-axis scale to linear?, default is no')
     parser.add_argument('--cmap', metavar='cmap', type=str, action='store', default='tab20', help='colormap to use; default is None')
-    parser.add_argument('--fit_lsm_range', metavar='fit_lsm_range', type=str, action='store', default='8.5,10.5', help='Range of log stellar mass within which to fit the final relations; Default is 8.5-10.5')
+    parser.add_argument('--fit_robust', dest='fit_robust', action='store_true', default=False, help='Fit in the robust-fit method?, default is no')
 
     parser.add_argument('--plot_dm_lsm', dest='plot_dm_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for a given mass range? Default is no.')
     parser.add_argument('--plot_dm_all_lsm', dest='plot_dm_all_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for ALL mass ranges? Default is no.')
@@ -552,7 +567,6 @@ def parse_args():
     args.inc_bins = list(zip(args.inc_bin_edges, args.inc_bin_edges[1:]))
     
     args.z_range = [float(item) for item in args.z_range.split(',')]
-    args.fit_lsm_range = [float(item) for item in args.fit_lsm_range.split(',')]
 
     if args.lsm_bin_edges == 'all':
         args.lsm_bin_edges = all_lsm_bin_edges
