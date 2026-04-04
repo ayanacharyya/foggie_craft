@@ -64,6 +64,10 @@ def logradialgaus (x, x0, a0):
 	return (radexp)
 
 #	------------------------------------------------------------------------------------------------------
+def gaussian(x, amp, mu, sigma):
+    return amp * np.exp(-(x - mu)**2 / (2 * sigma**2))
+
+#	------------------------------------------------------------------------------------------------------
 def logradialexp3 (x, x0, a0):
 #   Return a radial exponential
 #	Arguments:	Radius, scale radius, normalization
@@ -538,6 +542,10 @@ def parse_args():
     parser.add_argument('--plot_dm_all_lsm', dest='plot_dm_all_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for ALL mass ranges? Default is no.')
     parser.add_argument('--plot_dm_fit', dest='plot_dm_fit', action='store_true', default=False, help='Plot DM0 and r0 vs log stellar mass? Default is no.')
     parser.add_argument('--make_latex_table', dest='make_latex_table', action='store_true', default=False, help='Convert the df_dmpars to a a latex table? Default is no.')
+
+    # ------- args added for compute_host_dm.py ------------------------------
+    parser.add_argument('--use_sfr', dest='use_sfr', action='store_true', default=False, help='Use observed SFRs to look for similation snapshots? Default is no.')
+    parser.add_argument('--input_cat', metavar='input_cat', type=str, action='store', default='frbcat0.txt', help='where to look for the observed data? default is defined frbcat0.txt within args.root_dir')
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()

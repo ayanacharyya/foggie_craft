@@ -69,8 +69,12 @@ def execute_mode_indi(df_snap, args):
         this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
 
         outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
-        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None)
-
+        try:
+            pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None)
+        except:
+            print(f'Failing DM profile fit for {snap["snap"]}')
+            continue
+        
         if args.multi_panel:
             if i // ncols < nrows - 1:
                 ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)
@@ -81,9 +85,7 @@ def execute_mode_indi(df_snap, args):
 
         # --------------initialise dataframe------------------
         lgsm	= np.log10(10.0 ** snap["log_gas_mass"] + 10.0 ** snap["log_star_mass"])
-        df_out = pd.DataFrame({'lsm_bin': pd.Interval(args.lsm_range[0], args.lsm_range[1]),
-                            'lsfr_bin': pd.Interval(args.lsfr_range[0], args.lsfr_range[1]),
-                            'inc_bin': pd.Interval(args.inc_range[0], args.inc_range[1]),
+        df_out = pd.DataFrame({'inc_bin': pd.Interval(args.inc_range[0], args.inc_range[1]),
                             'medlsm': snap["log_star_mass"],
                             'medsfr': snap["sfr"],
                             'medlgm': snap["log_gas_mass"],

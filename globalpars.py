@@ -39,12 +39,18 @@ neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','
 all_lsm_bin_edges = [8.5,8.75,9.0,9.25,9.5,9.75,10.0,10.25,10.5,10.75,11.0,11.25,11.5]
 all_lsfr_bin_edges	=[-3.0,0.0,0.5,1.0,1.5,2.0]
 
+# ----------------for computing host DM for observed catalogs---------------
+min_max_lsm = 9.0                                           # the upper limit of lsm search window should be at least this, to ensure finding sufficient number of simulated galaxies
+obs_lsm_allowance = 0.2                                     # log stellar mass half-window for searching snapshots around observed stellar mass
+obs_lsfr_allowance = 0.2                                    # log SFR half-window for searching snapshots around observed SFR, only used --use_sfr mode
+obs_inc_allowance = 0.5                                       # inclination half-window for searching LoS
+obs_impf_frac_allow = 1                                   # fractional impact factor window for searching LoS
 
+lsm_fit_D0 = [0.24, 2.15]                                 # best-fit parameter for D0 [slope, normalisation]
+lsm_fit_r0 = [-0.53, 0.61]                                 # best-fit parameter for r0 [slope, normalisation]
 
-
-
-
-
+lsm_lsfr_fit_D0 = [0.21, 0.11, 2.09]                                 # best-fit parameter for D0 [a, b, c] for fits on both mass and SFR (a * (lsm-10) + b * lsfr +c)
+lsm_lsfr_fit_r0 = [-0.49, -0.06, 0.67]                                 # best-fit parameter for r0 [a, b, c] for fits on both mass and SFR (a * (lsm-10) + b * lsfr +c)
 
 
 
