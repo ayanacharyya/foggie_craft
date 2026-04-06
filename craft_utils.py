@@ -546,6 +546,10 @@ def parse_args():
     # ------- args added for compute_host_dm.py ------------------------------
     parser.add_argument('--use_sfr', dest='use_sfr', action='store_true', default=False, help='Use observed SFRs to look for similation snapshots? Default is no.')
     parser.add_argument('--input_cat', metavar='input_cat', type=str, action='store', default='frbcat0.txt', help='where to look for the observed data? default is defined frbcat0.txt within args.root_dir')
+    parser.add_argument('--plot_compare', dest='plot_compare', action='store_true', default=False, help='Make plot comparing DMs obtained via different methods? Default is no.')
+    parser.add_argument('--plot_distribution', dest='plot_distribution', action='store_true', default=False, help='Make plot of distribution of DMs? Default is no.')
+    parser.add_argument('--plot_scaling', dest='plot_scaling', action='store_true', default=False, help='Make plot od scaling relations between DM and different host properties? Default is no.')
+    parser.add_argument('--plot_all', dest='plot_all', action='store_true', default=False, help='Make all available plots? Default is no.')
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()
