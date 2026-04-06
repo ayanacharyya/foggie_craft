@@ -544,8 +544,9 @@ def parse_args():
     parser.add_argument('--make_latex_table', dest='make_latex_table', action='store_true', default=False, help='Convert the df_dmpars to a a latex table? Default is no.')
 
     # ------- args added for compute_host_dm.py ------------------------------
-    parser.add_argument('--use_sfr', dest='use_sfr', action='store_true', default=False, help='Use observed SFRs to look for similation snapshots? Default is no.')
     parser.add_argument('--input_cat', metavar='input_cat', type=str, action='store', default='frbcat0.txt', help='where to look for the observed data? default is defined frbcat0.txt within args.root_dir')
+    parser.add_argument('--input_fg_cat', metavar='input_fg_cat', type=str, action='store', default='fgcat0.txt', help='where to look for the observed FOREGROUND data? default is defined fgcat0.txt within args.root_dir')
+    parser.add_argument('--use_sfr', dest='use_sfr', action='store_true', default=False, help='Use observed SFRs to look for similation snapshots? Default is no.')
     parser.add_argument('--plot_compare', dest='plot_compare', action='store_true', default=False, help='Make plot comparing DMs obtained via different methods? Default is no.')
     parser.add_argument('--plot_distribution', dest='plot_distribution', action='store_true', default=False, help='Make plot of distribution of DMs? Default is no.')
     parser.add_argument('--plot_scaling', dest='plot_scaling', action='store_true', default=False, help='Make plot od scaling relations between DM and different host properties? Default is no.')

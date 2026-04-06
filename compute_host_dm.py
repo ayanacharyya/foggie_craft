@@ -7,7 +7,7 @@
     Started :    04-04-26
     Examples :   run compute_host_dm.py --use_sfr --input_cat frbcat0.txt --plot_compare --plot_dist --plot_scaling
                  run compute_host_dm.py --input_cat frbcat0.txt --plot_all
-                 run compute_host_dm.py --input_cat frbcat0.txt --plot_scaling
+                 run compute_host_dm.py --input_cat fgcat0.txt
 """
 from craft_header import *
 from craft_utils import *
@@ -29,30 +29,34 @@ def read_foggie_catalog(filename):
     return df
 
 # ------------------------------------------------------------------------------------------------
-def read_obs_catalog(args, input_column_dict=None, add_columns=['dm_16', 'dm_50', 'dm_84', 'dm_fit']):
+def read_obs_catalog(filename, args, input_column_dict=None, add_columns=['dm_16', 'dm_50', 'dm_84', 'dm_fit']):
     '''
     Function to read in the input observed catalog,
     Rename its columns as per input_column_dict, and
     Add new columns (add_columns) and set them to nan, to be filled in later
     Returns pandas dataframe
     '''
-    if not os.path.exists(args.input_cat):
-        args.input_cat = args.root_dir / args.input_cat
+    if not os.path.exists(filename):
+        filename = args.root_dir / filename
     
-    print(f'Reading in observed data from {args.input_cat}')
-    df = pd.read_table(args.input_cat, sep=r'\s+')
+    if os.path.exists(filename):
+        print(f'Reading in observed data from {filename}')
+        df = pd.read_table(filename, sep=r'\s+', comment='#')
 
-    if input_column_dict is not None:
-        inverted_col_dict = {v: k for k, v in input_column_dict.items()}
-        df = df.rename(columns = inverted_col_dict)
+        if input_column_dict is not None:
+            inverted_col_dict = {v: k for k, v in input_column_dict.items()}
+            df = df.rename(columns = inverted_col_dict)
 
-    # ------------declaring dummy columsn to be filled inside the loop---------------
-    for col in ['sfr_low', 'sfr_med', 'sfr_up']:
-        df[col] = np.log10(df[col])
-    for col in add_columns:
-        df[col] = np.nan
+        # ------------declaring dummy columsn to be filled inside the loop---------------
+        for col in ['sfr_low', 'sfr_med', 'sfr_up']:
+            df[col] = np.log10(df[col])
+        for col in add_columns:
+            df[col] = np.nan
+    else:
+        print(f'Could not find {filename}..')
+        df = pd.DataFrame()
 
-    return df
+    return df, filename
 
 # ------------------------------------------------------------------------------------------------
 def get_param_ranges(obs):
@@ -125,7 +129,7 @@ def get_fit_r0_d0(obs, args):
     return fit_D0, fit_r0
 
 # ------------------------------------------------------------------------------------------------
-def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'lsm', 'impf', 'redshift', 'dm_16', 'dm_50', 'dm_84', 'dm_fit']):
+def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'lsm', 'impf', 'impf_low', 'impf_up', 'redshift', 'dm_16', 'dm_50', 'dm_84', 'dm_fit']):
     '''
     Convert the input dataframe into a latex table
     Saves latex table
@@ -141,19 +145,24 @@ def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'ls
                      'dm_fit':r'\makecell{$DM_{\rm fit}$\\($pc\: cm^{-3}$)}',
                      }
 
-    columns_onedec = ['lsm', 'impf']
-    columns_fourdec = ['redshift']
+    columns_with_err = ['impf']
+    columns_onedec = ['lsm']
+    columns_threedec = ['redshift']
 
     df_latex = df_dmpars[columns_to_publish]
     df_mread = df_latex.copy()   
     
+    for col in columns_with_err:
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f} $^{{+{row[col+"_up"] :.1f}}}_{{-{row[col+"_low"] :.1f}}}$', axis=1)
+        df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
+
     for col in columns_onedec:
         df_latex[col] = df_latex[col].map('{:.1f}'.format)
 
-    for col in columns_fourdec:
-        df_latex[col] = df_latex[col].map('{:.4f}'.format)
+    for col in columns_threedec:
+        df_latex[col] = df_latex[col].map('{:.3f}'.format)
 
-    for col in (set(df_latex.columns) - set(np.hstack([columns_onedec, columns_fourdec, ['id']]))):
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_onedec, columns_threedec, ['id']]))):
         df_latex[col] = df_latex[col].map('{:.0f}'.format)
 
     df_latex = df_latex.rename(columns=colnames_dict)
@@ -221,7 +230,7 @@ def plot_dm_scaling(df, args):
     # --------------looping over each panel-----------
     fig, axes = plt.subplots(1, len(xcols), figsize=(9, 2.8), layout='constrained')
     for index, xcol in enumerate(xcols):
-        axes[index].errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6)
+        axes[index].errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6, markeredgecolor='k', markerfacecolor='cornflowerblue')
 
         axes[index].set_yscale('log')
         if 'log' not in label_dict[xcol]: axes[index].set_xscale('log')
@@ -249,7 +258,8 @@ if __name__ == '__main__':
 
     # ---------reading input catalogs------------------
     df_snap = read_foggie_catalog(args.data_dir / "lsm_sfr.txt")
-    df_obs = read_obs_catalog(args, input_column_dict=input_column_dict, add_columns=['dm_16', 'dm_50', 'dm_84', 'dm_fit'])
+    add_columns = ['dm_16', 'dm_50', 'dm_84', 'dm_fit']
+    df_obs, args.input_cat = read_obs_catalog(args.input_cat, args, input_column_dict=input_column_dict, add_columns=add_columns)
 
     # ---------setting output filenames------------------
     sfr_text = '_with_sfr' if args.use_sfr else ''
