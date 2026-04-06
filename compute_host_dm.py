@@ -182,7 +182,7 @@ def plot_dm_comparison(df, args):
     ax.set_yscale('log')
 
     ax = annotate_axes(ax, r'DM from scaling relation (pc cm$^{-3}$)', r'DM from LoS (pc cm$^{-3}$)', args=args, set_ticks=False)
-    save_fig(fig, args.fig_dir, f'observed_DM{sfr_text}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_comparison{sfr_text}.pdf', args)
 
     return fig
 
@@ -227,7 +227,7 @@ def plot_dm_scaling(df, args):
         if 'log' not in label_dict[xcol]: axes[index].set_xscale('log')
         axes[index] = annotate_axes(axes[index], label_dict[xcol], r'DM from LoS (pc cm$^{-3}$)', args=args, set_ticks=False, hide_yaxis=index)
     
-    save_fig(fig, args.fig_dir, f'DM_distribution{sfr_text}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_scaling{sfr_text}.pdf', args)
     
     return fig
 
