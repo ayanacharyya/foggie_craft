@@ -225,7 +225,7 @@ if __name__ == '__main__':
             fig, axes = plt.subplots(nrows, ncols, figsize=(8, 8))
             fig.subplots_adjust(left=0.07, bottom=0.07, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
-        # ------------looping over inclination bins----------
+        # ------------looping over SFR bins----------
         for index2, this_lsfr_bin in enumerate(args.lsfr_bins):
             print(f'\n\tRunning ({index2 + 1}/{len(args.lsfr_bins)}) for SFR bin {this_lsfr_bin}..\n')
             args.lsfr_range = this_lsfr_bin

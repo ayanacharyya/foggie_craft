@@ -397,6 +397,11 @@ def setup_plots_for_talks():
     plt.rcParams['grid.alpha'] = 0.5
     plt.rcParams['grid.linewidth'] = 0.3
 
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams['ytick.right'] = True
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['xtick.top'] = True
+
 # --------------------------------------------------------------------------------------------------------------------
 def annotate_axes(ax, xlabel, ylabel, args=None, fontsize=10, fontfactor=1, label='', clabel='', hide_xaxis=False, hide_yaxis=False, hide_cbar=True, p=None, hide_cbar_ticks=False, cticks_integer=True, label_color='k', bbox=True, set_ticks=True):
     '''

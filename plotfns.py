@@ -48,8 +48,8 @@ def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle
     #ax.set_xlim([-1,205])
     #ax.set_ylim([3.5e-6,1.5])
 
-    ax.text(x=2, y=0.2, s=title)
-    ax.text(x=2, y=0.6, s=subtitle)
+    ax.text(x=0.3, y=0.8, s=title, ha='left', va='bottom', transform=ax.transAxes)
+    ax.text(x=0.3, y=0.9, s=subtitle, ha='left', va='bottom', transform=ax.transAxes)
 
     ax.set_yscale('log')
     ax.set_xscale('log')
