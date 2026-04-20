@@ -9,8 +9,8 @@
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90 --multi_panel
                  run plots_for_frb_paper.py --plot_radprof
-                 run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0 --fit_robust
-                 run plots_for_frb_paper.py --plot_dm_fit --fit_lsm_range 8.5,11.0
+                 run plots_for_frb_paper.py --plot_dm_fit --fit_robust
+                 run plots_for_frb_paper.py --plot_dm_fit --fit_robust --resfile_prefix binby_lsm_lsfr
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
                  run plots_for_frb_paper.py --plot_dm_all_lsm
                  run plots_for_frb_paper.py --make_latex_table --resfile_prefix binby_lsm_lsfr

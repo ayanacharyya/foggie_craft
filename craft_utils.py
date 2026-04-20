@@ -131,20 +131,6 @@ def linearxy (xy, a, b, c):
 
 
 ###################### Following routines are from foggie_utils.py ######################################
-# ----------------------------------------------------------------
-def setup_plot_style():
-    '''
-    Function to set default style for all plots made in this project
-    '''
-    plt.rcParams['pdf.fonttype']	= 42
-    plt.rcParams['ps.fonttype'] 	= 42
-    plt.rcParams['savefig.dpi'] 	= 600
-    plt.rcParams['font.family'] 	= 'sans-serif'
-    plt.rcParams['font.size']		= 8
-    plt.rcParams['ytick.direction'] = 'in'
-    plt.rcParams['ytick.right'] = True
-    plt.rcParams['xtick.direction'] = 'in'
-    plt.rcParams['xtick.top'] = True
 
 # ----------------------------------------------------------------
 def findReplace(directory, find, replace, filePattern):
@@ -365,11 +351,28 @@ def pull_halo_redshift(args):
         else: z = -99
     return z
 
+# ----------------------------------------------------------------
+def setup_plot_style():
+    '''
+    Function to set default style for all plots made in this project
+    '''
+    plt.rcParams['pdf.fonttype']	= 42
+    plt.rcParams['ps.fonttype'] 	= 42
+    plt.rcParams['savefig.dpi'] 	= 600
+    plt.rcParams['font.family'] 	= 'sans-serif'
+    plt.rcParams['font.size']		= 8
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams['ytick.right'] = True
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['xtick.top'] = True
+
 # ------------------------------------------------------------------------
 def setup_plots_for_talks():
     '''
     Function to setup plto themes etc for talks
     '''
+    print(f'Setting up plots for talks..')
+    
     plt.style.use('cyberpunk')
     background_for_talks = 'cyberpunk'  # 'dark_background' #'Solarize_Light2' #
     plt.style.use(background_for_talks)
@@ -570,7 +573,8 @@ def parse_args():
     args.data_dir = Path(f'{datadir}{docomoving_text}')
     args.plot_dir = Path(f'{plotdir}{docomoving_text}')
     
-    args.fig_dir = args.plot_dir / 'plots_for_paper'
+    if args.fortalk: args.fig_dir = args.plot_dir / 'plots_for_talk'
+    else: args.fig_dir = args.plot_dir / 'plots_for_paper'
     args.fig_dir.mkdir(exist_ok=True, parents=True)
 
     args.resfile_prefix = str(args.data_dir / args.resfile_prefix)
@@ -598,7 +602,6 @@ def parse_args():
 
     # ---------------aesthetics---------------------
     if args.fortalk:
-        print(f'Setting up plots for talks..')
         setup_plots_for_talks()
         
     return args

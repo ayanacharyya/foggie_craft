@@ -22,6 +22,7 @@ from matplotlib import cm as mpl_cm
 from matplotlib import colors as mplcolors
 from matplotlib import ticker
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import mplcyberpunk
 
 from pathlib import Path
 from importlib import reload

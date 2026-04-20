@@ -242,7 +242,7 @@ if __name__ == '__main__':
     # --------------end test code block--------------------------
 
     quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map], 'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
-    quant_arr = ['density']# ['el_density']#, 'density']
+    quant_arr = ['el_density', 'density']
 
     # ------------reading SFR and mstar df-----------------
     mstar_df = get_mstar_df(args)

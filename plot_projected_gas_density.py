@@ -76,6 +76,8 @@ if __name__ == '__main__':
 
             # --------determining corresponding text suffixes and figname-------------
             args.fig_dir = args.output_dir + 'plots/'
+            if args.fortalk: args.fig_dir = args.fig_dir + 'plots_for_talk/'
+            if args.forpaper: args.fig_dir = args.fig_dir + 'plots_for_paper/'
             Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
             # ------tailoring the simulation box for individual snapshot analysis--------
