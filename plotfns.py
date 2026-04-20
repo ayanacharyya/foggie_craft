@@ -11,7 +11,7 @@ from craft_utils import *
 setup_plot_style()
 
 #	----------------------------------------------------------------------------------------------------------
-def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle='', given_ax=None):
+def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle='', given_ax=None, fortalk=False):
     #	Plot Radial profile of ne within the inclination range
 
     if given_ax is None:
@@ -57,16 +57,15 @@ def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle
     ax.set_ylabel('$n_e$ (cm$^{-3}$)')
 
     if given_ax is None:
-        fig.savefig(outfile, transparent=True)
-        print(f'Saved figure {outfile}..')
-
+        figname = Path(outfile)
+        save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
         if hide: plt.close()
         else: plt.show(block=False)
 
     return ax
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=None):
+def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=None, fortalk=False):
 	#	Plot LoSDM vs impact factor and dmaj_proj for a given inclination range 
 
     percentiles = [16, 25, 50, 75, 84]
@@ -110,15 +109,15 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
     fig.colorbar(medim, cax=ax3, label="DM (pc cm$^{-3}$)")	
 
     if given_ax is None:
-        fig.savefig(outfilename+".png")
-
+        figname = Path(outfilename + ".png")
+        save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
         if hide: plt.close()
         else: plt.show(block=False)
 
     return ax1, ax2, ax3
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None):
+def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False):
 	#	Plot LoSDM vs impact factor for a given inclination range 
 			
     df['bin'] = pd.cut(df[bin_col], bins=impbinegs, include_lowest=True)
@@ -178,9 +177,8 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         ax.text(x=0.4*impbinegs[1], y=1, s="log SFR $\in$ [%.1f, %.1f]"%(lsfr_lims[0],lsfr_lims[1]))
 
     if given_ax is None:
-        fig.savefig(outfilename + ".pdf")
-        print(f'Saved {outfilename} as both .pdf and .npy')
-
+        figname = Path(outfilename + ".pdf")
+        save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
         if hide: plt.close()
         else: plt.show(block=False)
 
@@ -210,7 +208,7 @@ def plt_dmpars_annotate(ax, ylabel, ylim, yticks, popt, perr, madex, yscale_log=
     return ax
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_sfms(xdata_arr, ydata_arr, outfilename):
+def plt_sfms(xdata_arr, ydata_arr, outfilename, fortalk=False):
     '''
     Mass vs SFR plot
     '''
@@ -228,14 +226,13 @@ def plt_sfms(xdata_arr, ydata_arr, outfilename):
     ax = annotate_axes(ax, r"log ($M_*/M_{\odot}$)", r'$\log SFR (M_{\odot}/yr)$', fontsize=8, fontfactor=1)
     
     # ------------save figure-------------
-    fig.savefig(outfilename + "_sfms.pdf")
-    plt.show(block=False)
-    print(f'Saved figures {outfilename}_sfms.pdf')
+    figname = Path(outfilename + "_sfms.pdf")
+    save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
 
     return fig
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=True, outfilename=None):
+def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=True, outfilename=None, fortalk=False):
     # Fit DM0 or r0 vs log stellar mass
 
     # ------------now fitting D0-------------
@@ -270,7 +267,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, yla
     # ------------plot SFMS--------------------
     if outfilename is not None:
         mass_col, sfr_col = 'medlsm', 'medsfr'
-        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename)
+        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename, fortalk=fortalk)
 
     # ------------now fitting r0-------------
     popt2,pcov2	= np.polyfit(df_fit[xcol] - 10, np.log10(df_fit[ycol2]), 1, cov=True)
@@ -289,7 +286,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, yla
     return popt, perr, popt2, perr2
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True, outfilename=None):
+def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True, outfilename=None, fortalk=False):
     # Fit DM0 or r0 vs log stellar mass
 
     df_fit = df.copy()
@@ -324,7 +321,7 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, yco
     # ------------plot SFMS--------------------
     if outfilename is not None:
         mass_col, sfr_col = 'medlsm', 'medsfr'
-        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename)
+        fig = plt_sfms([df[mass_col].values, df_fit[mass_col].values], [df[sfr_col].values, df_fit[sfr_col].values], outfilename, fortalk=fortalk)
 
     # ------------now fitting r0-------------
     popt2,pcov2	= curve_fit(linearxy, lsmsfr_fit, np.log10(df_fit[ycol2]), p0=(-0.5,0.0,1.0))
@@ -342,7 +339,7 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, ylabel, ylim, yticks, yco
     return popt, perr, popt2, perr2
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=True):
+def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=True, fortalk=False):
 	#	Plot LoSDM vs impact factor for a given inclination range
 	
     fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
@@ -351,11 +348,11 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 
     popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, r"$D_0\:(pc \: cm^{-3})$", [40,420], [50,100,200,400], 
                                   y2col, ax2, r"$r_0$ (kpc)", None, [1,2,4,8,16,32],
-                                  fit_robust=fit_robust, outfilename=outfilename)
+                                  fit_robust=fit_robust, outfilename=outfilename, fortalk=fortalk)
     
     # ------------save figure-------------
-    fig.savefig(outfilename + "_lsm.pdf")
-    plt.show(block=False)
+    figname = Path(outfilename + "_lsm.pdf")
+    save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
 
     # --------------Multiparameter fit--------------------------------
     fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
@@ -364,16 +361,15 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 
     popt_d0, perr_d0, popt_r0, perr_r0 = plt_dmpars_fit_multipar(df, xcol, x2col, y1col, ax1, r"$\Delta \log D_0$", None, None, 
                                        y2col, ax2, r"$\Delta \log r_0$", None, None,
-                                       yscale_log=False, fit_robust=fit_robust, outfilename=outfilename)
+                                       yscale_log=False, fit_robust=fit_robust, outfilename=outfilename, fortalk=fortalk)
 
     # ------------write fit params-------------
     np.savetxt(f'{outfilename}_multifit_params.txt', np.array([popt_d0, perr_d0, popt_r0, perr_r0]), fmt='%.2f    %.2f    %.2f')
-    
-    # ------------save figure-------------
-    fig.savefig(outfilename + "_lsmsfr.pdf")
-    plt.show(block=False)
+    print(f'Saved figures {outfilename}_multifit_params.txt')
 
-    print(f'Saved figures {outfilename}_lsm.pdf and *_lsmsfr.pdf and *_multifit_params.txt')
+    # ------------save figure-------------
+    figname = Path(outfilename + "_lsmsfr.pdf")
+    save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
 
     return (0)
 

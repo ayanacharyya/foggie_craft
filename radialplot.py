@@ -58,7 +58,7 @@ def execute_mode_indi(df_snap, incranges, args):
 
         title	= r"log ($M_* / M_{\odot}$) = %.2f, SFR = %.2f $M_{\odot} yr^{-1}$"%(snap["lsm"], snap["sfr"])
         outfile = args.radial_plot_dir / f'{args.mode}_{snap["halo"]}_{snap["snap"]}_{args.quant}_density_radprof.pdf'
-        ax = pfns.plot_nerad([cube], incranges, title, outfile, 3.0, hide=args.hide, given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None)
+        ax = pfns.plot_nerad([cube], incranges, title, outfile, 3.0, hide=args.hide, given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -91,7 +91,7 @@ def execute_mode_halo(df_snap, incranges, args):
 
         title	= r"log ($M_* / M_{\odot}$) = %.2f, SFR = %.2f $M_{\odot} yr^{-1}$"%(snap["lsm"], snap["sfr"])
         outfile = args.radial_plot_dir / f'{args.mode}_{snap["halo"]}_{snap["snap"]}_{args.quant}_density_radprof.pdf'
-        ax = pfns.plot_nerad([cube], incranges, title, outfile, 3.0, hide=args.hide, given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None)
+        ax = pfns.plot_nerad([cube], incranges, title, outfile, 3.0, hide=args.hide, given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -129,7 +129,7 @@ def execute_mode_lsmzsfr(df_snap, incranges, args, given_ax=None):
     subtitle	= "%.1f < log (SFR / $M_{\odot} yr^{-1}$) < %.1f"%(args.lsfr_range[0], args.lsfr_range[1])
     outfile = args.radial_plot_dir / f'{args.mode}_{snap["halo"]}_{snap["snap"]}_radprof.pdf'
 
-    ax = pfns.plot_nerad(cubes, incranges, title, outfile, 2.8, hide=args.hide, subtitle=subtitle, given_ax=given_ax)
+    ax = pfns.plot_nerad(cubes, incranges, title, outfile, 2.8, hide=args.hide, subtitle=subtitle, given_ax=given_ax, fortalk=args.fortalk)
 
     return ax
 

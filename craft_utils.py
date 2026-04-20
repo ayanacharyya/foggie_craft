@@ -388,6 +388,7 @@ def setup_plots_for_talks():
     plt.rcParams['figure.edgecolor'] = new_foreground_color
     plt.rcParams['savefig.edgecolor'] = new_foreground_color
     plt.rcParams['axes.linewidth'] = 2
+    plt.rcParams['savefig.dpi'] = 900
 
     new_background_color = '#120000'
     plt.rcParams['axes.facecolor'] = new_background_color
@@ -440,12 +441,12 @@ def annotate_axes(ax, xlabel, ylabel, args=None, fontsize=10, fontfactor=1, labe
     return ax
 
 # --------------------------------------------------------------------------------------------------------------------
-def save_fig(fig, fig_dir, figname, args, silent=False):
+def save_fig(fig, fig_dir, figname, args=None, fortalk=False, silent=False):
     '''
     Saves a given figure handle as a given output filename
     '''
-
-    if args.fortalk:
+    if args is not None: fortalk = args.fortalk
+    if fortalk:
         #mplcyberpunk.add_glow_effects()
         #try: mplcyberpunk.make_lines_glow()
         #except: pass
@@ -454,7 +455,9 @@ def save_fig(fig, fig_dir, figname, args, silent=False):
 
     fig_dir.mkdir(exist_ok=True, parents=True)
     figname = fig_dir / figname
-    fig.savefig(figname, transparent=args.fortalk)
+    if fortalk:
+         figname = Path(str(figname).replace('.pdf', '.png'))
+    fig.savefig(figname, transparent=fortalk)
     if not silent: print(f'\nSaved figure as {figname}')
     plt.show(block=False)
 

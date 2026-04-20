@@ -162,7 +162,7 @@ def plot_dm_fit(df_dmpars, args):
     Returns axis handle
     '''
     outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
-    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=args.fit_robust)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
 
     return res
 

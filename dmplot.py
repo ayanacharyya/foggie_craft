@@ -70,7 +70,7 @@ def execute_mode_indi(df_snap, args):
 
         outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
         try:
-            pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None)
+            pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
         except:
             print(f'Failing DM profile fit for {snap["snap"]}')
             continue
@@ -134,8 +134,8 @@ def execute_mode_halo(df_snap, args):
 
         outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
         
-        ax_list = pfns.pltdm_ind_imf(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None)
-        pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None)
+        ax_list = pfns.pltdm_ind_imf(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
+        pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -181,7 +181,7 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
     lgsm	= np.log10(10.0 ** df_snap["log_gas_mass"] + 10.0 ** df_snap["log_star_mass"])
     
     outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{args.mode}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}_1d'
-    pars, epars, ax	= pfns.pltdm_ind_imf_1d(combined_df, median_lsm, median_sfr, args.lsm_range, outfile, 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=given_ax, nobj=len(df_snap), lsfr_lims=args.lsfr_range if len(args.lsfr_bins) > 1 else None)
+    pars, epars, ax	= pfns.pltdm_ind_imf_1d(combined_df, median_lsm, median_sfr, args.lsm_range, outfile, 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=given_ax, nobj=len(df_snap), lsfr_lims=args.lsfr_range if len(args.lsfr_bins) > 1 else None, fortalk=args.fortalk)
 
     # --------------initialise dataframe------------------
     df_out = pd.DataFrame({'lsm_bin': pd.Interval(args.lsm_range[0], args.lsm_range[1]),
