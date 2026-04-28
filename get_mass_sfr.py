@@ -42,7 +42,7 @@ def get_mass_profile(args):
 
         if len(thisdata) == 0: # snapshot not found in masses less than z=2 file, so try greater than z=2 file
             mass_filename = mass_filename.replace('less', 'gtr')
-            print('Could not find spanshot in previous file, now reading in', mass_filename)
+            print('Could not find snapshot in previous file, now reading in', mass_filename)
             alldata = pd.read_hdf(mass_filename, key='all_data')
             thisdata = alldata[alldata['snapshot'] == args.output]
 
@@ -76,7 +76,12 @@ def get_masses_and_re(args, get_re_using='gas_HI_mass'):
     mstar = mass_profile['stars_mass'].iloc[-1] # radius is in kpc, mass in Msun
 
     total_mass = mass_profile[get_re_using].iloc[-1]
-    half_mass_radius = mass_profile[mass_profile[get_re_using] <= total_mass/2]['radius'].iloc[-1]
+    mask = mass_profile[get_re_using] <= total_mass/2
+    if len(mass_profile[mask]) > 0:
+        half_mass_radius = mass_profile[mask]['radius'].iloc[-1]
+    else:
+        print('Smallest shell avialable in mass profile is larger than half-mass. So returning the smallest shell as half-mass radius')
+        half_mass_radius = mass_profile['radius'].iloc[0]
 
     return mhalo, mgas, mstar, half_mass_radius
 

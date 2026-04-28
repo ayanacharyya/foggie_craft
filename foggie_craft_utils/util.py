@@ -82,7 +82,7 @@ def get_disk_rad(args, refine_box=None):
     if len(r[search_range]) > 0:
         disk_radius = r[search_range][np.argmax(d2[search_range])]
     else:
-        print('Smallest shell avialable in density profile is smaller than 15 kpc. So returning the smallest shell as disk radius')
+        print('Smallest shell avialable in density profile is larger than 15 kpc. So returning the smallest shell as disk radius')
         disk_radius = r[0]
 
     return disk_radius
