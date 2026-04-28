@@ -52,8 +52,8 @@ def get_mass_profile(args):
 
         mass_profile = thisdata[thisdata['radius'] <= args.diskrad]
         if len(mass_profile) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            print('Smallest shell avialable in mass profile is too small compared to args.diskrad. Returning bogus mass')
-            return np.nan
+            print('Smallest shell avialable in mass profile is too large compared to args.diskrad. Returning nearest shell')
+            return thisdata.head(1)
     else:
         print('File not found:', mass_filename)
         return np.nan
@@ -69,6 +69,10 @@ def get_masses_and_re(args, get_re_using='gas_HI_mass'):
     '''
 
     mass_profile = get_mass_profile(args)
+
+    if np.isnan(mass_profile):
+        return np.nan, np.nan, np.nan, np.nan
+    
     mass_profile = mass_profile.sort_values('radius')
 
     mhalo = mass_profile['total_mass'].iloc[-1] # radius is in kpc, mass in Msun
