@@ -174,7 +174,7 @@ def load_df(args):
 # -----------------------------------------------------------------------------
 def get_disk_stellar_mass(args, quant='stars'):
     '''
-    Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
+    Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.massrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     '''
     mass_filename = args.code_path + 'halo_infos/00' + args.halo + '/' + args.run + '/masses_z-less-2.hdf5'
 
@@ -196,10 +196,10 @@ def get_disk_stellar_mass(args, quant='stars'):
         thisshell = thisdata[thisdata['radius'] <= args.massrad]
         if len(thisshell) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
             if thisdata['radius'].iloc[0] > args.massrad:
-                print('Smallest shell available in the mass profile is larger than args.galrad, taking the mass in the smallest shell as galaxy stellar mass')
+                print('Smallest shell available in the mass profile is larger than args.massrad, taking the mass in the smallest shell as galaxy stellar mass')
                 mstar = thisdata[f'{quant}_mass'].iloc[0] # assigning the mass of the smallest shell as the stellar mass
             else:
-                print('Smallest shell avialable in mass profile is too small compared to args.galrad. Returning bogus mass')
+                print('Smallest shell avialable in mass profile is too small compared to args.massrad. Returning bogus mass')
                 return -999
         else:
             mstar = thisshell[f'{quant}_mass'].values[-1] # radius is in kpc, mass in Msun

@@ -7,7 +7,7 @@
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    Jan 2026
-    Examples :   run get_mass_sfr.py --system ayan_pleiades --upto_kpc 200
+    Examples :   run get_mass_sfr.py --system ayan_pleiades
 """
 from foggie_header import *
 start_time = datetime.now()
@@ -120,9 +120,6 @@ if __name__ == '__main__':
             if args.output in sfr_df['output'].values:
                 sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
                 args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
-
-                if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
-                else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
 
                 # ------determining extent for computing mass--------
                 args.massrad = get_disk_rad(args)
