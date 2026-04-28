@@ -172,7 +172,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
             ax.set_ylabel('')
         
         if 'massrad' in args:
-            ax.add_patch(plt.Circle((0, 0), args.massrad, color='r', fill=False, lw=1)) # for over-plotting radius within which mass was computed
+            ax.add_patch(plt.Circle((0, 0), args.diskrad, color='r', fill=False, lw=1)) # for over-plotting radius within which mass was computed
 
     # ---------------making annotations------------------------
     axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
@@ -280,7 +280,7 @@ if __name__ == '__main__':
         try: sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
         except: sfr = -99
 
-        args.massrad = get_disk_rad(args, refine_box=refine_box)
+        args.diskrad = get_disk_rad(args, refine_box=refine_box)
         log_mstar = np.log10(get_disk_stellar_mass(args))
 
         # --------determining corresponding text suffixes and figname-------------

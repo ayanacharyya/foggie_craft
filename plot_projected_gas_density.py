@@ -90,7 +90,7 @@ if __name__ == '__main__':
             box_center = ds.halo_center_kpc
             box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
 
-            args.massrad = get_disk_rad(args, refine_box=refine_box)
+            args.diskrad = get_disk_rad(args, refine_box=refine_box)
 
             # ------making the plots-----------
             for index, quant in enumerate(quant_arr):

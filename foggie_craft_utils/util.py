@@ -66,12 +66,12 @@ def get_disk_rad(args, refine_box=None):
         print(f'Doing property ({index + 1}/{len(fields)}) {field}..')
         df[field] = box[field_dict[field]].in_units(unit_dict[field]).ndarray_view()
     
-    df = df.sort_values(by='radius')
+    df = df.sort_values(by='radius').reset_index(drop=True)
     r = df['radius'].values
     dr = r[1] - r[0]
    
     # ---------------smoothing the profile----------------------
-    ncells = len(df) // 100
+    ncells = len(df) // 10
     if ncells %2 == 0: ncells += 1
     df['smoothed_density'] = df['density'].rolling(window=ncells, center=True, min_periods=1).mean()
 
@@ -79,7 +79,11 @@ def get_disk_rad(args, refine_box=None):
     d1 = np.gradient(np.log10(df['smoothed_density']), dr)
     d2 = np.gradient(d1, dr)
     search_range = (r > 2) & (r < 15) # assuming disk edge should be > 1 and < 15 kpc
-    disk_radius = r[search_range][np.argmax(d2[search_range])]
+    if len(r[search_range]) > 0:
+        disk_radius = r[search_range][np.argmax(d2[search_range])]
+    else:
+        print('Smallest shell avialable in density profile is smaller than 15 kpc. So returning the smallest shell as disk radius')
+        disk_radius = r[0]
 
     return disk_radius
 
@@ -174,7 +178,7 @@ def load_df(args):
 # -----------------------------------------------------------------------------
 def get_disk_stellar_mass(args, quant='stars'):
     '''
-    Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.massrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
+    Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.diskrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     '''
     mass_filename = args.code_path + 'halo_infos/00' + args.halo + '/' + args.run + '/masses_z-less-2.hdf5'
 
@@ -193,13 +197,13 @@ def get_disk_stellar_mass(args, quant='stars'):
                 print('Snapshot not found in either file. Returning bogus mass')
                 return -999
 
-        thisshell = thisdata[thisdata['radius'] <= args.massrad]
+        thisshell = thisdata[thisdata['radius'] <= args.diskrad]
         if len(thisshell) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            if thisdata['radius'].iloc[0] > args.massrad:
-                print('Smallest shell available in the mass profile is larger than args.massrad, taking the mass in the smallest shell as galaxy stellar mass')
+            if thisdata['radius'].iloc[0] > args.diskrad:
+                print('Smallest shell available in the mass profile is larger than args.diskrad, taking the mass in the smallest shell as galaxy stellar mass')
                 mstar = thisdata[f'{quant}_mass'].iloc[0] # assigning the mass of the smallest shell as the stellar mass
             else:
-                print('Smallest shell avialable in mass profile is too small compared to args.massrad. Returning bogus mass')
+                print('Smallest shell avialable in mass profile is too small compared to args.diskrad. Returning bogus mass')
                 return -999
         else:
             mstar = thisshell[f'{quant}_mass'].values[-1] # radius is in kpc, mass in Msun
@@ -207,7 +211,7 @@ def get_disk_stellar_mass(args, quant='stars'):
         print('File not found:', mass_filename)
         mstar = -999
 
-    print('Stellar mass for halo ' + args.halo + ' output ' + args.output + ' (z=%.1F' %(args.current_redshift) + ') within ' + str(args.massrad) + ' kpc is %.2E' %(mstar))
+    print('Stellar mass for halo ' + args.halo + ' output ' + args.output + ' (z=%.1F' %(args.current_redshift) + ') within ' + str(args.diskrad) + ' kpc is %.2E' %(mstar))
     return mstar
 
 # -----------------------------------------------------

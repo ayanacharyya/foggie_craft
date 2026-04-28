@@ -50,9 +50,9 @@ def get_mass_profile(args):
                 print('Snapshot not found in either file. Returning bogus mass')
                 return np.nan
 
-        mass_profile = thisdata[thisdata['radius'] <= args.massrad]
+        mass_profile = thisdata[thisdata['radius'] <= args.diskrad]
         if len(mass_profile) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            print('Smallest shell avialable in mass profile is too small compared to args.massrad. Returning bogus mass')
+            print('Smallest shell avialable in mass profile is too small compared to args.diskrad. Returning bogus mass')
             return np.nan
     else:
         print('File not found:', mass_filename)
@@ -63,7 +63,7 @@ def get_mass_profile(args):
 # -----------------------------------------------------------------------------
 def get_masses_and_re(args, get_re_using='gas_HI_mass'):
     '''
-    Function to determine the stellar, gas, and halo (total) mass, for a given snapshot, which is defined as the mass contained within args.massrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
+    Function to determine the stellar, gas, and halo (total) mass, for a given snapshot, which is defined as the mass contained within args.diskrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     Also determines the effective radius of stellar disk, based on the stellar mass profile
     Returns halo mass, gas mass, stellar mass, and stellar half-light radius
     '''
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                 args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
                 # ------determining extent for computing mass--------
-                args.massrad = get_disk_rad(args)
+                args.diskrad = get_disk_rad(args)
 
                 # ------determining stellar mass--------                
                 mhalo, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                 log_mgas = np.log10(mgas)
 
                 # ------appending to dataframe----------
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, args.massrad, log_mstar, sfr, log_mgas, log_mhalo]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, args.diskrad, log_mstar, sfr, log_mgas, log_mhalo]
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
                 df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]
