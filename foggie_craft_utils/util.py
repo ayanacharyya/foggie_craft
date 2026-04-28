@@ -29,6 +29,60 @@ from util import *", "*.py")
             with open(filepath, "w") as f:
                 f.write(s)
 
+# -----------------------------------------------------------------------------
+def get_disk_rad(args, refine_box=None):
+    '''
+    Computes the extent of disk, by using a redshift-based density cut-off
+    Returns disk radius in kpc
+    '''
+    field_dict = {'radius':('gas', 'radius_corrected'), 'density':('gas', 'density'), 'mass':('gas', 'mass'), \
+                'metal':('gas', 'metallicity'), 'temp':('gas', 'temperature'), 'vrad':('gas', 'radial_velocity_corrected'), 'vdisp': ('gas', 'velocity_dispersion_3d'), \
+                'phi_L':('gas', 'angular_momentum_phi'), 'theta_L':('gas', 'angular_momentum_theta'), 'volume':('gas', 'volume'), \
+                'phi_disk': ('gas', 'phi_pos_disk'), 'theta_disk': ('gas', 'theta_pos_disk'), 'el_density':('gas', 'El_number_density')}
+    if yt.__version__[0]=='3':
+        field_dict['mass'] = ('gas','cell_mass')
+        field_dict['volume'] = ('gas', 'cell_volume')
+    unit_dict = {'radius':'kpc', 'rad_re':'', 'density':'g/cm**3', 'metal':r'Zsun', 'temp':'K', 'vrad':'km/s', 'phi_L':'deg', 'theta_L':'deg', 'PDF':'', 'mass':'Msun', 'stars_mass':'Msun', 'ystars_mass':'Msun', 'ystars_age':'Gyr', 'gas_frac':'', 'gas_time':'Gyr', 'volume':'pc**3', 'phi_disk':'deg', 'theta_disk':'deg', 'vdisp':'km/s', 'el_density':'cm**-3'}
+
+    # ---------------reading in the snapshot-----------------
+    if refine_box is None:
+        halos_df_name = args.code_path + f'halo_infos/00{args.halo}/{args.run}/halo_cen_smoothed'
+        try:
+            ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=False, disk_relative=False, halo_c_v_name=halos_df_name)
+        except Exception as e:
+            print(f'Skipping {args.output} because {e}')
+            return np.nan
+
+    # ------------getting the density cut-----------------
+    args.current_time = refine_box.ds.current_time.in_units('Gyr').tolist()
+    rho_cut = get_density_cut(args.current_time)  # based on Cassi's CGM-ISM density cut-off
+    box = refine_box.cut_region(['obj["gas", "density"] > %.1E' % rho_cut])
+    print('Imposing a density criteria to get ISM above density', rho_cut, 'g/cm^3')
+
+    # ------------making density profile-----------------
+    df = pd.DataFrame()
+    fields = ['radius', 'density'] # only the relevant properties
+    for index, field in enumerate(fields):
+        print(f'Doing property ({index + 1}/{len(fields)}) {field}..')
+        df[field] = box[field_dict[field]].in_units(unit_dict[field]).ndarray_view()
+    
+    df = df.sort_values(by='radius')
+    r = df['radius'].values
+    dr = r[1] - r[0]
+   
+    # ---------------smoothing the profile----------------------
+    ncells = len(df) // 100
+    if ncells %2 == 0: ncells += 1
+    df['smoothed_density'] = df['density'].rolling(window=ncells, center=True, min_periods=1).mean()
+
+    # ---------determining knew----------------
+    d1 = np.gradient(np.log10(df['smoothed_density']), dr)
+    d2 = np.gradient(d1, dr)
+    search_range = (r > 2) & (r < 15) # assuming disk edge should be > 1 and < 15 kpc
+    disk_radius = r[search_range][np.argmax(d2[search_range])]
+
+    return disk_radius
+
 # ---------------------------------
 def load_df(args):
     '''
@@ -123,7 +177,6 @@ def get_disk_stellar_mass(args, quant='stars'):
     Function to get the disk stellar mass for a given output, which is defined as the stellar mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     '''
     mass_filename = args.code_path + 'halo_infos/00' + args.halo + '/' + args.run + '/masses_z-less-2.hdf5'
-    upto_radius = args.galrad # should this be something else? 2*Re may be?
 
     if os.path.exists(mass_filename):
         print('Reading in', mass_filename)
@@ -140,11 +193,11 @@ def get_disk_stellar_mass(args, quant='stars'):
                 print('Snapshot not found in either file. Returning bogus mass')
                 return -999
 
-        thisshell = thisdata[thisdata['radius'] <= upto_radius]
+        thisshell = thisdata[thisdata['radius'] <= args.massrad]
         if len(thisshell) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            if thisdata['radius'].iloc[0] <= 1.5*args.galrad:
+            if thisdata['radius'].iloc[0] > args.massrad:
                 print('Smallest shell available in the mass profile is larger than args.galrad, taking the mass in the smallest shell as galaxy stellar mass')
-                mstar = thisdata['stars_mass'].iloc[0] # assigning the mass of the smallest shell as the stellar mass
+                mstar = thisdata[f'{quant}_mass'].iloc[0] # assigning the mass of the smallest shell as the stellar mass
             else:
                 print('Smallest shell avialable in mass profile is too small compared to args.galrad. Returning bogus mass')
                 return -999
@@ -154,7 +207,7 @@ def get_disk_stellar_mass(args, quant='stars'):
         print('File not found:', mass_filename)
         mstar = -999
 
-    print('Stellar mass for halo ' + args.halo + ' output ' + args.output + ' (z=%.1F' %(args.current_redshift) + ') within ' + str(upto_radius) + ' kpc is %.2E' %(mstar))
+    print('Stellar mass for halo ' + args.halo + ' output ' + args.output + ' (z=%.1F' %(args.current_redshift) + ') within ' + str(args.massrad) + ' kpc is %.2E' %(mstar))
     return mstar
 
 # -----------------------------------------------------
@@ -1725,8 +1778,6 @@ def parse_args(haloname, RDname, fast=False):
 
     # ------- args added for make_3D_FRB_electron_density.py ------------------------------
     parser.add_argument('--plot_3d', dest='plot_3d', action='store_true', default=False, help='Plot 3D FRB?, default is no')
-
-    # ------- args added for plots_for_frb_paper.py ------------------------------
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()

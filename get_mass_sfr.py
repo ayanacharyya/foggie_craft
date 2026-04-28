@@ -50,9 +50,9 @@ def get_mass_profile(args):
                 print('Snapshot not found in either file. Returning bogus mass')
                 return np.nan
 
-        mass_profile = thisdata[thisdata['radius'] <= args.galrad]
+        mass_profile = thisdata[thisdata['radius'] <= args.massrad]
         if len(mass_profile) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            print('Smallest shell avialable in mass profile is too small compared to args.galrad. Returning bogus mass')
+            print('Smallest shell avialable in mass profile is too small compared to args.massrad. Returning bogus mass')
             return np.nan
     else:
         print('File not found:', mass_filename)
@@ -63,7 +63,7 @@ def get_mass_profile(args):
 # -----------------------------------------------------------------------------
 def get_masses_and_re(args, get_re_using='gas_HI_mass'):
     '''
-    Function to determine the stellar, gas, and halo (total) mass, for a given snapshot, which is defined as the mass contained within args.galrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
+    Function to determine the stellar, gas, and halo (total) mass, for a given snapshot, which is defined as the mass contained within args.massrad, which can either be a fixed absolute size in kpc OR = args.upto_re*Re
     Also determines the effective radius of stellar disk, based on the stellar mass profile
     Returns halo mass, gas mass, stellar mass, and stellar half-light radius
     '''
@@ -90,12 +90,12 @@ if __name__ == '__main__':
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/mass_sfr_table.txt'
-    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'log_star_mass', 'sfr', 'log_gas_mass', 'log_halo_mass'])
+    output_dfname = args.output_dir + 'data/lsm_sfr_upto_disk.txt'
+    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'disk_rad', 'log_star_mass', 'sfr', 'log_gas_mass', 'log_halo_mass'])
 
     # ----------getting list of snapshots-----------
-    halos = ['8508', '5036', '5016', '4123', '2392', '2878']
-    redshift_list = [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
+    halos = ['8508']#, '5036', '5016', '4123', '2392', '2878']
+    redshift_list = [1.] # [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
 
     # ---------looping over halos-----------
     for thishalo in halos:
@@ -121,22 +121,27 @@ if __name__ == '__main__':
                 sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
                 args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
-                # ------determining stellar mass--------
                 if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
                 else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
 
+                # ------determining extent for computing mass--------
+                args.massrad = get_disk_rad(args)
+
+                # ------determining stellar mass--------                
                 mhalo, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
                 log_mhalo = np.log10(mhalo)
                 log_mstar = np.log10(mstar)
                 log_mgas = np.log10(mgas)
 
                 # ------appending to dataframe----------
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, log_mstar, sfr, log_mgas, log_mhalo]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, args.massrad, log_mstar, sfr, log_mgas, log_mhalo]
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]
 
     # -----------saving dataframe---------------
-    df_out.to_csv(output_dfname, index=None, mode='a', header=not os.path.exists(output_dfname))
+    with open(output_dfname, 'w') as f:
+        f.write('#') 
+        df_out.to_csv(f, sep='\t', index=False)
     print(f'Saved dataframe as {output_dfname}')
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

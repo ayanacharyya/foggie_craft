@@ -44,7 +44,7 @@ min_max_lsm = 9.0                                           # the upper limit of
 obs_lsm_allowance = 0.2                                     # log stellar mass half-window for searching snapshots around observed stellar mass
 obs_lsfr_allowance = 0.2                                    # log SFR half-window for searching snapshots around observed SFR, only used --use_sfr mode
 obs_inc_allowance = 0.5                                       # inclination half-window for searching LoS
-obs_impf_frac_allow = 1                                   # fractional impact factor window for searching LoS
+obs_impf_frac_allow = 0.5                                   # fractional impact factor window for searching LoS
 
 lsm_fit_D0 = [0.24, 2.15]                                 # best-fit parameter for D0 [slope, normalisation]
 lsm_fit_r0 = [-0.53, 0.61]                                 # best-fit parameter for r0 [slope, normalisation]

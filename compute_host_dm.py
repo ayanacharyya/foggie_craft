@@ -153,7 +153,7 @@ def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'ls
     df_mread = df_latex.copy()   
     
     for col in columns_with_err:
-        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f} $^{{+{row[col+"_up"] :.1f}}}_{{-{row[col+"_low"] :.1f}}}$', axis=1)
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.2f} $^{{+{row[col+"_up"] :.2f}}}_{{-{row[col+"_low"] :.2f}}}$' if row[col+"_up"] > 0.1 else rf'{row[col] :.2f}', axis=1)
         df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
 
     for col in columns_onedec:
@@ -204,7 +204,8 @@ def plot_dm_distribution(df, args):
     '''
     fig, ax = plt.subplots(figsize=(3, 2.8), layout='constrained')
     delta_hist = 0.1
-    ydata, bins, _ = ax.hist(np.log10(df['dm_50']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='b')
+    ydata, bins, _ = ax.hist(np.log10(df['dm_fit']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='salmon', alpha=0.5)
+    ydata, bins, _ = ax.hist(np.log10(df['dm_50']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='cornflowerblue', alpha=0.5)
 
     bin_centers = (bins[1:] + bins[:-1]) / 2
     popt, pcov = curve_fit(gaussian, bin_centers, ydata)
@@ -212,7 +213,7 @@ def plot_dm_distribution(df, args):
     ax.text(0.05, 0.95, r'$\mu$=' + f'{popt[1]:.2f}', color='k', transform=ax.transAxes, ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
     ax.text(0.05, 0.85, r'$\sigma$=' + f'{popt[2]:.2f}', color='k', transform=ax.transAxes, ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
 
-    ax = annotate_axes(ax, r'DM from LoS (pc cm$^{-3}$)', 'Frequency', args=args, set_ticks=False)
+    ax = annotate_axes(ax, r'$\log$ (DM /pc cm$^{-3}$)', 'Number', args=args, set_ticks=False)
     save_fig(fig, args.fig_dir, f'DM_distribution{sfr_text}.pdf', args)
     
     return fig

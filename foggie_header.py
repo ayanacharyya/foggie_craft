@@ -177,3 +177,14 @@ try:
         ipython.run_line_magic('autoreload', '2')
 except Exception:
     pass
+
+#-------- set variables and dictionaries such that they are available to other scripts importing this script-----------
+field_dict = {'radius':('gas', 'radius_corrected'), 'density':('gas', 'density'), 'mass':('gas', 'mass'), \
+              'metal':('gas', 'metallicity'), 'temp':('gas', 'temperature'), 'vrad':('gas', 'radial_velocity_corrected'), 'vdisp': ('gas', 'velocity_dispersion_3d'), \
+              'phi_L':('gas', 'angular_momentum_phi'), 'theta_L':('gas', 'angular_momentum_theta'), 'volume':('gas', 'volume'), \
+              'phi_disk': ('gas', 'phi_pos_disk'), 'theta_disk': ('gas', 'theta_pos_disk'), 'el_density':('gas', 'El_number_density')}
+if yt.__version__[0]=='3':
+    field_dict['mass'] = ('gas','cell_mass')
+    field_dict['volume'] = ('gas', 'cell_volume')
+unit_dict = {'radius':'kpc', 'rad_re':'', 'density':'g/cm**3', 'metal':r'Zsun', 'temp':'K', 'vrad':'km/s', 'phi_L':'deg', 'theta_L':'deg', 'PDF':'', 'mass':'Msun', 'stars_mass':'Msun', 'ystars_mass':'Msun', 'ystars_age':'Gyr', 'gas_frac':'', 'gas_time':'Gyr', 'volume':'pc**3', 'phi_disk':'deg', 'theta_disk':'deg', 'vdisp':'km/s', 'el_density':'cm**-3'}
+labels_dict = {'radius':'Radius', 'rad_re':'Radius/R_e', 'density':'Density', 'metal':'Metallicity', 'temp':'Temperature', 'vrad':'Radial velocity', 'phi_L':r'$\phi_L$', 'theta_L':r'$\theta_L$', 'PDF':'PDF', 'gas_frac':'Gas fraction', 'gas_time':'Gas consumption timescale', 'phi_disk':'Azimuthal Angle', 'theta_disk':r'$\theta_{\mathrm{diskrel}}$', 'vdisp':'Gas velocity dispersion', 'el_density': 'Electron number density'}

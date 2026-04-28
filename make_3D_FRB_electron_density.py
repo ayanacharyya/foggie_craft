@@ -36,27 +36,6 @@ def get_sfr_df(args):
     return sfr_df
 
 # -----------------------------------------------------------------------------
-def get_mstar_df(args):
-    '''
-    Reads in the dataframe that contains stellar mass of each snapshot of a given halo
-    Returns pandas dataframe
-    '''
-    try:
-        dummy_args = copy.deepcopy(args)
-        dummy_args.weight = 'mass'
-        dummy_args.weightby_text = '' if dummy_args.weight is None else '_wtby_' + dummy_args.weight
-        dummy_args.Zgrad_den = 'kpc'
-        dummy_args.use_density_cut = True
-        mass_df = load_df(dummy_args)
-        mass_df = mass_df[['output', 'log_mass']]
-        print('Retrieved stellar masses')
-    except:
-        print('Could not retrieve stellar masses, therefore will not include mstar')
-        mass_df = pd.DataFrame()
-
-    return mass_df
-
-# -----------------------------------------------------------------------------
 def get_AM_vector(ds):
     '''
     Computes the orientation vector of angular momentum of the disk, in the given dataset, considering young star particles
@@ -191,6 +170,9 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
         else:
             ax.set_yticklabels(['' % item for item in ax.get_yticks()])
             ax.set_ylabel('')
+        
+        if 'massrad' in args:
+            ax.add_patch(plt.Circle((0, 0), args.massrad, color='r', fill=False, lw=2)) # for over-plotting radius within which mass was computed
 
     # ---------------making annotations------------------------
     axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
@@ -245,7 +227,6 @@ if __name__ == '__main__':
     quant_arr = ['el_density', 'density']
 
     # ------------reading SFR and mstar df-----------------
-    mstar_df = get_mstar_df(args)
     sfr_df  = get_sfr_df(args)
 
     # --------domain decomposition; for mpi parallelisation-------------
@@ -299,6 +280,7 @@ if __name__ == '__main__':
         try: sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
         except: sfr = -99
 
+        args.massrad = get_disk_rad(args, refine_box=refine_box)
         log_mstar = np.log10(get_disk_stellar_mass(args))
 
         # --------determining corresponding text suffixes and figname-------------
