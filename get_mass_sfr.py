@@ -70,22 +70,22 @@ def get_masses_and_re(args, get_re_using='gas_HI_mass'):
 
     mass_profile = get_mass_profile(args)
 
-    if np.isnan(mass_profile):
-        return np.nan, np.nan, np.nan, np.nan
-    
-    mass_profile = mass_profile.sort_values('radius')
+    if type(mass_profile) == pd.DataFrame:    
+        mass_profile = mass_profile.sort_values('radius')
 
-    mhalo = mass_profile['total_mass'].iloc[-1] # radius is in kpc, mass in Msun
-    mgas = mass_profile['gas_mass'].iloc[-1] # radius is in kpc, mass in Msun
-    mstar = mass_profile['stars_mass'].iloc[-1] # radius is in kpc, mass in Msun
+        mhalo = mass_profile['total_mass'].iloc[-1] # radius is in kpc, mass in Msun
+        mgas = mass_profile['gas_mass'].iloc[-1] # radius is in kpc, mass in Msun
+        mstar = mass_profile['stars_mass'].iloc[-1] # radius is in kpc, mass in Msun
 
-    total_mass = mass_profile[get_re_using].iloc[-1]
-    mask = mass_profile[get_re_using] <= total_mass/2
-    if len(mass_profile[mask]) > 0:
-        half_mass_radius = mass_profile[mask]['radius'].iloc[-1]
+        total_mass = mass_profile[get_re_using].iloc[-1]
+        mask = mass_profile[get_re_using] <= total_mass/2
+        if len(mass_profile[mask]) > 0:
+            half_mass_radius = mass_profile[mask]['radius'].iloc[-1]
+        else:
+            print('Smallest shell avialable in mass profile is larger than half-mass. So returning the smallest shell as half-mass radius')
+            half_mass_radius = mass_profile['radius'].iloc[0]
     else:
-        print('Smallest shell avialable in mass profile is larger than half-mass. So returning the smallest shell as half-mass radius')
-        half_mass_radius = mass_profile['radius'].iloc[0]
+        mhalo, mgas, mstar, half_mass_radius = np.nan, np.nan, np.nan, np.nan
 
     return mhalo, mgas, mstar, half_mass_radius
 
