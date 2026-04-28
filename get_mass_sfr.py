@@ -99,12 +99,13 @@ if __name__ == '__main__':
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/lsm_sfr_upto_disk.txt'
+    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.txt'
     df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'disk_rad', 'log_star_mass', 'sfr', 'log_gas_mass', 'log_halo_mass'])
 
     # ----------getting list of snapshots-----------
     halos = ['8508', '5036', '5016', '4123', '2392', '2878']
-    redshift_list = [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
+    #redshift_list = [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
+    redshift_list = [4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
 
     # ---------looping over halos-----------
     for thishalo in halos:

@@ -258,7 +258,7 @@ if __name__ == '__main__':
     }                                           # the user will need to modify this dict
 
     # ---------reading input catalogs------------------
-    df_snap = read_foggie_catalog(args.data_dir / "lsm_sfr.txt")
+    df_snap = read_foggie_catalog(args.data_dir / "lsm_sfr_masses_upto_disk.txt")
     add_columns = ['dm_16', 'dm_50', 'dm_84', 'dm_fit']
     df_obs, args.input_cat = read_obs_catalog(args.input_cat, args, input_column_dict=input_column_dict, add_columns=add_columns)
 

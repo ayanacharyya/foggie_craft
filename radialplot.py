@@ -164,7 +164,7 @@ if __name__ == '__main__':
                 ncol = index2 if len(args.lsfr_bins) > 1 else index % ncols
 
             #	-------------------------	Initialize	-----------------------------------
-            filespecs =	args.data_dir / "lsm_sfr.txt"
+            filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
             df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python')
             df_snap = df_snap.rename(columns={f'{df_snap.columns[0]}':f'{df_snap.columns[0][1:]}'})
             df_snap['log_sfr'] = np.log10(df_snap['sfr'])

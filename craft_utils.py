@@ -544,7 +544,7 @@ def parse_args():
     parser.add_argument('--inc_bin_edges', metavar='inc_bin_edges', type=str, action='store', default='0,90', help='Bin edges of inclination angles; Default is 0-90')
     parser.add_argument('--lsm_bin_edges', metavar='lsm_bin_edges', type=str, action='store', default='all', help='Bin edges of log stellar mass; Default is all mass bins')
     parser.add_argument('--lsfr_bin_edges', metavar='lsfr_bin_edges', type=str, action='store', default='-10,10', help='Bin edges of log SFR; Default is -10-10 i.e., all SFRs')
-    parser.add_argument('--z_range', metavar='z_range', type=str, action='store', default='0,6', help='Range of redshifts; Default is 0-6')
+    parser.add_argument('--z_range', metavar='z_range', type=str, action='store', default='0,4', help='Range of redshifts; Default is 0-4')
     parser.add_argument('--set_ylin', dest='set_ylin', action='store_true', default=False, help='Set y-axis scale to linear?, default is no')
     parser.add_argument('--cmap', metavar='cmap', type=str, action='store', default='tab20', help='colormap to use; default is None')
     parser.add_argument('--fit_robust', dest='fit_robust', action='store_true', default=False, help='Fit in the robust-fit method?, default is no')
