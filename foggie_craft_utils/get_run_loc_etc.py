@@ -10,6 +10,10 @@ def get_run_loc_etc(args):
         foggie_dir = "/Volumes/Elements/acharyya_backup/models/simulation_output/foggie/"
         output_path = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/"
         code_path = "/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/"
+    elif args.system == "ayan_ssd":
+        foggie_dir = "/Volumes/Ayan_SSD/Ayan_macbook/Users/aacharyya/models/simulation_output/foggie/"
+        output_path = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/"
+        code_path = "/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/"
     elif args.system == "ayan_pleiades":
         foggie_dir = "/nobackup/mpeeples/" if args.foggie_dir is None else args.foggie_dir
         output_path = "/nobackupp19/aachary2/foggie_craft/"

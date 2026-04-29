@@ -1474,7 +1474,7 @@ def setup_plots_for_talks():
     plt.rcParams['grid.linewidth'] = 0.3
 
 # --------------------------------------------------------------------------------------------------------------
-def parse_args(haloname, RDname, fast=False):
+def parse_args(fast=False):
     '''
     Function to parse keyword arguments
     '''
@@ -1484,9 +1484,9 @@ def parse_args(haloname, RDname, fast=False):
     parser.add_argument('--system', metavar='system', type=str, action='store', default='ayan_local', help='Which system are you on? Default is Jase')
     parser.add_argument('--do', metavar='do', type=str, action='store', default='gas', help='Which particles do you want to plot? Default is gas')
     parser.add_argument('--run', metavar='run', type=str, action='store', default='nref11c_nref9f', help='which run? default is natural')
-    parser.add_argument('--halo', metavar='halo', type=str, action='store', default=haloname, help='which halo? default is 8508 (Tempest)')
+    parser.add_argument('--halo', metavar='halo', type=str, action='store', default='8508', help='which halo? default is 8508 (Tempest)')
     parser.add_argument('--projection', metavar='projection', type=str, action='store', default='x', help='Which projection do you want to plot, i.e., which axis is your line of sight? Default is x')
-    parser.add_argument('--output', metavar='output', type=str, action='store', default=RDname, help='which output? default is RD0020')
+    parser.add_argument('--output', metavar='output', type=str, action='store', default='RD0042', help='which output? default is RD0020')
     parser.add_argument('--foggie_dir', metavar='foggie_dir', type=str, action='store', default=None, help='Specify which directory the dataset lies in, otherwise, by default it will use the args.system variable to determine the FOGGIE data location')
     parser.add_argument('--pwd', dest='pwd', action='store_true', default=False, help='Just use the current working directory?, default is no')
     parser.add_argument('--forcepath', dest='forcepath', action='store_true', default=False, help='Use given path variables regardless of "feedback" being present in them?, default is no')
@@ -1535,7 +1535,7 @@ def parse_args(haloname, RDname, fast=False):
     parser.add_argument('--nooutliers', dest='nooutliers', action='store_true', default=False, help='discard outlier HII regions (according to D16 diagnostic)?, default is no')
     parser.add_argument('--xratio', metavar='xratio', type=str, action='store', default=None, help='ratio of lines to plot on X-axis; default is None')
     parser.add_argument('--yratio', metavar='yratio', type=str, action='store', default=None, help='ratio of lines to plot on Y-axis; default is None')
-    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=25, help='fontsize of plot labels, etc.; default is 15')
+    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=15, help='fontsize of plot labels, etc.; default is 15')
     parser.add_argument('--plot_metgrad', dest='plot_metgrad', action='store_true', default=False, help='make metallicity gradient plot?, default is no')
     parser.add_argument('--plot_phase_space', dest='plot_phase_space', action='store_true', default=False, help='make P-r phase space plot?, default is no')
     parser.add_argument('--plot_obsv_phase_space', dest='plot_obsv_phase_space', action='store_true', default=False, help='overlay observed P-r phase space on plot?, default is no')
@@ -1809,13 +1809,6 @@ def parse_args(haloname, RDname, fast=False):
     args.without_outlier = '_no_outlier' if args.nooutliers else '' # to be used as filename suffix to denote whether outlier HII regions (as per D16 density criteria) have been discarded
 
     args.foggie_dir, args.output_dir, args.run_loc, args.code_path, args.trackname, args.haloname, args.spectra_dir, args.infofile = get_run_loc_etc(args)
-    try:
-        args = pull_halo_center(args, fast=fast) # pull details about center of the snapshot
-        if type(args) is tuple: args, ds, refine_box = args
-        args.halo_center = args.halo_center + args.center_wrt_halo # kpc # offsetting center of ifu data cube wrt halo center, if any
-    except Exception as e:
-        print('Error being overlooked in utils.parse_args():', e)
-        pass
 
     if args.fortalk:
         print(f'Setting up plots for talks..')
@@ -1828,5 +1821,6 @@ def parse_args(haloname, RDname, fast=False):
     args.smoothed_cube_filename = args.cube_output_path + instrument_dummy.path + 'smoothed_ifu' + '_z' + str(args.z) + args.mergeHII_text + '_ppb' + str(args.pix_per_beam) + '.fits'
     args.mockcube_filename = args.cube_output_path + instrument_dummy.path + 'mock_ifu' + '_z' + str(args.z) + args.mergeHII_text + '_ppb' + str(args.pix_per_beam) + '_exp' + str(args.exptime) + 's_snr' + str(args.snr) + '.fits'
 
-    if 'ds' in locals(): return args, ds, refine_box # if ds has already been loaded then return it, so that subsequent functions won't need to re-load ds
-    else: return args
+    #if 'ds' in locals(): return args, ds, refine_box # if ds has already been loaded then return it, so that subsequent functions won't need to re-load ds
+    #else: 
+    return args

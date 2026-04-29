@@ -36,7 +36,7 @@ def get_sfr_df(args):
     return sfr_df
 
 # -----------------------------------------------------------------------------
-def get_AM_vector(ds):
+def get_AM_vector(ds, radius_kpc=15., use_particles='young_stars'):
     '''
     Computes the orientation vector of angular momentum of the disk, in the given dataset, considering young star particles
     Based on foggie_load()
@@ -45,8 +45,11 @@ def get_AM_vector(ds):
     start_time = datetime.now()
 
     print('Starting to derive angular momentum vector. This can take a while..')
-    sphere = ds.sphere(ds.halo_center_kpc, (15., 'kpc'))
-    L = sphere.quantities.angular_momentum_vector(use_gas=False, use_particles=True, particle_type='young_stars')
+    sphere = ds.sphere(ds.halo_center_kpc, (radius_kpc, 'kpc'))
+    if use_particles == 'gas' or use_particles == False:
+        L = sphere.quantities.angular_momentum_vector(use_gas=True, use_particles=False)
+    else:
+        L = sphere.quantities.angular_momentum_vector(use_gas=False, use_particles=True, particle_type=use_particles)
     print('Completed deriving angular momentum vector, in %s'% timedelta(seconds=(datetime.now() - start_time).seconds))
     norm_L = L / np.sqrt((L ** 2).sum())
     norm_L = np.array(norm_L.value)
@@ -110,7 +113,7 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis'):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
@@ -129,14 +132,14 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
 
     # ---------------setting up units, colormaps, etc------------------------
-    p_faceon.set_log(field, True)
+    p_faceon.set_log(field, takelog)
     p_faceon.set_unit(field, unit)
-    p_faceon.set_zlim(field, zmin=10**clim[0], zmax=10**clim[1])
+    if clim is not None: p_faceon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
     p_faceon.set_cmap(field, cmap)
 
-    p_edgeon.set_log(field, True)
+    p_edgeon.set_log(field, takelog)
     p_edgeon.set_unit(field, unit)
-    p_edgeon.set_zlim(field, zmin=10**clim[0], zmax=10**clim[1])
+    if clim is not None: p_edgeon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
     p_edgeon.set_cmap(field, cmap)
 
     # ------plotting onto a matplotlib figure--------------
