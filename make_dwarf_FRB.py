@@ -16,7 +16,7 @@ start_time = datetime.now()
 
 # -----main code-----------------
 if __name__ == '__main__':
-    args = parse_args()  # default simulation to work upon when comand line args not provided
+    args = parse_args()
     if not args.keep: plt.close('all')
     args.fontfactor = 1.2
     quant_arr = ['el_density', 'density']
