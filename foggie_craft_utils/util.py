@@ -71,7 +71,7 @@ def get_stellar_mass(args, refine_box=None):
     mass_cum_sums = np.cumsum(mass_sums)
     mass_increase_frac = np.hstack([np.diff(mass_cum_sums), np.nan]) / mass_cum_sums
 
-    index = edges[np.where(mass_increase_frac <= mass_increase_frac_thresh)[0][0]]
+    index = np.where(mass_increase_frac <= mass_increase_frac_thresh)[0][0]
     disk_rad_kpc = edges[index]
     log_stellar_mass = np.log10(mass_cum_sums[index])
 
