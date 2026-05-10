@@ -69,12 +69,13 @@ def execute_mode_indi(df_snap, args):
         this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
 
         outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
-        try:
-            pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
+        #try:
+        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
+        '''
         except:
             print(f'Failing DM profile fit for {snap["snap"]}')
             continue
-        
+        '''
         if args.multi_panel:
             if i // ncols < nrows - 1:
                 ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)

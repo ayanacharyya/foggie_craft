@@ -110,12 +110,15 @@ def intnelos(necube,dkpc,xyz1,xyz2):
 
 
 
-def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift):	
+def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, extent_kpc):	
 #	Calculate DMs integrating over LoS
 
 	dmarr	= []
 
-	ptpairs	= np.random.triangular(-necube.shape[0]/2, 0.0, necube.shape[0]/2, size=(6,2,nfixpts))
+	extent_pixel = int(min(extent_kpc / dkpc[0], necube.shape[0]/2))
+	print(f'Computing LoS up to +/- {extent_pixel} pixels')
+
+	ptpairs	= np.random.triangular(-extent_pixel, 0.0, extent_pixel, size=(6,2,nfixpts))
 	
 	ptsxl	= np.array([-(necube.shape[0]/2)*np.ones(nfixpts,dtype=int), ptpairs[0,0], ptpairs[0,1]]).T
 	ptsxr	= np.array([ (necube.shape[0]/2)*np.ones(nfixpts,dtype=int), ptpairs[1,0], ptpairs[1,1]]).T

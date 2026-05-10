@@ -6,12 +6,17 @@
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    29-04-2026
-    Examples :   run make_dwarf_FRB.py --system ayan_ssd --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 200 --res 0.5
-                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 200 --res 0.5
+    Examples :   run make_dwarf_FRB.py --system ayan_ssd --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 2392 --run 2520_24 --output DD1860 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 4123 --run 2520_15 --output DD2033 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 4123 --run 2520_5 --output DD1862 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 5016 --run 2520_3 --output DD1618 --upto_kpc 50 --res 0.5
+                 run make_dwarf_FRB.py --system ayan_pleiades --foggie_dir /nobackupp19/aachary2/LowZRuns/ --halo 5016 --run 2520_6 --output DD1995 --upto_kpc 50 --res 0.5
 """
 from foggie_header import *
 from make_3D_FRB_electron_density import plot_projection_diskrel, get_AM_vector, FITSImageData
-from get_foggie_metallicity_profile import my_foggie_load, get_halo_coords, quant_dict
+from get_foggie_metallicity_profile import my_foggie_load, get_halo_coords
 start_time = datetime.now()
 
 # -----main code-----------------
@@ -19,7 +24,12 @@ if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
     args.fontfactor = 1.2
-    quant_arr = ['el_density', 'density']
+    quant_arr = ['el_density']#, 'density']
+
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True], 
+              'el_density':['El_number_density', 'Electron density', 'cm**-3', None, None, 'cornflowerblue', 'viridis', False],
+              'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7, 0.7, 'cornflowerblue', metal_color_map, True],
+              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
 
     # -----------determining directories----------------
     args.fig_dir = args.output_dir + 'plots/'
@@ -39,7 +49,7 @@ if __name__ == '__main__':
     df = pd.read_csv(input_filename, sep='\s+')
 
     # -----------making FRB------------------
-    if not os.path.exists(fitsname) or args.clobber:
+    if not os.path.exists(fitsname) or args.clobber or args.do_only_plot:
         # ----------reading in snapshot-----------
         halos_df_name = Path(args.code_path) / f'halo_infos/00{args.halo}/{args.run}/halo_c_v'
         halo_center = get_halo_coords(halos_df_name, args.output)
@@ -62,6 +72,9 @@ if __name__ == '__main__':
             args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
             args.galrad = args.re * args.upto_re  # kpc
 
+        # ------determining extent for computing mass--------
+        #args.diskrad = get_disk_rad(args)
+        
         # -------extract the required box------------
         box_center = ds.halo_center_kpc
         box_width = args.galrad * 2  # in kpc
@@ -80,35 +93,36 @@ if __name__ == '__main__':
 
         for index, quant in enumerate(quant_arr):
             print(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..')
+            if not args.do_only_plot:
+                # --------making the 3D FRB------------
+                FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
 
-            # --------making the 3D FRB------------
-            FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
+                # --------making the FITS ImageHDU---------------
+                img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
+                header = img_hdu[0].header
+                for ind in range(3):
+                    header[f'CDELT{ind+1}'] = args.kpc_per_pix
+                    header[f'CUNIT{ind+1}'] = 'kpc'
+                    header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
 
-            # --------making the FITS ImageHDU---------------
-            img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
-            header = img_hdu[0].header
-            for ind in range(3):
-                header[f'CDELT{ind+1}'] = args.kpc_per_pix
-                header[f'CUNIT{ind+1}'] = 'kpc'
-                header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
+                header[f'SFR'] = sfr
+                header[f'SFRUNIT'] = 'Msun/yr'
 
-            header[f'SFR'] = sfr
-            header[f'SFRUNIT'] = 'Msun/yr'
+                header[f'LOG_MSTAR'] = log_star_mass
+                header[f'MSTARUNIT'] = 'Msun'
 
-            header[f'LOG_MSTAR'] = log_star_mass
-            header[f'MSTARUNIT'] = 'Msun'
+                header[f'REDSHIFT'] = args.current_redshift
 
-            header[f'REDSHIFT'] = args.current_redshift
-
-            img_hdu_list.append(img_hdu)
+                img_hdu_list.append(img_hdu)
 
             # ------making the plots-----------
-            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/1.44, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
 
         # ------saving fits file------------------
-        combined_img_hdu = FITSImageData.from_images(img_hdu_list)
-        combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
-        print(f'Saved fits file as {fitsname}')
+        if not args.do_only_plot:
+            combined_img_hdu = FITSImageData.from_images(img_hdu_list)
+            combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
+            print(f'Saved fits file as {fitsname}')
     else:
         print(f'Skipping snapshot {args.output} as {fitsname} already exists. Use --clobber to remake figure.')
         combined_img_hdu = fits.open(fitsname)

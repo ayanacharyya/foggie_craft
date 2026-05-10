@@ -1782,6 +1782,7 @@ def parse_args(fast=False):
 
     # ------- args added for make_3D_FRB_electron_density.py ------------------------------
     parser.add_argument('--plot_3d', dest='plot_3d', action='store_true', default=False, help='Plot 3D FRB?, default is no')
+    parser.add_argument('--do_only_plot', dest='do_only_plot', action='store_true', default=False, help='Only plot the FRB, without saving it?, default is no')
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()

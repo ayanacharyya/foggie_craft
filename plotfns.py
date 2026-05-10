@@ -119,8 +119,11 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
 #	----------------------------------------------------------------------------------------------------------	
 def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False):
 	#	Plot LoSDM vs impact factor for a given inclination range 
-			
-    df['bin'] = pd.cut(df[bin_col], bins=impbinegs, include_lowest=True)
+	
+    indices = np.where(impbinegs < df[bin_col].max())[0]
+    impbinegs_short = impbinegs[indices]
+    
+    df['bin'] = pd.cut(df[bin_col], bins=impbinegs_short, include_lowest=True)
     percentiles = [0.16, 0.25, 0.50, 0.75, 0.84] # Quantiles are 0 to 1 (so 16th percentile is 0.16)
     stats = df.groupby('bin')[data_col].quantile(percentiles).unstack()
     
@@ -132,7 +135,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     dmlower	= stats['p50'] - stats['p16']
     dmhier	= stats['p84'] - stats['p50']
 
-    impx	= (impbinegs[:-1] + impbinegs[1:]) / 2.0
+    impx	= (impbinegs_short[:-1] + impbinegs_short[1:]) / 2.0
 
     #popt,pcov	= curve_fit(logbeselk, impx, np.log10(dmavg), p0=(2.0,100.0), maxfev=1000)
     popt,pcov	= curve_fit(logradialexp3, impx, np.log10(dmavg), p0=(10.0,100.0))
@@ -153,28 +156,29 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='bo',lw=1,markersize=4,capsize=4)
     #ax.plot(impx, 10**logbeselk(impx,*popt),'k--',lw=1)
     ax.plot(impx, 10**logradialexp3(impx,*popt),'k--',lw=1)
-    ax.plot(impx, 10**logradialexp3(impx,10.0**(0.61-0.53*(lsm-10)),10.0**(2.15+0.24*(lsm-10))),'r:',lw=1)
+    #ax.plot(impx, 10**logradialexp3(impx,10.0**(0.61-0.53*(lsm-10)),10.0**(2.15+0.24*(lsm-10))),'r:',lw=1)
+    ax.plot(impx, 10**logradialexp3(impx,10.0**(0.48-0.48*(lsm-10)),10.0**(2.22+0.22*(lsm-10))),'r:',lw=1)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_ylim([0.5, 3 * maxdmcol])
-    ax.set_xlim([0.25 * impbinegs[1], 1.5 * impbinegs[-1]])
+    ax.set_xlim([0.25 * impbinegs_short[1], 1.5 * impbinegs_short[-1]])
     ax.set_yticks(dm_ticks, dm_ticks)
     ax.set_ylabel("DM (pc cm$^{-3}$)")	
     ax.set_xlabel("Impact factor (kpc)")
 
     if lsfr_lims is None:
-        ax.set_xticks(impbinegs[1:], impbinegs[1:])
+        ax.set_xticks(impbinegs_short[1:], impbinegs_short[1:])
         nobj_text = '' if nobj is None else f' ({nobj})'
-        ax.text(x=0.4*impbinegs[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
-        ax.text(x=0.4*impbinegs[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
-        ax.text(x=0.4*impbinegs[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"%sfr)
-        ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(popt[1],perr[1]))
-        ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(popt[0],perr[0]))
+        ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
+        ax.text(x=0.4*impbinegs_short[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
+        ax.text(x=0.4*impbinegs_short[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"%sfr)
+        ax.text(x=1.0*impbinegs_short[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(popt[1],perr[1]))
+        ax.text(x=1.0*impbinegs_short[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(popt[0],perr[0]))
     else:
-        ax.set_xticks(impbinegs[1::2], impbinegs[1::2])
+        ax.set_xticks(impbinegs_short[1::2], impbinegs_short[1::2])
         nobj_text = ''# if nobj is None else f' ({nobj})'
-        ax.text(x=0.4*impbinegs[1], y=250, s="log $M_*$ $\in$ [%.1f, %.1f]%s"%(parlims[0],parlims[1], nobj_text))
-        ax.text(x=0.4*impbinegs[1], y=1, s="log SFR $\in$ [%.1f, %.1f]"%(lsfr_lims[0],lsfr_lims[1]))
+        ax.text(x=0.4*impbinegs_short[1], y=250, s="log $M_*$ $\in$ [%.1f, %.1f]%s"%(parlims[0],parlims[1], nobj_text))
+        ax.text(x=0.4*impbinegs_short[1], y=1, s="log SFR $\in$ [%.1f, %.1f]"%(lsfr_lims[0],lsfr_lims[1]))
 
     if given_ax is None:
         figname = Path(outfilename + ".pdf")
@@ -183,7 +187,6 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         else: plt.show(block=False)
 
     return (popt, perr, ax)
-
 
 #	----------------------------------------------------------------------------------------------------------
 #	----------------------------------------------------------------------------------------------------------

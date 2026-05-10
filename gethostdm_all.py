@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     exmode		=	sys.argv[1]					#	What to do	
     nfixpts     =   int(sys.argv[2])            #   Number of fixed points on each face to simulate LoSs
-    extent     =   float(sys.argv[3])             #   Extent of datacube on either side of the center, in units of comoving kpc (to pick the right cubes from datadir)
+    extent     =   float(sys.argv[3])             #   Extent of datacube on either side of the center, in units of kpc (to pick the right cubes from datadir)
     scalekpc	=	float(sys.argv[4])			#	Scale radius in kpc
     try: 
         filename	=	sys.argv[5]			#	Individual fits filename
@@ -93,8 +93,8 @@ if __name__ == '__main__':
     if filename != '':
         list_of_fits = glob.glob(datadir + f'{filename.replace(".fits", "")}.fits')
     else:
-        list_of_fits = glob.glob(datadir + f'*FRB_density*{extent:.1f}kpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
-        #list_of_fits = glob.glob(losdir + f'*El_number_density*{extent:.1f}kpc*{scalekpc:.1f}kpc*.npy') # all snapshots of this particular halo
+        #list_of_fits = glob.glob(datadir + f'*FRB_density*{extent:.1f}kpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
+        list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}kpc*{scalekpc:.1f}kpc*.fits') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
     comm = MPI.COMM_WORLD
@@ -121,6 +121,7 @@ if __name__ == '__main__':
         start_time_this_snapshot = datetime.now()
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
+
         profile_pkl_filename = datadir + fitsname + '_radprof.pkl'
         
         if fitsname[-3:] == str(nfixpts): fitsname = fitsname[:-4]
@@ -156,7 +157,7 @@ if __name__ == '__main__':
 
         elif (exmode=='losdm'):
             print_mpi("\nEstimating LoS DMs...\n")
-            losdms(fitsname,necub,dkpc,theta0,phi0,nfixpts,1.0,1.0,1.0)
+            losdms(fitsname,necub,dkpc,theta0,phi0,nfixpts,1.0,1.0,1.0, los_extent_kpc) # last argument is extent of shooting LoS (in kpc), the value is in globalpars.py
 
         elif (exmode=='pltdm'):
             print_mpi("\nPloting LoS DMs...\n")

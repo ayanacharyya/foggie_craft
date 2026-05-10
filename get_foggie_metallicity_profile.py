@@ -73,13 +73,6 @@ def my_foggie_load(snap, halo_center, refine_width_chkpc=200.):
     ds.add_field(('gas', 'radius_corrected'), function=radius_corrected, units='kpc', take_log=False, force_override=True, sampling_type='cell')
     ds.add_field(('gas', 'cell_mass_msun'), function=cell_mass_msun, units='Msun', take_log=True, force_override=True, sampling_type='cell')
 
-    # # filter particles into star and dm
-    # filter_particles(refine_box, filter_particle_types = ['stars', 'young_stars', 'dm'])
-
-    # ds.add_field(('stars', 'radius_corrected'), function=radius_corrected_stars, units='kpc', take_log=False, force_override=True, sampling_type='particle')
-    # ds.add_field(('young_stars', 'radius_corrected'), function=radius_corrected_young_stars, units='kpc', take_log=False, force_override=True, sampling_type='particle')
-    # ds.add_field(('dm', 'radius_corrected'), function=radius_corrected_dm, units='kpc', take_log=False, force_override=True, sampling_type='particle')
-
     # -------------------get refine region-----------------
     zsnap = ds.get_parameter('CosmologyCurrentRedshift') 
     ds.refine_width_kpc = refine_width_chkpc / (1 + zsnap) / 0.695
