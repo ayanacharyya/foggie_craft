@@ -10,6 +10,8 @@
 #   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
 #   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
 #   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
+#   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
+#   run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
 #   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
 #   run dmplot.py --mode lsmzsfr --lsm all --multi_panel
 #   run dmplot.py --mode lsmzsfr --lsm all
@@ -207,6 +209,48 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
 
     return ax
 
+# ------------------------------------------------------------------------------------------------
+def plot_dm_impfac_halo(df_snap, args, cmap='viridis'):
+    '''
+    Plot DM vs Impact factor in a single panel, for a list of stellar mass ranges and a given inclination range
+    Saves plot
+    Returns axis handle
+    '''
+    # ---------setup figure---------------
+    fig, ax = plt.subplots(1, figsize=(8, 5))
+    fig.subplots_adjust(left=0.12, bottom=0.12, right=0.99, top=0.98)
+
+    norm = mplcolors.Normalize(vmin=df_snap['redshift'].min(), vmax=df_snap['redshift'].max())
+    sm = mpl_cm.ScalarMappable(cmap=plt.get_cmap(cmap), norm=norm)
+
+    # -----------loop through mass bins--------------------
+    for index, snap in df_snap.iterrows(): 
+        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
+        col = sm.to_rgba(snap['redshift'])
+
+        data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]
+        ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], c=col, fmt='o-', lw=2, markersize=15, capsize=4, alpha=0.5)
+
+    ax.set_xscale("log")
+    ax.set_xticks(impbinegs[1:],impbinegs[1:])
+
+    if not args.set_ylin:
+        ax.set_yscale("log")
+        ax.set_yticks(dm_ticks, dm_ticks)
+        ax.set_ylim(ymin=0.7)
+    
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label('Redshift', fontsize=args.fontsize)
+    cbar.ax.tick_params(labelsize=args.fontsize)
+
+    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel='Redshift', set_ticks=False)
+    ax.text(0.95, 0.95, f'Halo {args.halo}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_halo_{args.halo}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
+    plt.show(block=False)
+
+    return fig
+
 # -----main code-----------------
 if __name__ == '__main__':
     #	--------------------------	Read inputs	-------------------------------
@@ -257,8 +301,10 @@ if __name__ == '__main__':
                 #	-------------------------	Execute tasks	-------------------------------
                 if (args.mode=='indi'):
                     execute_mode_indi(df_snap, args)
-                elif (args.mode=='halo'):
-                    execute_mode_halo(df_snap, args)            
+                
+                elif (args.mode=='halo') :
+                    execute_mode_halo(df_snap, args)     
+                    
                 elif (args.mode=='lsmzsfr'):                
                     # ---------------make the plots-----------------
                     ax = execute_mode_lsmzsfr(df_snap, args, given_ax=axes[nrow][ncol] if args.multi_panel else None)
@@ -270,8 +316,13 @@ if __name__ == '__main__':
                         if ncol > 0:
                             ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
                             ax.set_ylabel('')
-                else:
+                elif args.mode != 'plot_halo':
                     print("\n\tHmm...What mode is that again...?\n")
+
+                if args.mode == 'halo' or args.mode == 'plot_halo':
+                    df_snap = df_snap[df_snap["halo"].astype(str) == args.halo]
+                    ax = plot_dm_impfac_halo(df_snap, args)
+
 
         if args.mode == 'lsmzsfr' and args.multi_panel:
             save_fig(fig, args.fig_dir, f'{Path(args.resfile_prefix).stem}_{args.mode}_inc_{args.inc_range[0]}_{args.inc_range[1]}_multipanel_1d.pdf', args)

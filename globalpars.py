@@ -16,8 +16,7 @@ plotradial  =   plotdir + "density_profiles/"                   #
 
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
 
-#impbinegs   =   np.array([0,2,4,8,16,32,64,128,256])              #   Impact parameter bins
-impbinegs   =   np.array([0,1,2,4,8,16,32,64,128,256])                #   Impact parameter bins in units of r_eff
+impbinegs   =   np.array([0,1,2,4,8,16,32,64,128])              #   Impact parameter bins
 maxdmcol    =   205.0                                             #   Maximum DM for colour scale
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff

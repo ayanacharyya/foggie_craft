@@ -263,7 +263,7 @@ if __name__ == '__main__':
     if args.plot_dm_all_lsm:
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
         ax = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
-    
+
     if args.plot_dm_fit:
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
         ax = plot_dm_fit(df_dmpars, args)
