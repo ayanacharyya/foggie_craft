@@ -601,7 +601,7 @@ def parse_args():
     args.z_range = [float(item) for item in args.z_range.split(',')]
 
     if args.lsm_bin_edges == 'all':
-        if args.sample == 'high_mass': args.lsm_bin_edges = [10.4, 11.4]
+        if args.sample == 'high_mass': args.lsm_bin_edges = [8.4, 11.4]
         elif args.sample == 'low_mass': args.lsm_bin_edges = [8.4, 9.4]
     else:
         args.lsm_bin_edges = [float(item) for item in args.lsm_bin_edges.split(',')]

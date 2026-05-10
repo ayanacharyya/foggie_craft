@@ -58,8 +58,7 @@ if __name__ == '__main__':
 
     # -----------------------read in snapshot list----------------------------------
     filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
-    df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python')
-    df_snap = df_snap.rename(columns={f'{df_snap.columns[0]}':f'{df_snap.columns[0][1:]}'})
+    df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
     df_snap['log_sfr'] = np.log10(df_snap['sfr'])
     df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
                     (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
