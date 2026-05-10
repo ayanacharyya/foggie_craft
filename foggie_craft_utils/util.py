@@ -42,7 +42,7 @@ def get_stellar_mass(args, refine_box=None):
     if refine_box is None:
         halos_df_name = args.code_path + f'halo_infos/00{args.halo}/{args.run}/halo_cen_smoothed'
         try:
-            ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=False, disk_relative=False, halo_c_v_name=halos_df_name)
+            ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
         except Exception as e:
             print(f'Skipping {args.output} because {e}')
             return np.nan
