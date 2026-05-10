@@ -262,9 +262,7 @@ if __name__ == '__main__':
         # -------loading in snapshot-------------------
         halos_df_name = args.code_path + 'halo_infos/00' + this_sim[0] + '/' + args.run + '/'
         halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
-        if len(list_of_sims) > 1 or args.do_all_sims: args = parse_args(this_sim[0], this_sim[1])
-        if type(args) is tuple: args, ds, refine_box = args  # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
-        else: ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
+        ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
         norm_L = get_AM_vector(ds) #np.array([-0.64498829, -0.5786498 , -0.49915379]) #computing disk orientation #
 
