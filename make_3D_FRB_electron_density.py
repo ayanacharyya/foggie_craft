@@ -204,9 +204,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
 
 # -----main code-----------------
 if __name__ == '__main__':
-    args_tuple = parse_args('8508', 'RD0042')  # default simulation to work upon when comand line args not provided
-    if type(args_tuple) is tuple: args, ds, refine_box = args_tuple # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
-    else: args = args_tuple
+    args = parse_args()
     if not args.keep: plt.close('all')
 
     # # ----------start test code block (comment out later)----------------------
