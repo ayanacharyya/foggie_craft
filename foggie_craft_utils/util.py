@@ -1792,13 +1792,13 @@ def parse_args(fast=False):
     args.Om_arr = [float(item) for item in args.Om_arr.split(',')]
     args.Om = args.Om_arr[0]
     args.halo_arr = [item for item in args.halo.split(',')]
-    args.halo = args.halo_arr[0] if len(args.halo_arr) == 1 else haloname
+    args.halo = args.halo_arr[0]
     if args.snapnumber is not None:
         if args.use_onlyDD: args.output = 'DD%04d' % (args.snapnumber)
         else: args.output = 'RD%04d' % (args.snapnumber)
     args.output_arr = get_output_range(args.output) if '-' in args.output else [item for item in args.output.split(',')]
     args.res_arr = [float(item) for item in args.res.split(',')]
-    args.output = args.output_arr[0] if len(args.output_arr) == 1 else RDname
+    args.output = args.output_arr[0]
     args.move_to = np.array([float(item) for item in args.move_to.split(',')])  # kpc
     args.center_wrt_halo = np.array([float(item) for item in args.center_wrt_halo.split(',')])  # kpc
     args.obs_wave_range = np.array([float(item) for item in args.obs_wave_range.split(',')])
