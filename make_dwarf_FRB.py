@@ -73,7 +73,7 @@ if __name__ == '__main__':
             args.galrad = args.re * args.upto_re  # kpc
 
         # ------determining extent for computing mass--------
-        #args.diskrad = get_disk_rad(args)
+        #args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)
         
         # -------extract the required box------------
         box_center = ds.halo_center_kpc

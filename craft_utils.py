@@ -446,7 +446,7 @@ def annotate_axes(ax, xlabel, ylabel, args=None, fontsize=10, fontfactor=1, labe
     return ax
 
 # --------------------------------------------------------------------------------------------------------------------
-def save_fig(fig, fig_dir, figname, args=None, fortalk=False, silent=False):
+def save_fig(fig, fig_dir, figname, args=None, fortalk=False, silent=False, dpi=200):
     '''
     Saves a given figure handle as a given output filename
     '''
@@ -462,7 +462,7 @@ def save_fig(fig, fig_dir, figname, args=None, fortalk=False, silent=False):
     figname = fig_dir / figname
     if fortalk:
          figname = Path(str(figname).replace('.pdf', '.png'))
-    fig.savefig(figname, transparent=fortalk)
+    fig.savefig(figname, transparent=fortalk, dpi=dpi)
     if not silent: print(f'\nSaved figure as {figname}')
     plt.show(block=False)
 

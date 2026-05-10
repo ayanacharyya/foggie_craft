@@ -224,7 +224,9 @@ if __name__ == '__main__':
 
     # --------------end test code block--------------------------
 
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True], 'el_density':['El_number_density', 'Electron density', 'cm**-3', 0.001, 0.008, 'cornflowerblue', 'viridis', False]} # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True], 
+                  'el_density':['El_number_density', 'Electron density', 'cm**-3', 0.001, 0.01, 'cornflowerblue', 'viridis', False]
+                  } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
     quant_arr = ['el_density', 'density']
 
     # ------------reading SFR and mstar df-----------------
@@ -265,7 +267,7 @@ if __name__ == '__main__':
         halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
         ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
-        norm_L = get_AM_vector(ds) #np.array([-0.64498829, -0.5786498 , -0.49915379]) #computing disk orientation #
+        norm_L = get_AM_vector(ds) #computing disk orientation #
 
         # --------assigning additional keyword args-------------
         args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
@@ -280,8 +282,7 @@ if __name__ == '__main__':
         try: sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
         except: sfr = -99
 
-        args.diskrad = get_disk_rad(args, refine_box=refine_box)
-        log_mstar = np.log10(get_disk_stellar_mass(args))
+        args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)
 
         # --------determining corresponding text suffixes and figname-------------
         args.fig_dir = args.output_dir + 'plots/'
@@ -326,45 +327,46 @@ if __name__ == '__main__':
 
                 for index, quant in enumerate(quant_arr):
                     myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
+                    if not args.do_only_plot:
+                        # --------making the 3D FRB------------
+                        FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
 
-                    # --------making the 3D FRB------------
-                    FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
+                        # --------making the FITS ImageHDU---------------
+                        img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
+                        header = img_hdu[0].header
+                        for ind in range(3):
+                            header[f'CDELT{ind+1}'] = args.kpc_per_pix
+                            header[f'CUNIT{ind+1}'] = 'kpc'
+                            header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
 
-                    # --------making the FITS ImageHDU---------------
-                    img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
-                    header = img_hdu[0].header
-                    for ind in range(3):
-                        header[f'CDELT{ind+1}'] = args.kpc_per_pix
-                        header[f'CUNIT{ind+1}'] = 'kpc'
-                        header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
+                        header[f'SFR'] = sfr
+                        header[f'SFRUNIT'] = 'Msun/yr'
 
-                    header[f'SFR'] = sfr
-                    header[f'SFRUNIT'] = 'Msun/yr'
+                        header[f'LOG_MSTAR'] = log_mstar
+                        header[f'MSTARUNIT'] = 'Msun'
 
-                    header[f'LOG_MSTAR'] = log_mstar
-                    header[f'MSTARUNIT'] = 'Msun'
+                        header[f'REDSHIFT'] = args.current_redshift
 
-                    header[f'REDSHIFT'] = args.current_redshift
+                        img_hdu_list.append(img_hdu)
 
-                    img_hdu_list.append(img_hdu)
+                        # ------making the plots-----------
+                        if args.plot_3d or args.plot_proj:
+                            ax = fig.add_subplot(1, len(quant_arr), index + 1, projection='3d' if args.plot_3d else None)
+                            if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
+                            elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
 
-                    # ------making the plots-----------
-                    if args.plot_3d or args.plot_proj:
-                        ax = fig.add_subplot(1, len(quant_arr), index + 1, projection='3d' if args.plot_3d else None)
-                        if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
-                        elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
-
-                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/1.44, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
+                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/3, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
 
                 # ------saving fits file------------------
-                combined_img_hdu = FITSImageData.from_images(img_hdu_list)
-                combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
-                myprint('Saved fits file as ' + fitsname, args)
+                if not args.do_only_plot:
+                    combined_img_hdu = FITSImageData.from_images(img_hdu_list)
+                    combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
+                    myprint('Saved fits file as ' + fitsname, args)
 
-                # ------saving fig------------------
-                if args.plot_3d or args.plot_proj:
-                    fig.savefig(figname)
-                    myprint('Saved plot as ' + figname, args)
+                    # ------saving fig------------------
+                    if args.plot_3d or args.plot_proj:
+                        fig.savefig(figname)
+                        myprint('Saved plot as ' + figname, args)
 
                 if not ('pleiades' in args.system or args.hide_plot): plt.show(block=False)
                 print_mpi('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds), args)

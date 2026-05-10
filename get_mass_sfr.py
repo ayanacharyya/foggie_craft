@@ -91,16 +91,14 @@ def get_masses_and_re(args, get_re_using='gas_HI_mass'):
 
 # -----main code-----------------
 if __name__ == '__main__':
-    args_tuple = parse_args('8508', 'RD0042')  # default simulation to work upon when comand line args not provided
-    if type(args_tuple) is tuple: args, ds, refine_box = args_tuple # if the sim has already been loaded in, in order to compute the box center (via utils.pull_halo_center()), then no need to do it again
-    else: args = args_tuple
+    args = parse_args()
     if not args.keep: plt.close('all')
     if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
     
    # ---------initialising output dataframe-------------
     output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.txt'
-    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 're', 'disk_rad', 'log_star_mass', 'sfr', 'log_gas_mass', 'log_halo_mass'])
+    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 'sfr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad'])
 
     # ----------getting list of snapshots-----------
     halos = ['8508', '5036', '5016', '4123', '2392', '2878']
@@ -132,16 +130,15 @@ if __name__ == '__main__':
                 args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
                 # ------determining extent for computing mass--------
-                args.diskrad = get_disk_rad(args)
+                args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
 
                 # ------determining stellar mass--------                
-                mhalo, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
-                log_mhalo = np.log10(mhalo)
-                log_mstar = np.log10(mstar)
-                log_mgas = np.log10(mgas)
+                _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
+                log_mstar_from_profile = np.log10(mstar)
+                log_mgas_from_profile = np.log10(mgas)
 
                 # ------appending to dataframe----------
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, half_mass_radius, args.diskrad, log_mstar, sfr, log_mgas, log_mhalo]
+                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
                 df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]

@@ -30,7 +30,57 @@ from util import *", "*.py")
                 f.write(s)
 
 # -----------------------------------------------------------------------------
-def get_disk_rad(args, refine_box=None):
+def get_stellar_mass(args, refine_box=None):
+    '''
+    Computes the extent of stllar disk, by using a threshold of successive fractional increase in stellar mass in radial shells
+    Returns disk radius (in kpc), and the cumulative stellar mass up to that shell (in log Msun)
+    '''
+    field_dict = {'radius':('stars', 'radius_corrected'), 'mass':('stars', 'particle_mass')}
+    unit_dict = {'radius':'kpc', 'mass':'Msun', 'stars_mass':'Msun', 'ystars_mass':'Msun', 'ystars_age':'Gyr'}
+
+    # ---------------reading in the snapshot-----------------
+    if refine_box is None:
+        halos_df_name = args.code_path + f'halo_infos/00{args.halo}/{args.run}/halo_cen_smoothed'
+        try:
+            ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=False, disk_relative=False, halo_c_v_name=halos_df_name)
+        except Exception as e:
+            print(f'Skipping {args.output} because {e}')
+            return np.nan
+
+    # ------------getting the density cut-----------------
+    args.current_time = refine_box.ds.current_time.in_units('Gyr').tolist()
+    rho_cut = get_density_cut(args.current_time)  # based on Cassi's CGM-ISM density cut-off
+    box = refine_box.cut_region(['obj["gas", "density"] > %.1E' % rho_cut])
+    print('Imposing a density criteria to get ISM above density', rho_cut, 'g/cm^3')
+
+    # ------------making mass profile-----------------
+    df = pd.DataFrame()
+    fields = ['radius', 'mass'] # only the relevant properties
+    for index, field in enumerate(fields):
+        print(f'Doing property ({index + 1}/{len(fields)}) {field}..')
+        df[field] = box[field_dict[field]].in_units(unit_dict[field]).ndarray_view()
+    
+    df = df.sort_values(by='radius').reset_index(drop=True)
+
+    # ----------binning mass profile--------------
+    shell_width_kpc = 1. # size of radial bins in kpc
+    mass_increase_frac_thresh = 0.001 # fractional increase in stellar mass between successive radial shells, below which we will stop computing mass
+
+    rad_bin_edges = np.arange(0, df['radius'].max() + shell_width_kpc, shell_width_kpc)
+    mass_sums, edges, _ = binned_statistic(df['radius'], df['mass'], statistic='sum', bins=rad_bin_edges)
+    mass_cum_sums = np.cumsum(mass_sums)
+    mass_increase_frac = np.hstack([np.diff(mass_cum_sums), np.nan]) / mass_cum_sums
+
+    index = edges[np.where(mass_increase_frac <= mass_increase_frac_thresh)[0][0]]
+    disk_rad_kpc = edges[index]
+    log_stellar_mass = np.log10(mass_cum_sums[index])
+
+    print(f'Obtained log stellar mass = {log_stellar_mass:.2f} within radius {disk_rad_kpc:.1f} kpc, for snap {args.halo}:{args.output}')
+
+    return disk_rad_kpc, log_stellar_mass
+
+# -----------------------------------------------------------------------------
+def get_gas_disk_rad(args, refine_box=None):
     '''
     Computes the extent of disk, by using a redshift-based density cut-off
     Returns disk radius in kpc

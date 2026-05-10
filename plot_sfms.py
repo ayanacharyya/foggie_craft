@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""
+    Title :      plot_sfms.py
+    Notes :      Make stellar mass vs SFR of FOGGIE snapshots
+    Output :     Plots as PDF
+    Author :     Ayan Acharyya
+    Started :    10-05-26
+    Examples :   run plot_sfms.py --sample high_mass
+                 run plot_sfms.py --sample high_mass --z_range 0,2
+"""
+from craft_header import *
+from craft_utils import *
+setup_plot_style()
+
+start_time = datetime.now()
+
+# ------------------------------------------------------------------------------------------------
+def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
+    '''
+    Plot mass vs SFR in a single panel
+    Saves plot
+    Returns axis handle
+    '''
+    label_dict = {'log_star_mass': r'$\log$ [M$_*$/M$_{\odot}$]', 
+                  'sfr': r'SFR [M$_{\odot}$ yr$^{-1}$]', 
+                  'log_sfr': r'$\log$ [SFR/M$_{\odot}$ yr$^{-1}$]', 
+                  'redshift': 'Redshift'}
+    
+    # --------------setting up figure---------
+    fig, ax = plt.subplots(1, figsize=(6, 5))
+    fig.subplots_adjust(left=0.12, bottom=0.12, right=0.98 if colorcol is None else 0.88, top=0.98)
+
+    marker_arr = ['o', 's', '^', 'P', 'd', '*']
+    color_arr = ['cornflowerblue', 'salmon', 'sienna', 'goldenrod', 'darkgreen', 'teal']
+    df = df.sort_values(by=xcol)
+
+    # -------------plotting-------------
+    for index, this_halo in enumerate(pd.unique(df['halo'])):
+        df_sub = df[df['halo'] == this_halo]
+        print(index, marker_arr[index], this_halo, df_sub[df_sub['redshift'] == 0][xcol].values[0], df_sub[xcol].max()) ##
+        color = df_sub[colorcol] if colorcol is not None else 'cornflowerblue'
+        p = ax.scatter(df_sub[xcol], df_sub[ycol], c=color, s=70, lw=1, ec='k', marker=marker_arr[index], alpha=0.8)
+        ax.plot(df_sub[xcol], df_sub[ycol], lw=0.5, c=color_arr[index])
+
+    # ----------annotating and saving-----------
+    ax = annotate_axes(ax, label_dict[xcol], label_dict[ycol], args=args, label='', clabel=label_dict[colorcol] if colorcol is not None else '', hide_cbar=colorcol is None, p=p, cticks_integer=True)
+
+    figname = f'{xcol}_vs_{ycol}_lsm_range_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_range_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}.png'
+    save_fig(fig, args.plot_dir, figname, args=args, dpi=300)
+
+    return ax
+
+# -----main code-----------------
+if __name__ == '__main__':
+    args = parse_args()
+    if not args.keep: plt.close('all')
+    args.lsm_range = args.lsm_bins[0]
+
+    # -----------------------read in snapshot list----------------------------------
+    filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
+    df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python')
+    df_snap = df_snap.rename(columns={f'{df_snap.columns[0]}':f'{df_snap.columns[0][1:]}'})
+    df_snap['log_sfr'] = np.log10(df_snap['sfr'])
+    df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
+                    (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
+                    (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
+    print (f'\t\tFound {len(df_snap)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
+    if (len(df_snap) < 1):
+        print('\t\tNo snapshot found. Continuing to next loop iteration... ')
+
+    # -----------make SFMS plot--------------------
+    ax = plot_sfms(df_snap, args, xcol='log_star_mass', ycol='log_sfr', colorcol='redshift')
