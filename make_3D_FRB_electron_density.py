@@ -257,6 +257,7 @@ if __name__ == '__main__':
     for index in range(core_start + args.start_index, core_end + 1):
         start_time_this_snapshot = datetime.now()
         this_sim = list_of_sims[index]
+        args.output = this_sim[1]
         print_mpi('Doing snapshot ' + this_sim[1] + ' of halo ' + this_sim[0] + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...', args)
 
         # -------loading in snapshot-------------------
@@ -353,7 +354,7 @@ if __name__ == '__main__':
                         if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
                         elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
 
-                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
+                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/1.44, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
 
                 # ------saving fits file------------------
                 combined_img_hdu = FITSImageData.from_images(img_hdu_list)
