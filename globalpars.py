@@ -4,8 +4,8 @@ from collections import namedtuple
 
 #root_dir    =   "../data_260310/"
 #root_dir = "../"
-root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/"
-#root_dir = "/nobackupp19/aachary2/foggie_craft/"
+#root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/May10/"
+root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 #datadir     =   root_dir                    #   Location of the FITS cubes
 datadir     =   root_dir + "data/"                #   Location of the FITS cubes
