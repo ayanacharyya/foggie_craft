@@ -530,10 +530,11 @@ def parse_args():
     parser.add_argument('--fortalk', dest='fortalk', action='store_true', default=False, help='Set plot labels, transparency etc for being used in a talk?, default is no')
     parser.add_argument('--forpaper', dest='forpaper', action='store_true', default=False, help='Set plot labels, transparency etc for being used in the paper?, default is no')
     parser.add_argument('--multi_panel', dest='multi_panel', action='store_true', default=False, help='Make multi-panel figure such that all subplots are in one figure?, default is no')
+    parser.add_argument('--sample', metavar='sample', type=str, action='store', default='high_mass', help='High mass or low mass sample? Choose between high_mass and low_mass; default high_mass')
 
     # ------- args added for dmplot.py ------------------------------
     parser.add_argument('--mode', metavar='mode', type=str, action='store', default='lsmzsfr', help='which mode to run dmplot.py for? default is lsmzsfr')
-    parser.add_argument('--rangekpc', metavar='rangekpc', type=float, action='store', default=200, help='Range (extent) in kpc; default is 200')
+    parser.add_argument('--rangekpc', metavar='rangekpc', type=float, action='store', default=-1, help='Range (extent) in kpc; default is -1, i.e. 100 kpc for massive galaxies and 50 kpc for dwarf galaxies')
     parser.add_argument('--reskpc', metavar='reskpc', type=float, action='store', default=0.5, help='Resolution (cell size) in kpc; default is 0.5')
     parser.add_argument('--resfile_prefix', metavar='resfile_prefix', type=str, action='store', default='all_lsm', help='where to save the resulting data? default is defined later')
 
@@ -544,7 +545,7 @@ def parse_args():
     parser.add_argument('--inc_bin_edges', metavar='inc_bin_edges', type=str, action='store', default='0,90', help='Bin edges of inclination angles; Default is 0-90')
     parser.add_argument('--lsm_bin_edges', metavar='lsm_bin_edges', type=str, action='store', default='all', help='Bin edges of log stellar mass; Default is all mass bins')
     parser.add_argument('--lsfr_bin_edges', metavar='lsfr_bin_edges', type=str, action='store', default='-10,10', help='Bin edges of log SFR; Default is -10-10 i.e., all SFRs')
-    parser.add_argument('--z_range', metavar='z_range', type=str, action='store', default='0,4', help='Range of redshifts; Default is 0-4')
+    parser.add_argument('--z_range', metavar='z_range', type=str, action='store', default='0,1', help='Range of redshifts; Default is 0-4')
     parser.add_argument('--set_ylin', dest='set_ylin', action='store_true', default=False, help='Set y-axis scale to linear?, default is no')
     parser.add_argument('--cmap', metavar='cmap', type=str, action='store', default='tab20', help='colormap to use; default is None')
     parser.add_argument('--fit_robust', dest='fit_robust', action='store_true', default=False, help='Fit in the robust-fit method?, default is no')
@@ -587,6 +588,12 @@ def parse_args():
 
     args.resfile_prefix = str(args.data_dir / args.resfile_prefix)
 
+    if args.rangekpc < 0: # to take care of the "auto" mode where args.rangekpc = -1
+        if args.sample == 'high_mass': args.rangekpc = 100. # kpc
+        elif args.sample == 'low_mass': args.rangekpc = 50. # kpc
+    else:
+         args.rangekpc = float(args.rangekpc)
+         
     # ---------------parameter ranges---------------------
     args.inc_bin_edges = [float(item) for item in args.inc_bin_edges.split(',')]
     args.inc_bins = list(zip(args.inc_bin_edges, args.inc_bin_edges[1:]))
@@ -594,7 +601,8 @@ def parse_args():
     args.z_range = [float(item) for item in args.z_range.split(',')]
 
     if args.lsm_bin_edges == 'all':
-        args.lsm_bin_edges = all_lsm_bin_edges
+        if args.sample == 'high_mass': args.lsm_bin_edges = [10.4, 11.4]
+        elif args.sample == 'low_mass': args.lsm_bin_edges = [8.4, 9.4]
     else:
         args.lsm_bin_edges = [float(item) for item in args.lsm_bin_edges.split(',')]
     args.lsm_bins = list(zip(args.lsm_bin_edges, args.lsm_bin_edges[1:]))
