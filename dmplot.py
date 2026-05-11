@@ -1,24 +1,26 @@
-#
-#	Script for estimating FRB host galaxy DM from simulated electron density cubes
-#
-#								AB, August 2024
-#   Modified by AA in Apr 2026
-#   
-#   Examples of how to run (from within ipython):   
-#   run dmplot.py --mode lsmzsfr --rangekpc 200 --reskpc 0.5 --z_range 0,6 --inc 0,90 --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
-#   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
-#   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
-#   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
-#   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
-#   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
-#   run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
-#   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
-#   run dmplot.py --mode lsmzsfr --lsm all --multi_panel
-#   run dmplot.py --mode lsmzsfr --lsm all
-#   run dmplot.py --mode lsmzsfr --lsm all --inc 0,30
-#   run dmplot.py --mode lsmzsfr --lsm all --inc 80,90
-#   run dmplot.py --mode lsmzsfr --lsm 8.5,9.0,9.5,10.0,10.5,11.0,11.5 --lsfr=-3.0,0.0,0.5,1.0,1.5,2.0 --resfile_prefix binby_lsm_lsfr --multi_panel --fontsize 6
+'''
+	Script for estimating FRB host galaxy DM from simulated electron density cubes
 
+								AB, August 2024
+  Modified by AA in Apr 2026
+  
+  Examples of how to run (from within ipython):   
+  run dmplot.py --mode lsmzsfr --rangekpc 200 --reskpc 0.5 --z_range 0,6 --inc 0,90 --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
+  run dmplot.py --mode lsmzsfr --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
+  run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
+  run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
+  run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
+  run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode indi --lsm 10.5,11.0 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
+  run dmplot.py --mode lsmzsfr --lsm all --multi_panel
+  run dmplot.py --mode lsmzsfr --lsm all
+  run dmplot.py --mode lsmzsfr --lsm all --inc 0,30
+  run dmplot.py --mode lsmzsfr --lsm all --inc 80,90
+  run dmplot.py --mode lsmzsfr --lsm 8.5,9.0,9.5,10.0,10.5,11.0,11.5 --lsfr=-3.0,0.0,0.5,1.0,1.5,2.0 --resfile_prefix binby_lsm_lsfr --multi_panel --fontsize 6
+'''
 
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
@@ -210,9 +212,9 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
     return ax
 
 # ------------------------------------------------------------------------------------------------
-def plot_dm_impfac_halo(df_snap, args, cmap='viridis'):
+def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
     '''
-    Plot DM vs Impact factor in a single panel, for a list of stellar mass ranges and a given inclination range
+    Plot DM vs Impact factor in a single panel, for a given halo
     Saves plot
     Returns axis handle
     '''
@@ -247,6 +249,49 @@ def plot_dm_impfac_halo(df_snap, args, cmap='viridis'):
     ax.text(0.95, 0.95, f'Halo {args.halo}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
 
     save_fig(fig, args.fig_dir, f'DM_vs_impfact_halo_{args.halo}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
+    plt.show(block=False)
+
+    return fig
+
+# ------------------------------------------------------------------------------------------------
+def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis'):
+    '''
+    Plot DM vs Impact factor in a single panel, for a list of stellar mass and sfr ranges
+    Saves plot
+    Returns axis handle
+    '''
+    # ---------setup figure---------------
+    fig, ax = plt.subplots(1, figsize=(8, 5))
+    fig.subplots_adjust(left=0.12, bottom=0.12, right=0.99, top=0.98)
+
+    norm = mplcolors.Normalize(vmin=df_snap['redshift'].min(), vmax=df_snap['redshift'].max())
+    sm = mpl_cm.ScalarMappable(cmap=plt.get_cmap(cmap), norm=norm)
+
+    # -----------loop through mass bins--------------------
+    for index, snap in df_snap.iterrows(): 
+        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
+        col = sm.to_rgba(snap['redshift'])
+
+        data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]
+        ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], c=col, fmt='o-', lw=2, markersize=15, capsize=4, alpha=0.5)
+
+    ax.set_xscale("log")
+    ax.set_xticks(impbinegs[1:],impbinegs[1:])
+
+    if not args.set_ylin:
+        ax.set_yscale("log")
+        ax.set_yticks(dm_ticks, dm_ticks)
+        ax.set_ylim(ymin=0.7)
+    
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label('Redshift', fontsize=args.fontsize)
+    cbar.ax.tick_params(labelsize=args.fontsize)
+
+    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel='Redshift', set_ticks=False)
+    ax.text(0.95, 0.95, rf'{args.lsm_range[0]} < $\log$(M/M$_\odot$) < {args.lsm_range[1]}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+    ax.text(0.95, 0.85, rf'{args.lsfr_range[0]} < $\log$(SFR/M$_\odot$ yr$^{-1}$) < {args.lsfr_range[1]} [{len(df_snap)}]', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_indi_lsm_bin_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_bin_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[0]}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
     plt.show(block=False)
 
     return fig
@@ -320,7 +365,10 @@ if __name__ == '__main__':
 
                 if args.mode == 'halo' or args.mode == 'plot_halo':
                     df_snap = df_snap[df_snap["halo"].astype(str) == args.halo]
-                    ax = plot_dm_impfac_halo(df_snap, args)
+                    ax = plot_dm_impfac_halo_combined(df_snap, args)
+
+                elif args.mode == 'indi' or args.mode == 'plot_indi':
+                    ax = plot_dm_impfac_indi_combined(df_snap, args)
 
 
         if args.mode == 'lsmzsfr' and args.multi_panel:
