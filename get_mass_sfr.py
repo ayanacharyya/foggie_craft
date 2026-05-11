@@ -98,7 +98,7 @@ if __name__ == '__main__':
     
    # ---------initialising output dataframe-------------
     output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.txt'
-    df_out = pd.DataFrame(columns=['halo', 'snap', 'redshift', 'sfr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad'])
+    columns = ['halo', 'snap', 'redshift', 'sfr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------
     halos = ['8508', '5036', '5016', '4123', '2392', '2878']
@@ -129,23 +129,28 @@ if __name__ == '__main__':
                 sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
                 args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
-                # ------determining extent for computing mass--------
-                args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
+                try:
+                    # ------determining extent for computing mass--------
+                    args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
 
-                # ------determining stellar mass--------                
-                _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
-                log_mstar_from_profile = np.log10(mstar)
-                log_mgas_from_profile = np.log10(mgas)
+                    # ------determining stellar mass--------                
+                    _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
+                    log_mstar_from_profile = np.log10(mstar)
+                    log_mgas_from_profile = np.log10(mgas)
 
-                # ------appending to dataframe----------
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]
+                    # ------appending to dataframe----------
+                    df_row = pd.DataFrame([thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius], columns=columns)
+                except Exception as e:
+                    print(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row')
+                    df_row = pd.DataFrame([thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99], columns=columns)
+                    continue
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                df_out.loc[len(df_out)] = [thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]
+                df_row = pd.DataFrame([thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99], columns=columns)
 
-    # -----------saving dataframe---------------
-    with open(output_dfname, 'w') as f:
-        f.write('#') 
-        df_out.to_csv(f, sep='\t', index=False)
+        # -----------saving dataframe---------------
+        file_exists = os.path.exists(output_dfname)
+        df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
+    
     print(f'Saved dataframe as {output_dfname}')
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
