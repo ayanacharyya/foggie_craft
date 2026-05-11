@@ -121,6 +121,7 @@ if __name__ == '__main__':
 
         # ---------looping over snapshots-----------
         for thisoutput in output_list:
+            start_time2 = datetime.now()
             print(f'\nStarting snapshot {thishalo}:{thisoutput}..')
             args.output = thisoutput
 
@@ -132,6 +133,8 @@ if __name__ == '__main__':
                 try:
                     # ------determining extent for computing mass--------
                     args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
+                    if np.isnan(log_mstar_from_snap):
+                        raise ValueError
 
                     # ------determining stellar mass--------                
                     _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
@@ -139,18 +142,19 @@ if __name__ == '__main__':
                     log_mgas_from_profile = np.log10(mgas)
 
                     # ------appending to dataframe----------
-                    df_row = pd.DataFrame([thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius], columns=columns)
+                    df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
                 except Exception as e:
                     print(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row')
-                    df_row = pd.DataFrame([thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99], columns=columns)
+                    df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99]], columns=columns)
                     continue
             else:
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                df_row = pd.DataFrame([thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99], columns=columns)
+                df_row = pd.DataFrame([[thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
 
         # -----------saving dataframe---------------
         file_exists = os.path.exists(output_dfname)
         df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
-    
+        print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
+
     print(f'Saved dataframe as {output_dfname}')
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

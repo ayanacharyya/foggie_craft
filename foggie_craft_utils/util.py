@@ -45,7 +45,7 @@ def get_stellar_mass(args, refine_box=None):
             ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
         except Exception as e:
             print(f'Skipping {args.output} because {e}')
-            return np.nan
+            return np.nan, np.nan
 
     # ------------getting the density cut-----------------
     args.current_time = refine_box.ds.current_time.in_units('Gyr').tolist()
