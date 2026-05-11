@@ -151,10 +151,10 @@ if __name__ == '__main__':
                 print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
                 df_row = pd.DataFrame([[thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
 
-        # -----------saving dataframe---------------
-        file_exists = os.path.exists(output_dfname)
-        df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
-        print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
+            # -----------saving dataframe---------------
+            file_exists = os.path.exists(output_dfname)
+            df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
+            print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
 
     print(f'Saved dataframe as {output_dfname}')
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
