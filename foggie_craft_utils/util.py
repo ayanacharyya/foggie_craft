@@ -1834,6 +1834,9 @@ def parse_args(fast=False):
     parser.add_argument('--plot_3d', dest='plot_3d', action='store_true', default=False, help='Plot 3D FRB?, default is no')
     parser.add_argument('--do_only_plot', dest='do_only_plot', action='store_true', default=False, help='Only plot the FRB, without saving it?, default is no')
 
+    # ------- args added for get_mass_sfr.py ------------------------------
+    parser.add_argument('--plot_sfh', dest='plot_sfh', action='store_true', default=False, help='Plot the SFH of every halo?, default is no')
+
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()
 

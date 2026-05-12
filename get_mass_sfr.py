@@ -8,8 +8,10 @@
     Author :     Ayan Acharyya
     Started :    Jan 2026
     Examples :   run get_mass_sfr.py --system ayan_pleiades
+                 run get_mass_sfr.py --system ayan_local --plot_sfh --fontsize 8
 """
 from foggie_header import *
+from craft_utils import annotate_axes, save_fig
 start_time = datetime.now()
 
 # -----------------------------------------------------------------------------
@@ -105,56 +107,102 @@ if __name__ == '__main__':
     #redshift_list = [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
     redshift_list = [2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
 
+    # -------setup SFH figure-------
+    if args.plot_sfh:
+        print(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option')
+        fig, axes = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
+        fig2, axes2 = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
+        smooth_over_nsnap_arr = [1, 3, 5, 10, 20]
+        col_arr = ['purple', 'orange', 'darkolivegreen', 'cornflowerblue', 'salmon']
+
     # ---------looping over halos-----------
-    for thishalo in halos:
+    for index, thishalo in enumerate(halos):
         print(f'\nStarting halo {thishalo}..')
         args.halo = thishalo
         sfr_df  = get_sfr_df(args) # reading SFR df
-        
+
+        # ---------make SFH plots-------------
+        if args.plot_sfh:
+            sfr_df['time'] = cosmo.age(sfr_df['redshift']).value # in Gyr
+
+            # ------smoothing the sfh----------
+            for index2, smooth_over_snap in enumerate(smooth_over_nsnap_arr):
+                sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
+                
+                # ---------plotting smoothed sfh---------
+                axes[index].plot(sfr_df['time'], sfr_df[f'sfr_smooth{smooth_over_snap}'], c=col_arr[index2], lw=0.5 + 0.1*index2, label=f'{int(smooth_over_snap * 5)} Myr scale')
+                
+                # -------annotating plots-----------
+                axes[index] = annotate_axes(axes[index], r'Time [Gyr]', r'SFR [M$_\odot$/yr]', fontsize=args.fontsize, label=f'{args.halo}', hide_xaxis=index < len(halos) - 1)
+            
+                # -----plotting SFR at our redshifts----------
+                sfr_list = [sfr_df.loc[(sfr_df['redshift'] - this_redshift).abs().idxmin(), f'sfr_smooth{smooth_over_snap}'] for this_redshift in redshift_list]
+                axes2[index].plot(redshift_list, np.log10(sfr_list), 'o-', c=col_arr[index2], lw=0.5, label=f'{int(smooth_over_snap * 5)} Myr scale')
+
+                # -------annotating plots-----------
+                axes2[index] = annotate_axes(axes2[index], r'Redshift', r'$\log$ SFR' +'\n'+ r'(M$_\odot$ yr$^{-1}$)', fontsize=args.fontsize, label=f'{args.halo}', hide_xaxis=index < len(halos) - 1)
+
+            # -----making legends---------
+            if index == 3: axes[index].legend(loc='upper right', fontsize = args.fontsize)
+            if index == 5: axes2[index].legend(loc='lower right', fontsize = args.fontsize, ncol=2)
+
+            # ------plotting redshifts of interest---------
+            for this_redshift in redshift_list:
+                this_time = cosmo.age(this_redshift).value
+                axes[index].axvline(this_time, c='k', ls='dotted')
+                if index == 0:
+                    axes[index].text(this_time, axes[index].get_ylim()[1], f'z={this_redshift}', c='k', va='top', ha='right', rotation=90, fontsize=args.fontsize)
+
         # --------determining snapshots-----------
-        df = pd.read_csv(args.code_dir + f'halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
-        df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
-        output_list = []
-        for redshift in redshift_list:
-            idx = (df['redshift'] - redshift).abs().idxmin()
-            output_list.append(df.loc[idx, 'snap'])
+        else:
+            df = pd.read_csv(args.code_dir + f'halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
+            df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
+            output_list = []
+            for redshift in redshift_list:
+                idx = (df['redshift'] - redshift).abs().idxmin()
+                output_list.append(df.loc[idx, 'snap'])
 
-        # ---------looping over snapshots-----------
-        for thisoutput in output_list:
-            start_time2 = datetime.now()
-            print(f'\nStarting snapshot {thishalo}:{thisoutput}..')
-            args.output = thisoutput
+            # ---------looping over snapshots-----------
+            for thisoutput in output_list:
+                start_time2 = datetime.now()
+                print(f'\nStarting snapshot {thishalo}:{thisoutput}..')
+                args.output = thisoutput
 
-            # -----------determining SFR and redshift--------------------
-            if args.output in sfr_df['output'].values:
-                sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
-                args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
+                # -----------determining SFR and redshift--------------------
+                if args.output in sfr_df['output'].values:
+                    sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
+                    args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
-                try:
-                    # ------determining extent for computing mass--------
-                    args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
-                    if np.isnan(log_mstar_from_snap):
-                        raise ValueError
+                    try:
+                        # ------determining extent for computing mass--------
+                        args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
+                        if np.isnan(log_mstar_from_snap):
+                            raise ValueError
 
-                    # ------determining stellar mass--------                
-                    _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
-                    log_mstar_from_profile = np.log10(mstar)
-                    log_mgas_from_profile = np.log10(mgas)
+                        # ------determining stellar mass--------                
+                        _, mgas, mstar, half_mass_radius = get_masses_and_re(args, get_re_using='gas_HI_mass')
+                        log_mstar_from_profile = np.log10(mstar)
+                        log_mgas_from_profile = np.log10(mgas)
 
-                    # ------appending to dataframe----------
-                    df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
-                except Exception as e:
-                    print(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row')
-                    df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99]], columns=columns)
-                    continue
-            else:
-                print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                df_row = pd.DataFrame([[thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
+                        # ------appending to dataframe----------
+                        df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
+                    except Exception as e:
+                        print(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row')
+                        df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99]], columns=columns)
+                        continue
+                else:
+                    print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
+                    df_row = pd.DataFrame([[thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
 
-            # -----------saving dataframe---------------
-            file_exists = os.path.exists(output_dfname)
-            df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
-            print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
-
-    print(f'Saved dataframe as {output_dfname}')
+                # -----------saving dataframe---------------
+                file_exists = os.path.exists(output_dfname)
+                df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
+                print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
+    
+    # --------saving final figure---------
+    if args.plot_sfh:
+        save_fig(fig, Path(args.output_dir) / 'plots', 'all_halos_sfh.png', args)
+        save_fig(fig2, Path(args.output_dir) / 'plots', 'all_halos_sfr_to_pick.png', args)
+    else:
+        print(f'Saved dataframe as {output_dfname}')
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

@@ -68,6 +68,7 @@ from astropy.stats import gaussian_fwhm_to_sigma as gf2s
 from astropy import convolution as con
 from astropy import units as u
 from astropy.cosmology import FlatLambdaCDM, Planck13, z_at_value
+cosmo = FlatLambdaCDM(H0=69.5, Om0=0.285, Ob0=0.0461)
 
 from operator import itemgetter
 from collections import defaultdict
