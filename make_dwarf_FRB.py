@@ -19,17 +19,16 @@ from make_3D_FRB_electron_density import plot_projection_diskrel, get_AM_vector,
 from get_foggie_metallicity_profile import my_foggie_load, get_halo_coords
 start_time = datetime.now()
 
+quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 120, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'DM [pc cm$^{-3}$]']
+                } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
+
 # -----main code-----------------
 if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
     args.fontfactor = 1.2
-    quant_arr = ['el_density']#, 'density']
-
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True], 
-              'el_density':['El_number_density', 'Electron density', 'cm**-3', None, None, 'cornflowerblue', 'viridis', False],
-              'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7, 0.7, 'cornflowerblue', metal_color_map, True],
-              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
+    quant_arr = ['el_density', 'density']
 
     # -----------determining directories----------------
     args.fig_dir = args.output_dir + 'plots/'
@@ -116,7 +115,15 @@ if __name__ == '__main__':
                 img_hdu_list.append(img_hdu)
 
             # ------making the plots-----------
-            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/1.44, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
+            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/2.5, norm_L, args, 
+                                                    quant_label=quant_dict[quant][0], 
+                                                    unit=quant_dict[quant][8], 
+                                                    clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
+                                                    cmap=quant_dict[quant][6], 
+                                                    takelog=quant_dict[quant][7], 
+                                                    clabel=quant_dict[quant][9],
+                                                    annotate_labels = [rf'SFR = {sfr:.1f} M$_\odot$/yr', rf'$\log$ (M$_*$/M$_\odot$) = {log_star_mass:.1f}'],
+                                                    )
 
         # ------saving fits file------------------
         if not args.do_only_plot:

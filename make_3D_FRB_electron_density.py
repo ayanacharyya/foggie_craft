@@ -10,7 +10,7 @@
     Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --do_all_sims --use_cen_smoothed
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --clobber --plot_3d --use_cen_smoothed
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --clobber --use_cen_smoothed
-                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 10 --output RD0027 --clobber --plot_3d --use_cen_smoothed
+                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 100 --output RD0027 --clobber --use_cen_smoothed --do_only_plot
 """
 from foggie_header import *
 from yt.visualization.fits_image import FITSImageData
@@ -113,7 +113,7 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
@@ -128,8 +128,8 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     fontsize = args.fontsize
 
     # ---------------making face on and edge on projections------------------------
-    p_faceon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(x))
-    p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
+    p_faceon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None, center=box.ds.halo_center_kpc, north_vector=box.ds.arr(x))
+    p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None, center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
 
     # ---------------setting up units, colormaps, etc------------------------
     p_faceon.set_log(field, takelog)
@@ -158,7 +158,8 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     cax = fig.add_axes([right, bottom + offset, width, top - bottom - 2 * offset])
     cbar = fig.colorbar(p_edgeon.plots[field].cb.mappable, orientation='vertical', cax=cax)
     cbar.ax.tick_params(labelsize=fontsize, width=2.5, length=5)
-    cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
+    if clabel is None: cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
+    else: cbar.set_label(clabel, fontsize=fontsize) # this is to have more control on the display of the color label
 
     # ---------------prepping axes------------------------
     for index in range(len(axes)):
@@ -178,14 +179,18 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
             ax.add_patch(plt.Circle((0, 0), args.diskrad, color='r', fill=False, lw=1)) # for over-plotting radius within which mass was computed
 
     # ---------------making annotations------------------------
-    axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-    axes[0].text(0.97, 0.85, 't = %.1F Gyr' % args.current_time, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-
+    if annotate_labels is None:
+        axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+        axes[0].text(0.97, 0.85, 't = %.1F Gyr' % args.current_time, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+    else:
+        for index, label in enumerate(annotate_labels):
+            axes[index % 2].text(0.97, 0.95 - (index // 2) * 0.1, label, c='white', ha='right', va='top', transform=axes[index % 2].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+  
     axes[0].text(0.98, 0.02, 'Face on', c='white', ha='right', va='bottom', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
     axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
 
     # ---------------saving fig------------------------
-    outfile_rootname = '%s_%s_diskrel_%s%s.png' % (args.output, args.halo, quant_label, args.upto_text)
+    outfile_rootname = '%s_%s_diskrel_%s%s.pdf' % (args.output, args.halo, quant_label, args.upto_text)
     if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
     figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
@@ -196,37 +201,22 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
         try: mplcyberpunk.make_scatter_glow()
         except: pass
 
-    plt.savefig(figname, dpi=800, transparent=args.fortalk)
+    plt.savefig(figname, dpi=dpi, transparent=args.fortalk)
     myprint('Saved figure ' + figname, args)
     if not ('pleiades' in args.system or args.hide_plot): plt.show()
 
     return fig
+
+# ---------------global dictionary--------------------------
+quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 220, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'DM [pc cm$^{-3}$]']
+                } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
 
 # -----main code-----------------
 if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
 
-    # # ----------start test code block (comment out later)----------------------
-    # halos = [8508, 2392, 5016, 5036, 4123, 2878]
-    # redshift_list = [4, 3, 2, 1.5, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
-
-    # for halo in halos:
-    #     df = pd.read_csv(f'/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/halo_infos/{halo:06d}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*')
-    #     df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
-    #     df_sub = pd.DataFrame(columns=['snap', 'redshift'])
-    #     for redshift in redshift_list:
-    #         idx = (df['redshift'] - redshift).abs().idxmin()
-    #         df_sub = df_sub.append({'snap':df.loc[idx, 'snap'], 'redshift':df.loc[idx, 'redshift']}, ignore_index=True)
-    #     print(f'Halo {halo}, df=\n{df_sub}\n')
-   
-    # sys.exit()
-
-    # --------------end test code block--------------------------
-
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True], 
-                  'el_density':['El_number_density', 'Electron density', 'cm**-3', 0.001, 0.01, 'cornflowerblue', 'viridis', False]
-                  } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
     quant_arr = ['el_density', 'density']
 
     # ------------reading SFR and mstar df-----------------
@@ -270,6 +260,7 @@ if __name__ == '__main__':
         ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
         norm_L = get_AM_vector(ds) #computing disk orientation #
+        #norm_L = np.array([-0.51443095, -0.62174905, -0.59058354]) # this is just for faster testing
 
         # --------assigning additional keyword args-------------
         args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
@@ -284,7 +275,8 @@ if __name__ == '__main__':
         try: sfr = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
         except: sfr = -99
 
-        args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)
+        if args.do_only_plot: args.diskrad, log_mstar = np.nan, np.nan
+        else: args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)
 
         # --------determining corresponding text suffixes and figname-------------
         args.fig_dir = args.output_dir + 'plots/'
@@ -357,7 +349,15 @@ if __name__ == '__main__':
                             if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
                             elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
 
-                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/3, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  cmap=quant_dict[quant][6], takelog=quant_dict[quant][7])
+                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/5, norm_L, args, 
+                                                          quant_label=quant_dict[quant][0], 
+                                                          unit=quant_dict[quant][8], 
+                                                          clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
+                                                          cmap=quant_dict[quant][6], 
+                                                          takelog=quant_dict[quant][7], 
+                                                          clabel=quant_dict[quant][9],
+                                                          annotate_labels = [rf'SFR = {sfr:.1f} M$_\odot$/yr', rf'$\log$ (M$_*$/M$_\odot$) = {log_mstar:.1f}'],
+                                                          )
 
                 # ------saving fits file------------------
                 if not args.do_only_plot:
