@@ -15,6 +15,24 @@ setup_plot_style()
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------------------------------
+def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt"):
+    '''
+    Reads in the list of FOGGIE simulation snapshots from <filename>
+    Returns pandas dataframe
+    '''
+    filespecs =	args.data_dir / filename
+    df = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
+    df['log_sfr'] = np.log10(df['sfr'])
+    df = df.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
+
+    df = df[(df['redshift'].between(args.z_range[0], args.z_range[1])) & 
+                    (df['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
+                    (df['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
+    print (f'\t\tFound {len(df)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
+
+    return df
+
+# ------------------------------------------------------------------------------------------------
 def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
     '''
     Plot mass vs SFR in a single panel
@@ -60,13 +78,7 @@ if __name__ == '__main__':
     args.lsm_range = args.lsm_bins[0]
 
     # -----------------------read in snapshot list----------------------------------
-    filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
-    df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
-    df_snap['log_sfr'] = np.log10(df_snap['sfr'])
-    df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
-                    (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
-                    (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
-    print (f'\t\tFound {len(df_snap)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
+    df_snap = read_snap_list(args)
     if (len(df_snap) < 1):
         print('\t\tNo snapshot found. Continuing to next loop iteration... ')
 

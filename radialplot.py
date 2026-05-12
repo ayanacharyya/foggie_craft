@@ -20,6 +20,7 @@
 from craft_utils import *
 setup_plot_style()
 import plotfns as pfns
+from plot_sfms import read_snap_list
 
 start_time = datetime.now()
 
@@ -164,15 +165,9 @@ if __name__ == '__main__':
                 ncol = index2 if len(args.lsfr_bins) > 1 else index % ncols
 
             #	-------------------------	Initialize	-----------------------------------
-            filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
-            df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
-            df_snap['log_sfr'] = np.log10(df_snap['sfr'])
-            df_snap = df_snap.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
-            df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
-                            (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
-                            (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
-            print (f'\t\tFound {len(df_snap)} snapshots, within log mass range {args.lsm_range}, log sfr range {args.lsfr_range} and redshift range {args.z_range}')
-            if (len(df_snap) < 1): sys.exit('Exiting because no snapshot found... ')
+            df_snap = read_snap_list(args)
+            if (len(df_snap) < 1):
+                sys.exit('Exiting because no snapshot found... ')
             
             #	-------------------------	Execute tasks	-------------------------------
             if (args.mode=='indi'):
