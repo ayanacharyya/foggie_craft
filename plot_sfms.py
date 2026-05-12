@@ -65,6 +65,7 @@ def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
 
     # ----------annotating and saving-----------
     ax = annotate_axes(ax, label_dict[xcol], label_dict[ycol], args=args, label='', clabel=label_dict[colorcol] if colorcol is not None else '', hide_cbar=colorcol is None, p=p, cticks_integer=True)
+    ax.set_ylim(-0.4, 2)
 
     figname = f'{xcol}_vs_{ycol}_lsm_range_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_range_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}.png'
     save_fig(fig, args.plot_dir, figname, args=args, dpi=300)
