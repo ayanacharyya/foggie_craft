@@ -158,8 +158,6 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     
     ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='bo',lw=1,markersize=4,capsize=4)
     ax.plot(impx, schechter(impx, *popt),'k--',lw=1)
-
-    ax.plot(impx, schechter(impx, *[10 ** np.poly1d([-0.32, 1.29])(np.log10(sfr)), 10 ** np.poly1d([0.47, 1.35])(np.log10(sfr))]), 'g:',lw=1)
     
     if multifit_par_filename is not None:
         popt_multipar = np.loadtxt(multifit_par_filename)
@@ -169,6 +167,13 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
         ax.text(x=1.0*impbinegs_short[1], y=320, s=f"Fitted $D_0$ = {fitted_D0:.1f}", c='r')
         ax.text(x=1.0*impbinegs_short[1], y=200, s=f"Fitted $r_0$ = {fitted_r0:.1f}", c='r')
+
+        fitted_D0_1D = 10 ** np.poly1d(popt_multipar[4][:-1])(np.log10(sfr))
+        fitted_r0_1D = 10 ** np.poly1d(popt_multipar[6][:-1])(np.log10(sfr))
+        ax.plot(impx, schechter(impx, *[fitted_r0_1D, fitted_D0_1D]), 'g:',lw=1)
+
+        ax.text(x=1.0*impbinegs_short[-5], y=100, s=f"Fitted $D_0$ 1D = {fitted_D0_1D:.1f}", c='g')
+        ax.text(x=1.0*impbinegs_short[-5], y=60, s=f"Fitted $r_0$ 1D = {fitted_r0_1D:.1f}", c='g')
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -435,7 +440,9 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
                                        yscale_log=False, fit_robust=fit_robust, outfilename=None, fortalk=fortalk)
 
     # ------------write fit params-------------
-    np.savetxt(f'{outfilename}_multifit_params.txt', np.array([popt_d0, perr_d0, popt_r0, perr_r0]), fmt='%.2f    %.2f    %.2f')
+    fit_params_2D = np.array([popt_d0, perr_d0, popt_r0, perr_r0])
+    fit_parms_1D = np.hstack([np.array([popt, perr, popt2, perr2]), np.atleast_2d(np.zeros(4)).transpose()])
+    np.savetxt(f'{outfilename}_multifit_params.txt', np.vstack([fit_params_2D, fit_parms_1D]), fmt='%.2f    %.2f    %.2f')
     print(f'Saved figures {outfilename}_multifit_params.txt')
 
     # ------------save figure-------------

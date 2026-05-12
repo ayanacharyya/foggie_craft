@@ -22,9 +22,13 @@ def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt"):
     '''
     filespecs =	args.data_dir / filename
     df = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
-    df['log_sfr'] = np.log10(df['sfr'])
-    df = df.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
 
+    df = df.drop('sfr', axis=1)
+    df = df.rename(columns={'sfr_100Myr':'sfr'})
+    
+    df['log_sfr'] = np.log10(df['sfr'])
+
+    df = df.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
     df = df[(df['redshift'].between(args.z_range[0], args.z_range[1])) & 
                     (df['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
                     (df['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)

@@ -70,7 +70,7 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
             continue
         
         dmpars = df_dmpars_sub.iloc[0]
-        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
+        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
 
         data_arr = np.load(infile)
 
@@ -127,7 +127,7 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
 
     # -----------loop through mass bins--------------------
     for index, dmpars in df_dmpars.iterrows(): 
-        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
+        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/lsmzsfr_lsm_{dmpars["lsm_bin"].left}_{dmpars["lsm_bin"].right}_lsfr_{dmpars["lsfr_bin"].left}_{dmpars["lsfr_bin"].right}_1d.npy'
 
         data_arr = np.load(infile)
         col = color_list[index]
@@ -162,7 +162,7 @@ def plot_dm_fit(df_dmpars, args):
     Saves plot
     Returns axis handle
     '''
-    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
+    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
     df_dmpars['log_ssfr'] = np.log10((10 ** df_dmpars['medlsm']) / df_dmpars['medsfr']) + 20
     df_dmpars['medlgsm_offset'] = df_dmpars['medlgsm'] - 10
     df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
@@ -215,7 +215,7 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'ngal', 'medlsm', 'med
 
     df_latex = df_latex.rename(columns=colnames_dict)
 
-    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
+    outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_table_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}.tex'
 
     df_mread.to_csv(outfilename.replace('.tex', '.txt'), index=None, sep='\t')
     df_latex.to_latex(outfilename, index=False, escape=False, column_format='l' * 1 + 'c' * (len(df_latex.columns) - 1))
@@ -240,8 +240,8 @@ if __name__ == '__main__':
     if not args.keep: plt.close('all')
 
     # -------------determining directories------------------
-    if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_indiv_allinc.txt'
-    else: catalog_name = f'{args.resfile_prefix}_allinc.txt'
+    if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc.txt'
+    else: catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.txt'
     df_dmpars = read_dataframe(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
 
     # -------------calling plotting functions------------------

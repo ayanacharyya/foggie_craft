@@ -58,7 +58,7 @@ def execute_mode_indi(df_snap, args):
     Returns nothing
     '''
     print("\nPloting individual snaps...\n")
-    param_outfile = f'{args.resfile_prefix}_indiv_allinc.txt'
+    param_outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc.txt'
     if os.path.exists(param_outfile) and args.clobber:
         os.remove(param_outfile)
         print(f'Removed existing {param_outfile} because --clobber was used.')
@@ -77,8 +77,10 @@ def execute_mode_indi(df_snap, args):
         print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
         this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
 
-        outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
-        multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
+        outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
+        
+        #multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
+        multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_0.0_1.0_DM0_r0_vs_lsm_inc_0.0_90.0_multifit_params.txt'
         if not os.path.exists(multifit_par_filename): multifit_par_filename = None
         #try:
         pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename)
@@ -143,7 +145,7 @@ def execute_mode_halo(df_snap, args):
         print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
         print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
 
-        outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
+        outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
         
         ax_list = pfns.pltdm_ind_imf(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
         pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
@@ -191,7 +193,7 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
     median_sfr = np.nanmedian(df_snap["sfr"])
     lgsm	= np.log10(10.0 ** df_snap["log_gas_mass"] + 10.0 ** df_snap["log_star_mass"])
     
-    outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{args.mode}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}_1d'
+    outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{args.mode}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}_1d'
     pars, epars, ax	= pfns.pltdm_ind_imf_1d(combined_df, median_lsm, median_sfr, args.lsm_range, outfile, 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=given_ax, nobj=len(df_snap), lsfr_lims=args.lsfr_range if len(args.lsfr_bins) > 1 else None, fortalk=args.fortalk)
 
     # --------------initialise dataframe------------------
@@ -212,7 +214,7 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
                            'ngal': len(df_snap),
                            }, index=[0])
     
-    outfile = f'{args.resfile_prefix}_allinc.txt'
+    outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.txt'
     df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
 
     return ax
@@ -233,7 +235,7 @@ def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
 
     # -----------loop through mass bins--------------------
     for index, snap in df_snap.iterrows(): 
-        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
+        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
         col = sm.to_rgba(snap['redshift'])
 
         data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]
@@ -275,7 +277,7 @@ def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis', colorcol='redshi
 
     # -----------loop through mass bins--------------------
     for index, snap in df_snap.iterrows(): 
-        infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
+        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
         col = sm.to_rgba(snap[colorcol])
 
         data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]
@@ -307,7 +309,7 @@ if __name__ == '__main__':
     #	--------------------------	Read inputs	-------------------------------
     args = parse_args()
     if not args.keep: plt.close('all')
-    out_dir = Path(f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
+    out_dir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
     out_dir.mkdir(exist_ok=True, parents=True)
 
     # ------------looping over inclination bins----------
@@ -371,15 +373,10 @@ if __name__ == '__main__':
                     #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
                     #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_star_mass')
                     ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
-                    
-                    xarr = np.linspace(0.1, 150, 150)
-                    DM_1, DM_10 = 10, 6
-                    yarr = 10 ** (np.log10(DM_1) + (np.log10(DM_10)-np.log10(DM_1)) * (np.log10(xarr))**2)
-                    ax.plot(xarr, yarr, lw=2, c='k', zorder=20)
 
 
         if args.mode == 'lsmzsfr' and args.multi_panel:
-            save_fig(fig, args.fig_dir, f'{Path(args.resfile_prefix).stem}_{args.mode}_inc_{args.inc_range[0]}_{args.inc_range[1]}_multipanel_1d.pdf', args)
+            save_fig(fig, args.fig_dir, f'{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_{args.mode}_inc_{args.inc_range[0]}_{args.inc_range[1]}_multipanel_1d.pdf', args)
         
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
 

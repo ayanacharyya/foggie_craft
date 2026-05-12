@@ -120,7 +120,7 @@ if __name__ == '__main__':
         print(f'\nStarting halo {thishalo}..')
         args.halo = thishalo
         sfr_df  = get_sfr_df(args) # reading SFR df
-        smooth_over_snap = 1
+        smooth_over_snap = 20
         sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
 
         # ---------make SFH plots-------------
