@@ -34,10 +34,13 @@ def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
     color_arr = ['cornflowerblue', 'salmon', 'sienna', 'goldenrod', 'darkgreen', 'teal']
     df = df.sort_values(by=xcol)
 
+    popt = np.polyfit(df[xcol] - 10, df[ycol], 1)
+    print(popt)
+    ax.plot(df[xcol], np.poly1d(popt)(df[xcol].values - 10), c='k')
+
     # -------------plotting-------------
     for index, this_halo in enumerate(pd.unique(df['halo'])):
         df_sub = df[df['halo'] == this_halo]
-        print(index, marker_arr[index], this_halo, df_sub[df_sub['redshift'] == 0][xcol].values[0], df_sub[xcol].max()) ##
         color = df_sub[colorcol] if colorcol is not None else 'cornflowerblue'
         p = ax.scatter(df_sub[xcol], df_sub[ycol], c=color, s=70, lw=1, ec='k', marker=marker_arr[index], alpha=0.8)
         ax.plot(df_sub[xcol], df_sub[ycol], lw=0.5, c=color_arr[index])

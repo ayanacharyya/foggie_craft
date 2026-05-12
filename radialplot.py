@@ -167,6 +167,7 @@ if __name__ == '__main__':
             filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
             df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
             df_snap['log_sfr'] = np.log10(df_snap['sfr'])
+            df_snap = df_snap.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
             df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
                             (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
                             (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)

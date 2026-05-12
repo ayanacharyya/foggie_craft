@@ -57,6 +57,10 @@ def execute_mode_indi(df_snap, args):
     Returns nothing
     '''
     print("\nPloting individual snaps...\n")
+    param_outfile = f'{args.resfile_prefix}_indiv_allinc.txt'
+    if os.path.exists(param_outfile) and args.clobber:
+        os.remove(param_outfile)
+        print(f'Removed existing {param_outfile} because --clobber was used.')
 
     if args.multi_panel:
         nrows, ncols = get_grid_size(len(df_snap))
@@ -73,8 +77,10 @@ def execute_mode_indi(df_snap, args):
         this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
 
         outfile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
+        multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
+        if not os.path.exists(multifit_par_filename): multifit_par_filename = None
         #try:
-        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
+        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename)
         '''
         except:
             print(f'Failing DM profile fit for {snap["snap"]}')
@@ -104,8 +110,7 @@ def execute_mode_indi(df_snap, args):
                             'eD0': epars[1],
                             }, index=[0])
         
-        outfile = f'{args.resfile_prefix}_indiv_allinc.txt'
-        df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
+        df_out.to_csv(param_outfile, mode='a', sep='\t', header=not os.path.exists(param_outfile), index=None)
 
     if args.multi_panel: save_fig(fig, args.fig_dir, f'{args.mode}_inc_{args.inc_range[0]}_{args.inc_range[1]}_multipanel_1d.pdf', args)
 
@@ -251,10 +256,10 @@ def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
     save_fig(fig, args.fig_dir, f'DM_vs_impfact_halo_{args.halo}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
     plt.show(block=False)
 
-    return fig
+    return ax
 
 # ------------------------------------------------------------------------------------------------
-def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis'):
+def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis', colorcol='redshift'):
     '''
     Plot DM vs Impact factor in a single panel, for a list of stellar mass and sfr ranges
     Saves plot
@@ -264,13 +269,13 @@ def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis'):
     fig, ax = plt.subplots(1, figsize=(8, 5))
     fig.subplots_adjust(left=0.12, bottom=0.12, right=0.99, top=0.98)
 
-    norm = mplcolors.Normalize(vmin=df_snap['redshift'].min(), vmax=df_snap['redshift'].max())
+    norm = mplcolors.Normalize(vmin=df_snap[colorcol].min(), vmax=df_snap[colorcol].max())
     sm = mpl_cm.ScalarMappable(cmap=plt.get_cmap(cmap), norm=norm)
 
     # -----------loop through mass bins--------------------
     for index, snap in df_snap.iterrows(): 
         infile = f'{args.resfile_prefix}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
-        col = sm.to_rgba(snap['redshift'])
+        col = sm.to_rgba(snap[colorcol])
 
         data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]
         ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], c=col, fmt='o-', lw=2, markersize=15, capsize=4, alpha=0.5)
@@ -284,17 +289,17 @@ def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis'):
         ax.set_ylim(ymin=0.7)
     
     cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label('Redshift', fontsize=args.fontsize)
+    cbar.set_label(colorcol, fontsize=args.fontsize)
     cbar.ax.tick_params(labelsize=args.fontsize)
 
-    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel='Redshift', set_ticks=False)
+    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel=colorcol, set_ticks=False)
     ax.text(0.95, 0.95, rf'{args.lsm_range[0]} < $\log$(M/M$_\odot$) < {args.lsm_range[1]}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
     ax.text(0.95, 0.85, rf'{args.lsfr_range[0]} < $\log$(SFR/M$_\odot$ yr$^{-1}$) < {args.lsfr_range[1]} [{len(df_snap)}]', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
 
-    save_fig(fig, args.fig_dir, f'DM_vs_impfact_indi_lsm_bin_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_bin_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[0]}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_indi_lsm_bin_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_bin_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
     plt.show(block=False)
 
-    return fig
+    return ax
 
 # -----main code-----------------
 if __name__ == '__main__':
@@ -332,6 +337,7 @@ if __name__ == '__main__':
                 filespecs =	args.data_dir / "lsm_sfr_masses_upto_disk.txt"
                 df_snap = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
                 df_snap['log_sfr'] = np.log10(df_snap['sfr'])
+                df_snap = df_snap.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
                 df_snap = df_snap[(df_snap['redshift'].between(args.z_range[0], args.z_range[1])) & 
                                 (df_snap['log_star_mass'].between(args.lsm_range[0], args.lsm_range[1])) & 
                                 (df_snap['log_sfr'].between(args.lsfr_range[0], args.lsfr_range[1]))].reset_index(drop=True)
@@ -368,7 +374,14 @@ if __name__ == '__main__':
                     ax = plot_dm_impfac_halo_combined(df_snap, args)
 
                 elif args.mode == 'indi' or args.mode == 'plot_indi':
-                    ax = plot_dm_impfac_indi_combined(df_snap, args)
+                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
+                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_star_mass')
+                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
+                    
+                    xarr = np.linspace(0.1, 150, 150)
+                    DM_1, DM_10 = 10, 6
+                    yarr = 10 ** (np.log10(DM_1) + (np.log10(DM_10)-np.log10(DM_1)) * (np.log10(xarr))**2)
+                    ax.plot(xarr, yarr, lw=2, c='k', zorder=20)
 
 
         if args.mode == 'lsmzsfr' and args.multi_panel:

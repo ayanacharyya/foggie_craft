@@ -72,9 +72,19 @@ def logradialexp3 (x, x0, a0):
 #   Return a radial exponential
 #	Arguments:	Radius, scale radius, normalization
 
-	radexp	= np.log10(a0 * np.exp(-(x/x0)**0.33))
+	radexp	= np.log10(a0 * np.exp(-((x-1)/x0)**0.33))
 
 	return (radexp)
+
+#	------------------------------------------------------------------------------------------------------
+def schechter (x, x0, y0):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    #y = y0 * ((x/x0) ** alpha) * np.exp(-((x/x0) ** (1/2.))) 
+    y = y0 * np.exp(-((x/x0) ** (1/2.))) 
+
+    return (y)
 
 #	------------------------------------------------------------------------------------------------------
 def logbeselk (x, x0, a0):

@@ -10,6 +10,7 @@
                  run plots_for_frb_paper.py --plot_dm_lsm --lsm 10.75,11,11.25,11.5 --inc 0,30,80,90 --multi_panel
                  run plots_for_frb_paper.py --plot_radprof
                  run plots_for_frb_paper.py --plot_dm_fit --fit_robust
+                 run plots_for_frb_paper.py --plot_dm_fit --mode indi
                  run plots_for_frb_paper.py --plot_dm_fit --fit_robust --resfile_prefix binby_lsm_lsfr
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
                  run plots_for_frb_paper.py --plot_dm_all_lsm
@@ -30,7 +31,7 @@ def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
     Returns dataframe
     '''
     df = pd.read_csv(filename, sep='\t')
-    df = df.drop_duplicates(subset=interval_cols, keep='last')
+    if len(interval_cols) > 1: df = df.drop_duplicates(subset=interval_cols, keep='last')
 
     for col in interval_cols:
         temp_df = df[col].str.strip('()[]').str.split(',', expand=True).astype(float)
@@ -162,7 +163,15 @@ def plot_dm_fit(df_dmpars, args):
     Returns axis handle
     '''
     outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
-    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    df_dmpars['log_ssfr'] = np.log10((10 ** df_dmpars['medlsm']) / df_dmpars['medsfr']) + 20
+    df_dmpars['medlgsm_offset'] = df_dmpars['medlgsm'] - 10
+    df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
+    df_dmpars['log_medsfr'] = np.log10(df_dmpars['medsfr'])
+    
+    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlgsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_ssfr', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
 
     return res
 
@@ -231,8 +240,9 @@ if __name__ == '__main__':
     if not args.keep: plt.close('all')
 
     # -------------determining directories------------------
-    catalog_name = f'{args.resfile_prefix}_allinc.txt'
-    df_dmpars = read_dataframe(catalog_name)
+    if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_indiv_allinc.txt'
+    else: catalog_name = f'{args.resfile_prefix}_allinc.txt'
+    df_dmpars = read_dataframe(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
 
     # -------------calling plotting functions------------------
     if args.plot_dm_lsm:
