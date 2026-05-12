@@ -231,6 +231,8 @@ if __name__ == '__main__':
 
     # ------------reading SFR and mstar df-----------------
     sfr_df  = get_sfr_df(args)
+    smooth_over_snap = 1
+    sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
 
     # --------domain decomposition; for mpi parallelisation-------------
     if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
@@ -279,7 +281,7 @@ if __name__ == '__main__':
         args.fontsize = 15
 
         # -----------determining SFR amd stellar mass--------------------
-        try: sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
+        try: sfr = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
         except: sfr = -99
 
         args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)

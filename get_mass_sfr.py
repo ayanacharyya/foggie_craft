@@ -120,6 +120,8 @@ if __name__ == '__main__':
         print(f'\nStarting halo {thishalo}..')
         args.halo = thishalo
         sfr_df  = get_sfr_df(args) # reading SFR df
+        smooth_over_snap = 1
+        sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
 
         # ---------make SFH plots-------------
         if args.plot_sfh:
@@ -133,14 +135,14 @@ if __name__ == '__main__':
                 axes[index].plot(sfr_df['time'], sfr_df[f'sfr_smooth{smooth_over_snap}'], c=col_arr[index2], lw=0.5 + 0.1*index2, label=f'{int(smooth_over_snap * 5)} Myr scale')
                 
                 # -------annotating plots-----------
-                axes[index] = annotate_axes(axes[index], r'Time [Gyr]', r'SFR [M$_\odot$/yr]', fontsize=args.fontsize, label=f'{args.halo}', hide_xaxis=index < len(halos) - 1)
+                axes[index] = annotate_axes(axes[index], r'Time [Gyr]', r'SFR [M$_\odot$/yr]', fontsize=args.fontsize, label=f'{args.halo}: {halo_dict[args.halo]}', hide_xaxis=index < len(halos) - 1)
             
                 # -----plotting SFR at our redshifts----------
                 sfr_list = [sfr_df.loc[(sfr_df['redshift'] - this_redshift).abs().idxmin(), f'sfr_smooth{smooth_over_snap}'] for this_redshift in redshift_list]
                 axes2[index].plot(redshift_list, np.log10(sfr_list), 'o-', c=col_arr[index2], lw=0.5, label=f'{int(smooth_over_snap * 5)} Myr scale')
 
                 # -------annotating plots-----------
-                axes2[index] = annotate_axes(axes2[index], r'Redshift', r'$\log$ SFR' +'\n'+ r'(M$_\odot$ yr$^{-1}$)', fontsize=args.fontsize, label=f'{args.halo}', hide_xaxis=index < len(halos) - 1)
+                axes2[index] = annotate_axes(axes2[index], r'Redshift', r'$\log$ SFR' +'\n'+ r'(M$_\odot$ yr$^{-1}$)', fontsize=args.fontsize, label=f'{args.halo}: {halo_dict[args.halo]}', hide_xaxis=index < len(halos) - 1)
 
             # -----making legends---------
             if index == 3: axes[index].legend(loc='upper right', fontsize = args.fontsize)
@@ -170,7 +172,7 @@ if __name__ == '__main__':
 
                 # -----------determining SFR and redshift--------------------
                 if args.output in sfr_df['output'].values:
-                    sfr = sfr_df[sfr_df['output'] == args.output]['sfr'].values[0]
+                    sfr = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
                     try:
