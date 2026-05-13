@@ -372,10 +372,10 @@ if __name__ == '__main__':
                             header[f'CUNIT{ind+1}'] = 'kpc'
                             header[f'NORMAL_UNIT_VECTOR{ind+1}'] = norm_L[ind]
 
-                        header[f'SFR'] = sfr
+                        header[f'SFR'] = 'NaN' if np.isnan(sfr) else sfr
                         header[f'SFRUNIT'] = 'Msun/yr'
 
-                        header[f'LOG_MSTAR'] = log_mstar
+                        header[f'LOG_MSTAR'] = 'NaN' if np.isnan(log_mstar) else log_mstar
                         header[f'MSTARUNIT'] = 'Msun'
 
                         header[f'REDSHIFT'] = args.current_redshift
