@@ -519,6 +519,7 @@ def parse_args():
     parser.add_argument('--run', metavar='run', type=str, action='store', default='nref11c_nref9f', help='which run? default is natural')
     parser.add_argument('--pwd', dest='pwd', action='store_true', default=False, help='Just use the current working directory?, default is no')
     parser.add_argument('--halo', metavar='halo', type=str, action='store', default='8508', help='which halo? default is 8508 (Tempest)')
+    parser.add_argument('--output', metavar='output', type=str, action='store', default='RD0027', help='which snapshot? default is RD0027 (z=1.0)')
     parser.add_argument('--projection', metavar='projection', type=str, action='store', default='x', help='Which projection do you want to plot, i.e., which axis is your line of sight? Default is x')
     parser.add_argument('--do_all_halos', dest='do_all_halos', action='store_true', default=False, help='loop over all available halos (and all snapshots each halo has)?, default is no')
     parser.add_argument('--silent', dest='silent', action='store_true', default=False, help='Suppress all print statements?, default is no')

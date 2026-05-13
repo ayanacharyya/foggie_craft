@@ -13,8 +13,119 @@ from craft_header import *
 from craft_utils import *
 setup_plot_style()
 from foggie_header import *
-from make_3D_FRB_electron_density import plot_projection_diskrel, get_AM_vector
+from make_3D_FRB_electron_density import get_AM_vector
 start_time = datetime.now()
+
+# --------------------------------------------------------------------------
+def get_projection_frb(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300, do_plot=True, return_frb=False, ncell_buff=800):
+    '''
+    Function to make a 2D projection plot along edge-on and face-on views given a dataset
+    Borrowed a little from foggie_load()
+    Returns figure handle
+    '''
+    if not do_plot: return_frb = True # if not plotting then has to return FRB objects
+    
+    x = np.array([1., 0., 0.])  # take a random vector
+    x -= x.dot(norm_L) * norm_L  # make it orthogonal to L
+    x /= np.linalg.norm(x)  # normalize it
+    y = np.cross(norm_L, x)  # cross product with L
+
+    field = ('gas', field)
+    fontsize = args.fontsize
+
+    # ---------------making face on and edge on projections------------------------
+    p_faceon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(x))
+    p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None if quant_label == 'density' else 'density', center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
+
+    # ------------set projection parameters------------
+    p_faceon.set_buff_size((ncell_buff, ncell_buff))
+    p_edgeon.set_buff_size((ncell_buff, ncell_buff))
+
+    p_faceon.set_unit(field, unit)
+    p_edgeon.set_unit(field, unit)
+
+    # ----------------make the FRB if required---------------------
+    if return_frb:
+        data_faceon = p_faceon.frb[field].v
+        data_edgeon = p_edgeon.frb[field].v
+    
+    # ----------------make the plot if required---------------------
+    if do_plot:
+        # ---------------setting up units, colormaps, etc------------------------
+        p_faceon.set_log(field, takelog)
+        if clim is not None: p_faceon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
+        p_faceon.set_cmap(field, cmap)
+
+        p_edgeon.set_log(field, takelog)
+        if clim is not None: p_edgeon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
+        p_edgeon.set_cmap(field, cmap)
+
+        # ------plotting onto a matplotlib figure--------------
+        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+
+        p_faceon.plots[field].axes = axes[0]
+        p_faceon._setup_plots()
+        p_edgeon.plots[field].axes = axes[1]
+        p_edgeon._setup_plots()
+
+        right, top, bottom, left, wspace = 0.85, 0.98, 0.1, 0.12, 0.0
+        fig.subplots_adjust(right=right, top=top, bottom=bottom, left=left, wspace=wspace)
+
+        # ---------------making colorbar------------------------
+        offset, width = 0.075, 0.02
+        cax = fig.add_axes([right, bottom + offset, width, top - bottom - 2 * offset])
+        cbar = fig.colorbar(p_edgeon.plots[field].cb.mappable, orientation='vertical', cax=cax)
+        cbar.ax.tick_params(labelsize=fontsize, width=2.5, length=5)
+        if clabel is None: cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
+        else: cbar.set_label(clabel, fontsize=fontsize) # this is to have more control on the display of the color label
+
+        # ---------------prepping axes------------------------
+        for index in range(len(axes)):
+            ax = axes[index]
+            ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+            ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+            ax.set_xticklabels(['%.1F' % item for item in ax.get_xticks()], fontsize=fontsize)
+            ax.set_xlabel('Offset (kpc)', fontsize=fontsize)
+            if index == 0:
+                ax.set_yticklabels(['%.1F' % item for item in ax.get_yticks()], fontsize=fontsize)
+                ax.set_ylabel('Offset (kpc)', fontsize=fontsize)
+            else:
+                ax.set_yticklabels(['' % item for item in ax.get_yticks()])
+                ax.set_ylabel('')
+            
+        # ---------------making annotations------------------------
+        if annotate_labels is None:
+            axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+            axes[0].text(0.97, 0.85, 't = %.1F Gyr' % args.current_time, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+        else:
+            for index, label in enumerate(annotate_labels):
+                axes[index % 2].text(0.97, 0.95 - (index // 2) * 0.1, label, c='white', ha='right', va='top', transform=axes[index % 2].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+    
+        axes[0].text(0.98, 0.02, 'Face on', c='white', ha='right', va='bottom', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+        axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+
+        # ---------------saving fig------------------------
+        outfile_rootname = '%s_%s_diskrel_%s%s.pdf' % (args.output, args.halo, quant_label, args.upto_text)
+        if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
+        figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
+
+        if args.fortalk:
+            mplcyberpunk.add_glow_effects()
+            try: mplcyberpunk.make_lines_glow()
+            except: pass
+            try: mplcyberpunk.make_scatter_glow()
+            except: pass
+
+        plt.savefig(figname, dpi=dpi, transparent=args.fortalk)
+        myprint('Saved figure ' + figname, args)
+        if not ('pleiades' in args.system or args.hide_plot): plt.show()
+
+    if return_frb and do_plot:
+        return fig, data_faceon, data_edgeon
+    elif return_frb:
+        return data_faceon, data_edgeon
+    else:
+        return fig
 
 # ------------------------------------------------------------------
 def get_halo_coords(halo_c_v_filename, snap):
@@ -108,10 +219,9 @@ def make_df_from_box(box, args):
     return df
 
 # ----------global variables------------
-quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map], 
-              'el_density':['El_number_density', 'Electron density', 'cm**-3', -6, -1, 'cornflowerblue', e_color_map],
-              'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7, 0.7, 'cornflowerblue', metal_color_map],
-              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap]
+quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
+              'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7, 0.7, 'cornflowerblue', metal_color_map, True, r'Zsun', r'Z/Z$_\odot$'],
+              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
 
 # -----main code-----------------
 if __name__ == '__main__':
@@ -162,8 +272,22 @@ if __name__ == '__main__':
         # ----------------making projection plots-------------------
         norm_L = get_AM_vector(ds, radius_kpc=3., use_particles=False)
         quant_arr = ['density', 'metal']
+
+        plot_width = box_width/1.44
+        ncell_buff = 800 # this buffer size is purely for visualising and saving the projected map
+
         for quant in quant_arr:
-            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+            # ----------------making projection plots-------------------
+            fig_diskrel = get_projection_frb(box, quant_dict[quant][0], plot_width, norm_L, args, 
+                                                    quant_label=quant_dict[quant][0], 
+                                                    unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], 
+                                                    clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
+                                                    cmap=quant_dict[quant][6], 
+                                                    takelog=quant_dict[quant][7], 
+                                                    clabel=quant_dict[quant][9],
+                                                    do_plot=True,
+                                                    ncell_buff = ncell_buff,
+                                                    )
 
         # ---------get profile-------------
         df = make_df_from_box(box, args)

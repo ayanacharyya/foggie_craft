@@ -10,7 +10,7 @@
     Examples :   run make_3D_FRB_electron_density.py --system ayan_pleiades --halo 8508 --res 1 --upto_kpc 50 --do_all_sims --use_cen_smoothed
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 4123 --res 1 --upto_kpc 10 --output RD0038 --clobber --plot_3d --use_cen_smoothed
                  run make_3D_FRB_electron_density.py --system ayan_hd --halo 8508 --res 1 --upto_kpc 200 --output RD0030,RD0042 --clobber --use_cen_smoothed
-                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 1 --upto_kpc 100 --output RD0027 --clobber --use_cen_smoothed --do_only_plot
+                 run make_3D_FRB_electron_density.py --system ayan_local --halo 8508 --res 0.5 --upto_kpc 100 --output RD0027 --clobber --use_cen_smoothed --do_only_plot
 """
 from foggie_header import *
 from yt.visualization.fits_image import FITSImageData
@@ -113,13 +113,15 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300, do_plot=True, return_frb=False, ncell_buff=800):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
     Returns figure handle
     '''
-    x = np.random.randn(3)  # take a random vector
+    if not do_plot: return_frb = True # if not plotting then has to return FRB objects
+    
+    x = np.array([1., 0., 0.])  # take a random vector
     x -= x.dot(norm_L) * norm_L  # make it orthogonal to L
     x /= np.linalg.norm(x)  # normalize it
     y = np.cross(norm_L, x)  # cross product with L
@@ -131,86 +133,103 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     p_faceon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(norm_L), field, data_source=box, width=(box_width, 'kpc'), weight_field=None, center=box.ds.halo_center_kpc, north_vector=box.ds.arr(x))
     p_edgeon = yt.OffAxisProjectionPlot(box.ds, box.ds.arr(x), field, data_source=box, width=(box_width, 'kpc'), weight_field=None, center=box.ds.halo_center_kpc, north_vector=box.ds.arr(norm_L))
 
-    # ---------------setting up units, colormaps, etc------------------------
-    p_faceon.set_log(field, takelog)
+    # ------------set projection parameters------------
+    p_faceon.set_buff_size((ncell_buff, ncell_buff))
+    p_edgeon.set_buff_size((ncell_buff, ncell_buff))
+
     p_faceon.set_unit(field, unit)
-    if clim is not None: p_faceon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
-    p_faceon.set_cmap(field, cmap)
-
-    p_edgeon.set_log(field, takelog)
     p_edgeon.set_unit(field, unit)
-    if clim is not None: p_edgeon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
-    p_edgeon.set_cmap(field, cmap)
 
-    # ------plotting onto a matplotlib figure--------------
-    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    # ----------------make the FRB if required---------------------
+    if return_frb:
+        data_faceon = p_faceon.frb[field].v
+        data_edgeon = p_edgeon.frb[field].v
+    
+    # ----------------make the plot if required---------------------
+    if do_plot:
+        # ---------------setting up units, colormaps, etc------------------------
+        p_faceon.set_log(field, takelog)
+        if clim is not None: p_faceon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
+        p_faceon.set_cmap(field, cmap)
 
-    p_faceon.plots[field].axes = axes[0]
-    p_faceon._setup_plots()
-    p_edgeon.plots[field].axes = axes[1]
-    p_edgeon._setup_plots()
+        p_edgeon.set_log(field, takelog)
+        if clim is not None: p_edgeon.set_zlim(field, zmin=10**clim[0] if takelog else clim[0], zmax=10**clim[1] if takelog else clim[1])
+        p_edgeon.set_cmap(field, cmap)
 
-    right, top, bottom, left, wspace = 0.85, 0.98, 0.1, 0.12, 0.0
-    fig.subplots_adjust(right=right, top=top, bottom=bottom, left=left, wspace=wspace)
+        # ------plotting onto a matplotlib figure--------------
+        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
-    # ---------------making colorbar------------------------
-    offset, width = 0.075, 0.02
-    cax = fig.add_axes([right, bottom + offset, width, top - bottom - 2 * offset])
-    cbar = fig.colorbar(p_edgeon.plots[field].cb.mappable, orientation='vertical', cax=cax)
-    cbar.ax.tick_params(labelsize=fontsize, width=2.5, length=5)
-    if clabel is None: cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
-    else: cbar.set_label(clabel, fontsize=fontsize) # this is to have more control on the display of the color label
+        p_faceon.plots[field].axes = axes[0]
+        p_faceon._setup_plots()
+        p_edgeon.plots[field].axes = axes[1]
+        p_edgeon._setup_plots()
 
-    # ---------------prepping axes------------------------
-    for index in range(len(axes)):
-        ax = axes[index]
-        ax.xaxis.set_major_locator(plt.MaxNLocator(5))
-        ax.yaxis.set_major_locator(plt.MaxNLocator(5))
-        ax.set_xticklabels(['%.1F' % item for item in ax.get_xticks()], fontsize=fontsize)
-        ax.set_xlabel('Offset (kpc)', fontsize=fontsize)
-        if index == 0:
-            ax.set_yticklabels(['%.1F' % item for item in ax.get_yticks()], fontsize=fontsize)
-            ax.set_ylabel('Offset (kpc)', fontsize=fontsize)
+        right, top, bottom, left, wspace = 0.85, 0.98, 0.1, 0.12, 0.0
+        fig.subplots_adjust(right=right, top=top, bottom=bottom, left=left, wspace=wspace)
+
+        # ---------------making colorbar------------------------
+        offset, width = 0.075, 0.02
+        cax = fig.add_axes([right, bottom + offset, width, top - bottom - 2 * offset])
+        cbar = fig.colorbar(p_edgeon.plots[field].cb.mappable, orientation='vertical', cax=cax)
+        cbar.ax.tick_params(labelsize=fontsize, width=2.5, length=5)
+        if clabel is None: cbar.set_label(p_edgeon.plots[field].cax.get_ylabel(), fontsize=fontsize)
+        else: cbar.set_label(clabel, fontsize=fontsize) # this is to have more control on the display of the color label
+
+        # ---------------prepping axes------------------------
+        for index in range(len(axes)):
+            ax = axes[index]
+            ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+            ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+            ax.set_xticklabels(['%.1F' % item for item in ax.get_xticks()], fontsize=fontsize)
+            ax.set_xlabel('Offset (kpc)', fontsize=fontsize)
+            if index == 0:
+                ax.set_yticklabels(['%.1F' % item for item in ax.get_yticks()], fontsize=fontsize)
+                ax.set_ylabel('Offset (kpc)', fontsize=fontsize)
+            else:
+                ax.set_yticklabels(['' % item for item in ax.get_yticks()])
+                ax.set_ylabel('')
+            
+            if 'massrad' in args:
+                ax.add_patch(plt.Circle((0, 0), args.massrad, color='r', fill=False, lw=1)) # for over-plotting radius within which mass was computed
+
+        # ---------------making annotations------------------------
+        if annotate_labels is None:
+            axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+            axes[0].text(0.97, 0.85, 't = %.1F Gyr' % args.current_time, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
         else:
-            ax.set_yticklabels(['' % item for item in ax.get_yticks()])
-            ax.set_ylabel('')
-        
-        if 'massrad' in args:
-            ax.add_patch(plt.Circle((0, 0), args.diskrad, color='r', fill=False, lw=1)) # for over-plotting radius within which mass was computed
+            for index, label in enumerate(annotate_labels):
+                axes[index % 2].text(0.97, 0.95 - (index // 2) * 0.1, label, c='white', ha='right', va='top', transform=axes[index % 2].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+    
+        axes[0].text(0.98, 0.02, 'Face on', c='white', ha='right', va='bottom', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+        axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
 
-    # ---------------making annotations------------------------
-    if annotate_labels is None:
-        axes[0].text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-        axes[0].text(0.97, 0.85, 't = %.1F Gyr' % args.current_time, c='white', ha='right', va='top', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
+        # ---------------saving fig------------------------
+        outfile_rootname = '%s_%s_diskrel_%s%s.pdf' % (args.output, args.halo, quant_label, args.upto_text)
+        if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
+        figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
+
+        if args.fortalk:
+            mplcyberpunk.add_glow_effects()
+            try: mplcyberpunk.make_lines_glow()
+            except: pass
+            try: mplcyberpunk.make_scatter_glow()
+            except: pass
+
+        plt.savefig(figname, dpi=dpi, transparent=args.fortalk)
+        myprint('Saved figure ' + figname, args)
+        if not ('pleiades' in args.system or args.hide_plot): plt.show()
+
+    if return_frb and do_plot:
+        return fig, data_faceon, data_edgeon
+    elif return_frb:
+        return data_faceon, data_edgeon
     else:
-        for index, label in enumerate(annotate_labels):
-            axes[index % 2].text(0.97, 0.95 - (index // 2) * 0.1, label, c='white', ha='right', va='top', transform=axes[index % 2].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-  
-    axes[0].text(0.98, 0.02, 'Face on', c='white', ha='right', va='bottom', transform=axes[0].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-    axes[1].text(0.98, 0.02, 'Edge on', c='white', ha='right', va='bottom', transform=axes[1].transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
-
-    # ---------------saving fig------------------------
-    outfile_rootname = '%s_%s_diskrel_%s%s.pdf' % (args.output, args.halo, quant_label, args.upto_text)
-    if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
-    figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
-
-    if args.fortalk:
-        mplcyberpunk.add_glow_effects()
-        try: mplcyberpunk.make_lines_glow()
-        except: pass
-        try: mplcyberpunk.make_scatter_glow()
-        except: pass
-
-    plt.savefig(figname, dpi=dpi, transparent=args.fortalk)
-    myprint('Saved figure ' + figname, args)
-    if not ('pleiades' in args.system or args.hide_plot): plt.show()
-
-    return fig
+        return fig
 
 # ---------------global dictionary--------------------------
 quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
-                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 220, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'DM [pc cm$^{-3}$]']
-                } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
+              'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 220, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'DM [pc cm$^{-3}$]'],
+              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
 
 # -----main code-----------------
 if __name__ == '__main__':
@@ -260,7 +279,7 @@ if __name__ == '__main__':
         ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
         norm_L = get_AM_vector(ds) #computing disk orientation #
-        #norm_L = np.array([-0.51443095, -0.62174905, -0.59058354]) # this is just for faster testing
+        #norm_L = np.array([-0.51443095, -0.62174905, -0.59058354]) # this is just for faster testing; this is for halo 8505 snap RD0027
 
         # --------assigning additional keyword args-------------
         args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
@@ -277,6 +296,7 @@ if __name__ == '__main__':
 
         if args.do_only_plot: args.diskrad, log_mstar = np.nan, np.nan
         else: args.diskrad, log_mstar = get_stellar_mass(args, refine_box=refine_box)
+        #else: args.diskrad, log_mstar = 5, 10.46  # this is just for faster testing; this is for halo 8505 snap RD0027
 
         # --------determining corresponding text suffixes and figname-------------
         args.fig_dir = args.output_dir + 'plots/'
@@ -319,15 +339,34 @@ if __name__ == '__main__':
                 all_data = ds.arbitrary_grid(left_edge=box.left_edge, right_edge=box.right_edge, dims=[args.ncells, args.ncells, args.ncells])
                 img_hdu_list = []
 
+                plot_width = box_width/5
+                ncell_buff = 800 # this buffer size is purely for visualising and saving the projected map
+                kpc_per_pix_proj = plot_width / ncell_buff
+
                 for index, quant in enumerate(quant_arr):
                     myprint(f'Making and plotting FRB for {quant} which is {index+1} out of {len(quant_arr)} quantities..', args)
+
+                    # --------making the projection plots------------
+                    fig_diskrel, data_faceon, data_edgeon = plot_projection_diskrel(box, quant_dict[quant][0], plot_width, norm_L, args, 
+                                                            quant_label=quant_dict[quant][0], 
+                                                            unit=quant_dict[quant][8], 
+                                                            clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
+                                                            cmap=quant_dict[quant][6], 
+                                                            takelog=quant_dict[quant][7], 
+                                                            clabel=quant_dict[quant][9],
+                                                            annotate_labels = [rf'SFR = {sfr:.1f} M$_\odot$/yr', rf'$\log$ (M$_*$/M$_\odot$) = {log_mstar:.1f}'],
+                                                            return_frb=True,
+                                                            do_plot=True,
+                                                            ncell_buff = ncell_buff,
+                                                            )
+                    # --------making the 3D FRB------------
                     if not args.do_only_plot:
-                        # --------making the 3D FRB------------
                         FRB = all_data[('gas', quant_dict[quant][0])].in_units(quant_dict[quant][2]).astype(np.float32)
 
-                        # --------making the FITS ImageHDU---------------
+                        # --------making the FITS ImageHDU for 3D FRB---------------
                         img_hdu = FITSImageData(FRB, ('gas', quant_dict[quant][1]))
-                        header = img_hdu[0].header
+                        header = img_hdu[0].header     
+                        
                         for ind in range(3):
                             header[f'CDELT{ind+1}'] = args.kpc_per_pix
                             header[f'CUNIT{ind+1}'] = 'kpc'
@@ -340,8 +379,30 @@ if __name__ == '__main__':
                         header[f'MSTARUNIT'] = 'Msun'
 
                         header[f'REDSHIFT'] = args.current_redshift
+                        
+                        img_hdu_list.append(img_hdu[0])
+                        
+                        # --------making the FITS ImageHDU for 2D projected FRB: face on---------------                    
+                        hdu_faceon = FITSImageData(data_faceon, f'{quant_dict[quant][1]} FACE ON PROJ')
+                        header = hdu_faceon[0].header                        
+        
+                        header['WIDTH'] = (plot_width, 'kpc')
+                        for ind in range(2):
+                            header[f'CDELT{ind+1}'] = kpc_per_pix_proj
+                            header[f'CUNIT{ind+1}'] = 'kpc'
+                        
+                        img_hdu_list.append(hdu_faceon[0])
 
-                        img_hdu_list.append(img_hdu)
+                        # --------making the FITS ImageHDU for 2D projected FRB: face on---------------
+                        hdu_edgeon = FITSImageData(data_edgeon, f'{quant_dict[quant][1]} EDGE ON PROJ')
+                        header = hdu_edgeon[0].header       
+                        
+                        header['WIDTH'] = (plot_width, 'kpc')
+                        for ind in range(2):
+                            header[f'CDELT{ind+1}'] = kpc_per_pix_proj
+                            header[f'CUNIT{ind+1}'] = 'kpc'
+                        
+                        img_hdu_list.append(hdu_edgeon[0])
 
                         # ------making the plots-----------
                         if args.plot_3d or args.plot_proj:
@@ -349,19 +410,11 @@ if __name__ == '__main__':
                             if args.plot_3d: ax = plot_3d_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6])
                             elif args.plot_proj: ax = plot_proj_frb(FRB, ax, args, label=quant_dict[quant][1], unit=quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]], cmap=quant_dict[quant][6], hidey=index > 0)
 
-                    fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width/5, norm_L, args, 
-                                                          quant_label=quant_dict[quant][0], 
-                                                          unit=quant_dict[quant][8], 
-                                                          clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
-                                                          cmap=quant_dict[quant][6], 
-                                                          takelog=quant_dict[quant][7], 
-                                                          clabel=quant_dict[quant][9],
-                                                          annotate_labels = [rf'SFR = {sfr:.1f} M$_\odot$/yr', rf'$\log$ (M$_*$/M$_\odot$) = {log_mstar:.1f}'],
-                                                          )
-
                 # ------saving fits file------------------
                 if not args.do_only_plot:
-                    combined_img_hdu = FITSImageData.from_images(img_hdu_list)
+                    primary = fits.PrimaryHDU(header=img_hdu_list[0].header, data=img_hdu_list[0].data)
+                    combined_img_hdu = fits.HDUList([primary] + [fits.ImageHDU(h.data, header=h.header) for h in img_hdu_list[1:]])
+
                     combined_img_hdu.writeto(fitsname, overwrite=args.clobber)
                     myprint('Saved fits file as ' + fitsname, args)
 
@@ -376,7 +429,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print_mpi('Skipping ' + this_sim[1] + ' because ' + str(e), args)
                 continue
-            
+                
         else:
             print('Skipping snapshot %s as %s already exists. Use --clobber to remake figure.' %(args.output, fitsname))
             continue

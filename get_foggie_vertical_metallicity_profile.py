@@ -13,11 +13,11 @@ from craft_header import *
 from craft_utils import *
 setup_plot_style()
 from foggie_header import *
-from make_3D_FRB_electron_density import plot_projection_diskrel, get_AM_vector
-from get_foggie_metallicity_profile import get_halo_coords, my_foggie_load, make_df_from_box, quant_dict
+from make_3D_FRB_electron_density import get_AM_vector
+from get_foggie_metallicity_profile import get_halo_coords, my_foggie_load, get_projection_frb, quant_dict
 start_time = datetime.now()
 
-# -----main code-----------------
+# ---------------------main code-----------------------------
 if __name__ == '__main__':
     args = parse_args()  # default simulation to work upon when comand line args not provided
     if not args.keep: plt.close('all')
@@ -28,15 +28,15 @@ if __name__ == '__main__':
     args.fig_dir = args.output_dir + 'metallicity_plots/'
     Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
     
-    args.text_dir = Path(args.output_dir) / 'metallicity_txtfiles'
-    args.text_dir.mkdir(exist_ok=True, parents=True)
+    args.data_dir = Path(args.output_dir) / 'metallicity_data'
+    args.data_dir.mkdir(exist_ok=True, parents=True)
     
     args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving and args.upto_kpc is not None else '_upto%.1Fkpc' % args.upto_kpc if args.upto_kpc is not None else f'_upto{args.re:.1f}re'
-    df_snap_filename = args.text_dir / f'met_profile_{args.halo}_{args.run}_{args.output}{args.upto_text}.txt'
+    fitsname = args.data_dir / f'{args.halo}_{args.run}_{args.output}_projected_met_map{args.upto_text}.fits'
 
     # ---------------getting the metallicity profile----------------
-    if not os.path.exists(df_snap_filename) or args.clobber:
-        print(f']\n{df_snap_filename} does not exist. Creating afresh..')
+    if not os.path.exists(fitsname) or args.clobber:
+        print(f']\n{fitsname} does not exist. Creating afresh..')
 
         # ----------reading in snapshot-----------
         halos_df_name = Path(args.code_path) / f'halo_infos/00{args.halo}/{args.run}/halo_c_v'
@@ -63,47 +63,69 @@ if __name__ == '__main__':
         box_width_kpc = ds.arr(box_width, 'kpc')
         box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2.]
 
-        # ----------------making projection plots-------------------
+        # ----------------setting up FITS file-------------------
         norm_L = get_AM_vector(ds, radius_kpc=3., use_particles=False)
-        quant_arr = ['density', 'metal']
+        quant_arr = ['metal', 'density']
+        img_hdu_list = []
+        primary_hdu = fits.PrimaryHDU()
+        img_hdu_list.append(primary_hdu)
+
+        plot_width = box_width/1.44
+        ncell_buff = 800 # this buffer size is purely for visualising and saving the projected map
+        kpc_per_pix_proj = plot_width / ncell_buff
+
         for quant in quant_arr:
-            fig_diskrel = plot_projection_diskrel(box, quant_dict[quant][0], box_width, norm_L, args, quant_label=quant_dict[quant][0], unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], clim=[quant_dict[quant][3], quant_dict[quant][4]],  cmap=quant_dict[quant][6])
+            # ----------------making projection plots-------------------
+            fig_diskrel, data_faceon, data_edgeon = get_projection_frb(box, quant_dict[quant][0], plot_width, norm_L, args, 
+                                                    quant_label=quant_dict[quant][0], 
+                                                    unit='Msun/pc**2' if quant == 'density' else quant_dict[quant][2], 
+                                                    clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
+                                                    cmap=quant_dict[quant][6], 
+                                                    takelog=quant_dict[quant][7], 
+                                                    clabel=quant_dict[quant][9],
+                                                    return_frb=True,
+                                                    do_plot=True,
+                                                    ncell_buff = ncell_buff,
+                                                    )
+        
+            # --------making the FITS ImageHDU for 2D projected FRB: face on---------------
+            hdu_faceon = fits.ImageHDU(data=data_faceon.astype(np.float32))
+            header = hdu_faceon.header
+            header['EXTNAME'] = f'{quant_dict[quant][1]} FACE ON PROJ'
+            header['FIELD'] = quant_dict[quant][1]
+            header['BUNIT'] = quant_dict[quant][8]
+            header['WIDTH'] = (plot_width, 'kpc')
+            for ind in range(2):
+                header[f'CDELT{ind+1}'] = kpc_per_pix_proj
+                header[f'CUNIT{ind+1}'] = 'kpc'
+            img_hdu_list.append(hdu_faceon)
 
-        # ---------get profile-------------
-        df = make_df_from_box(box, args)
+            # --------making the FITS ImageHDU for 2D projected FRB: face on---------------
+            hdu_edgeon = fits.ImageHDU(data=data_edgeon.astype(np.float32))
+            header = hdu_edgeon.header
+            header['EXTNAME'] = f'{quant_dict[quant][1]} EDGE ON PROJ'
+            header['FIELD'] = quant_dict[quant][1]
+            header['BUNIT'] = quant_dict[quant][8]
+            header['WIDTH'] = (plot_width, 'kpc')
+            for ind in range(2):
+                header[f'CDELT{ind+1}'] = kpc_per_pix_proj
+                header[f'CUNIT{ind+1}'] = 'kpc'
+            img_hdu_list.append(hdu_edgeon)
 
-        df.to_csv(df_snap_filename, sep='\t', index=None)
-        print(f'Saved profile to file {df_snap_filename}')
+        # -----------------saving the projections as fits file------------
+        hdul = fits.HDUList(img_hdu_list)
+        hdul.writeto(fitsname, overwrite=True)
+        print(f'Successfully saved {len(hdul)-1} extensions to {fitsname}"')
+
     else:
-        print(f'\nReading from existing file {df_snap_filename}')
-        df = pd.read_table(df_snap_filename, delim_whitespace=True, comment='#')
+        print(f'\nReading from existing file {fitsname}')
+        hdul = fits.open(fitsname)
 
-    # --------preparing profile------------
+    # --------preparing cone bins------------
     quant = 'metal'
-    weight_by = None # choose between 'density' and None
-    met_profile_upto = 10. # kpc
-
-    if weight_by is not None:
-        weight_sum = np.sum(df[weight_by])
-        colname = f'weighted_{quant}'
-        df[colname] = df[quant] * df[weight_by] / weight_sum
-        weightby_text = f'_wtby_{weight_by}'
-    else:
-        colname = quant
-        weightby_text = ''
+    data = hdul[f'{quant_dict[quant][1].upper()} EDGE ON PROJ'].data
     
-    df[f'log_{colname}'] = np.log10(df[colname])
-    df = df[df['radius_kpc'] < met_profile_upto]
-    
-    # ---------------smoothing the profile----------------------
-    ncells = len(df) // 100
-    if ncells %2 == 0: ncells += 1
-    df[f'smoothed_log_{colname}'] = df[f'log_{colname}'].rolling(window=ncells, center=True, min_periods=1).mean()
-
     # ----------------making profile plots-------------------
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(df['radius_kpc'], df[f'smoothed_log_{colname}'], c=quant_dict[quant][5], lw=1)
-    ax = annotate_axes(ax, 'Radius (kpc)', f'Log {quant_dict[quant][1]} ({quant_dict[quant][2]})', args=args)
-    save_fig(fig, Path(args.fig_dir), f'met_profile_{args.halo}_{args.run}_{args.output}_upto{met_profile_upto:.1f}kpc{weightby_text}.png')
+
 
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
