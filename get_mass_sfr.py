@@ -22,10 +22,10 @@ def get_sfr_df(args):
     '''
     sfr_filename = args.code_path + 'halo_infos/00' + args.halo + '/' + args.run + '/sfr'
     if os.path.exists(sfr_filename):
-        print('Reading SFR history from', sfr_filename)
+        print_master(f'Reading SFR history from {sfr_filename}', args)
         sfr_df = pd.read_table(sfr_filename, names=('output', 'redshift', 'sfr'), comment='#', delim_whitespace=True)
     else:
-        print('Did not find', sfr_filename, ', therefore will not include SFR')
+        print_master(f'Did not find {sfr_filename}, therefore will not include SFR', args)
         sfr_df = pd.DataFrame()
 
     return sfr_df
@@ -38,26 +38,26 @@ def get_mass_profile(args):
     mass_filename = args.code_path + 'halo_infos/00' + args.halo + '/' + args.run + '/masses_z-less-2.hdf5'
 
     if os.path.exists(mass_filename):
-        print('Reading in', mass_filename)
+        print_mpi(f'Reading in {mass_filename}', args)
         alldata = pd.read_hdf(mass_filename, key='all_data')
         thisdata = alldata[alldata['snapshot'] == args.output]
 
         if len(thisdata) == 0: # snapshot not found in masses less than z=2 file, so try greater than z=2 file
             mass_filename = mass_filename.replace('less', 'gtr')
-            print('Could not find snapshot in previous file, now reading in', mass_filename)
+            print_mpi(f'Could not find snapshot in previous file, now reading in {mass_filename}', args)
             alldata = pd.read_hdf(mass_filename, key='all_data')
             thisdata = alldata[alldata['snapshot'] == args.output]
 
             if len(thisdata) == 0: # snapshot still not found in file
-                print('Snapshot not found in either file. Returning bogus mass')
+                print_mpi('Snapshot not found in either file. Returning bogus mass', args)
                 return np.nan
 
         mass_profile = thisdata[thisdata['radius'] <= args.diskrad]
         if len(mass_profile) == 0: # the smallest shell available in the mass profile is larger than the necessary radius within which we need the stellar mass
-            print('Smallest shell avialable in mass profile is too large compared to args.diskrad. Returning nearest shell')
+            print_mpi('Smallest shell avialable in mass profile is too large compared to args.diskrad. Returning nearest shell', args)
             return thisdata.head(1)
     else:
-        print('File not found:', mass_filename)
+        print_mpi(f'File not found: {mass_filename}', args)
         return np.nan
 
     return mass_profile
@@ -84,7 +84,7 @@ def get_masses_and_re(args, get_re_using='gas_HI_mass'):
         if len(mass_profile[mask]) > 0:
             half_mass_radius = mass_profile[mask]['radius'].iloc[-1]
         else:
-            print('Smallest shell avialable in mass profile is larger than half-mass. So returning the smallest shell as half-mass radius')
+            print_mpi('Smallest shell avialable in mass profile is larger than half-mass. So returning the smallest shell as half-mass radius', args)
             half_mass_radius = mass_profile['radius'].iloc[0]
     else:
         mhalo, mgas, mstar, half_mass_radius = np.nan, np.nan, np.nan, np.nan
@@ -97,30 +97,30 @@ if __name__ == '__main__':
     if not args.keep: plt.close('all')
     if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
+    smooth_over_snap = 20
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.txt'
-    columns = ['halo', 'snap', 'redshift', 'sfr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
+    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk_dummy.txt'
+    columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------
     halos = ['8508', '5036', '5016', '4123', '2392', '2878']
-    #redshift_list = [5.0, 4.8, 4.6, 4.4, 4.2, 4.0,  3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2, 0.]
-    redshift_list = [2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.]
+    z_min, z_max, delta_z = 0, 2, 0.05
+    redshift_list = np.arange(z_min, z_max + delta_z, delta_z)
 
     # -------setup SFH figure-------
     if args.plot_sfh:
-        print(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option')
+        print_master(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option', args)
         fig, axes = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
         fig2, axes2 = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
-        smooth_over_nsnap_arr = [1, 3, 5, 10, 20]
+        smooth_over_nsnap_arr = [1, 20]
         col_arr = ['purple', 'orange', 'darkolivegreen', 'cornflowerblue', 'salmon']
-
+    
     # ---------looping over halos-----------
     for index, thishalo in enumerate(halos):
-        print(f'\nStarting halo {thishalo}..')
+        print_master(f'Starting halo {thishalo}..', args)
         args.halo = thishalo
         sfr_df  = get_sfr_df(args) # reading SFR df
-        smooth_over_snap = 20
         sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
 
         # ---------make SFH plots-------------
@@ -151,12 +151,13 @@ if __name__ == '__main__':
             # ------plotting redshifts of interest---------
             for this_redshift in redshift_list:
                 this_time = cosmo.age(this_redshift).value
-                axes[index].axvline(this_time, c='k', ls='dotted')
+                axes[index].axvline(this_time, c='k', ls='dotted', lw=0.5)
                 if index == 0:
-                    axes[index].text(this_time, axes[index].get_ylim()[1], f'z={this_redshift}', c='k', va='top', ha='right', rotation=90, fontsize=args.fontsize)
+                    axes[index].text(this_time, axes[index].get_ylim()[1], f'z={this_redshift:.2f}', c='k', va='top', ha='right', rotation=90, fontsize=args.fontsize)
 
         # --------determining snapshots-----------
         else:
+
             df = pd.read_csv(args.code_dir + f'halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
             output_list = []
@@ -164,15 +165,38 @@ if __name__ == '__main__':
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
 
-            # ---------looping over snapshots-----------
-            for thisoutput in output_list:
-                start_time2 = datetime.now()
-                print(f'\nStarting snapshot {thishalo}:{thisoutput}..')
-                args.output = thisoutput
+            # --------domain decomposition; for mpi parallelisation-------------
+            total_snaps = len(output_list)
+
+            comm = MPI.COMM_WORLD
+            ncores = comm.size
+            rank = comm.rank
+            print_master('Total number of MPI ranks = ' + str(ncores) + '. Starting at: {:%Y-%m-%d %H:%M:%S}'.format(datetime.now()), args)
+            comm.Barrier() # wait till all cores reached here and then resume
+
+            split_at_cpu = total_snaps - ncores * int(total_snaps/ncores)
+            nper_cpu1 = int(total_snaps / ncores)
+            nper_cpu2 = nper_cpu1 + 1
+            if rank < split_at_cpu:
+                core_start = rank * nper_cpu2
+                core_end = (rank+1) * nper_cpu2 - 1
+            else:
+                core_start = split_at_cpu * nper_cpu2 + (rank - split_at_cpu) * nper_cpu1
+                core_end = split_at_cpu * nper_cpu2 + (rank - split_at_cpu + 1) * nper_cpu1 - 1
+
+            # -------------loop over snapshots-----------------
+            print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
+
+            for index in range(core_start + args.start_index, core_end + 1):
+                start_time_this_snapshot = datetime.now()
+                args.output = output_list[index]
+                args.halo = thishalo
+                print_mpi('Doing snapshot ' + args.output + ' of halo ' + args.halo + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...', args)
 
                 # -----------determining SFR and redshift--------------------
                 if args.output in sfr_df['output'].values:
-                    sfr = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
+                    sfr = sfr_df[sfr_df['output'] == args.output][f'sfr'].values[0]
+                    sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
 
                     try:
@@ -187,24 +211,28 @@ if __name__ == '__main__':
                         log_mgas_from_profile = np.log10(mgas)
 
                         # ------appending to dataframe----------
-                        df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
+                        df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
                     except Exception as e:
-                        print(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row')
-                        df_row = pd.DataFrame([[thishalo, thisoutput, args.current_redshift, sfr, -99, -99, -99, -99, -99]], columns=columns)
+                        print_mpi(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row', args)
+                        df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth, -99, -99, -99, -99, -99]], columns=columns)
                         continue
                 else:
-                    print(f'Snapshot {args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot')
-                    df_row = pd.DataFrame([[thishalo, thisoutput, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
+                    print_mpi(f'Snapshot {args.halo}:{args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot', args)
+                    df_row = pd.DataFrame([[args.halo, args.output, -99, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
 
                 # -----------saving dataframe---------------
                 file_exists = os.path.exists(output_dfname)
                 df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
-                print(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time2).seconds)}')
+                print_mpi(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds)}', args)
     
     # --------saving final figure---------
     if args.plot_sfh:
         save_fig(fig, Path(args.output_dir) / 'plots', 'all_halos_sfh.png', args)
         save_fig(fig2, Path(args.output_dir) / 'plots', 'all_halos_sfr_to_pick.png', args)
+
+        print_master('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
     else:
-        print(f'Saved dataframe as {output_dfname}')
-    print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
+        print_master(f'Saved dataframe as {output_dfname}', args)
+
+        if ncores > 1: print_master('Parallely: time taken for ' + str(total_snaps) + ' snapshots with ' + str(ncores) + ' cores was %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
+        else: print_master('Serially: time taken for ' + str(total_snaps) + ' snapshots with ' + str(ncores) + ' core was %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)

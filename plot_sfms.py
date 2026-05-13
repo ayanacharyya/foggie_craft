@@ -23,8 +23,9 @@ def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt"):
     filespecs =	args.data_dir / filename
     df = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
 
-    df = df.drop('sfr', axis=1)
-    df = df.rename(columns={'sfr_100Myr':'sfr'})
+    if 'sfr_100Myr' in df.columns:
+        df = df.drop('sfr', axis=1)
+        df = df.rename(columns={'sfr_100Myr':'sfr'})
     
     df['log_sfr'] = np.log10(df['sfr'])
 
@@ -89,3 +90,5 @@ if __name__ == '__main__':
 
     # -----------make SFMS plot--------------------
     ax = plot_sfms(df_snap, args, xcol='log_star_mass', ycol='log_sfr', colorcol='redshift')
+
+    print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))
