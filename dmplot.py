@@ -12,7 +12,7 @@
   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
   run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
-  run dmplot.py --mode indi --lsm 10.5,11.0 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode indi --z_range 0,2
   run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
   run dmplot.py --mode lsmzsfr --lsm all --multi_panel

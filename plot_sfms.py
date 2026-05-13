@@ -24,6 +24,7 @@ def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt"):
     df = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
 
     if 'sfr_100Myr' in df.columns:
+        print('\nReplacing sfr column with sfr_100My column')
         df = df.drop('sfr', axis=1)
         df = df.rename(columns={'sfr_100Myr':'sfr'})
     

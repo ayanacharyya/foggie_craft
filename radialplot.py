@@ -1,21 +1,22 @@
-#
-#	Script for estimating FRB host galaxy DM from simulated electron density cubes
-#
-#								AB, August 2024
-#   Modified by AA in Apr 2026
-#   
-#   Examples of how to run (from within ipython):   
-#   run radialplot.py --mode lsmzsfr --rangekpc 200 --reskpc 0.5 --z_range 0,6 --inc 0,90 --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
-#   run radialplot.py --mode lsmzsfr --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
-#   run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
-#   run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
-#   run radialplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
-#   run radialplot.py --mode lsmzsfr --lsm 9.5,10.5
-#   run radialplot.py --quant electron --mode lsmzsfr --lsm all
-#   run radialplot.py --quant electron --mode lsmzsfr --lsm all --multi_panel
-#   run radialplot.py --quant gas --mode lsmzsfr --lsm all
-#   run radialplot.py --quant gas --mode lsmzsfr --lsm all --multi_panel
+'''
+	Script for estimating FRB host galaxy DM from simulated electron density cubes
 
+								AB, August 2024
+  Modified by AA in Apr 2026
+  
+  Examples of how to run (from within ipython):   
+  run radialplot.py --mode lsmzsfr --rangekpc 200 --reskpc 0.5 --z_range 0,6 --inc 0,90 --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
+  run radialplot.py --mode lsmzsfr --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
+  run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
+  run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
+  run radialplot.py --mode indi --z_range 0,2
+  run radialplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
+  run radialplot.py --mode lsmzsfr --lsm 9.5,10.5
+  run radialplot.py --quant electron --mode lsmzsfr --lsm all
+  run radialplot.py --quant electron --mode lsmzsfr --lsm all --multi_panel
+  run radialplot.py --quant gas --mode lsmzsfr --lsm all
+  run radialplot.py --quant gas --mode lsmzsfr --lsm all --multi_panel
+'''
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
 setup_plot_style()
