@@ -157,20 +157,31 @@ if __name__ == '__main__':
 
         # --------determining snapshots-----------
         else:
+            # ------------------reading existing file if any-------------------
+            if os.path.exists(output_dfname):
+                df_exists = pd.read_csv(output_dfname, sep=r'\s+', engine='python', comment='#')
+                existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
 
-            df = pd.read_csv(args.code_dir + f'halo_infos/00{thishalo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
+            # --------preparing to read in this halo-----------------
+            df = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
             output_list = []
             for redshift in redshift_list:
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
+            
+            outputs_todo = list(set(output_list) - set(existing_outputs))
 
             # --------domain decomposition; for mpi parallelisation-------------
-            total_snaps = len(output_list)
+            total_snaps = len(outputs_todo)
 
             comm = MPI.COMM_WORLD
             ncores = comm.size
             rank = comm.rank
+            print_master(f'For halo {args.halo}: need to do only {len(outputs_todo)} of original {len(output_list)} outputs because {len(existing_outputs)} already exist', args)
+            if len(outputs_todo) == 0:
+                print_master(f'Therefore continuing to next halo..', args)
+                continue
             print_master('Total number of MPI ranks = ' + str(ncores) + '. Starting at: {:%Y-%m-%d %H:%M:%S}'.format(datetime.now()), args)
             comm.Barrier() # wait till all cores reached here and then resume
 
@@ -186,10 +197,9 @@ if __name__ == '__main__':
 
             # -------------loop over snapshots-----------------
             print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
-
             for index in range(core_start + args.start_index, core_end + 1):
                 start_time_this_snapshot = datetime.now()
-                args.output = output_list[index]
+                args.output = outputs_todo[index]
                 args.halo = thishalo
                 print_mpi('Doing snapshot ' + args.output + ' of halo ' + args.halo + ' which is ' + str(index + 1 - core_start) + ' out of the total ' + str(core_end - core_start + 1) + ' snapshots...', args)
 
@@ -213,12 +223,11 @@ if __name__ == '__main__':
                         # ------appending to dataframe----------
                         df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth, args.diskrad, log_mstar_from_snap, log_mstar_from_profile, log_mgas_from_profile, half_mass_radius]], columns=columns)
                     except Exception as e:
-                        print_mpi(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and putting junk value in this dataframe row', args)
-                        df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth, -99, -99, -99, -99, -99]], columns=columns)
+                        print_mpi(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and not adding to dataframe', args)
                         continue
                 else:
-                    print_mpi(f'Snapshot {args.halo}:{args.output} is not in sfr_df, so filling dataframe with dummy values for this snapshot', args)
-                    df_row = pd.DataFrame([[args.halo, args.output, -99, -99, -99, -99, -99, -99, -99, -99]], columns=columns)
+                    print_mpi(f'Snapshot {args.halo}:{args.output} is not in sfr_df, therefore skipping, and not adding to dataframe', args)
+                    continue
 
                 # -----------saving dataframe---------------
                 file_exists = os.path.exists(output_dfname)

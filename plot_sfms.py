@@ -15,13 +15,14 @@ setup_plot_style()
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------------------------------
-def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt"):
+def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt", filepath=None):
     '''
     Reads in the list of FOGGIE simulation snapshots from <filename>
     Returns pandas dataframe
     '''
-    filespecs =	args.data_dir / filename
-    df = pd.read_csv(filespecs, sep=r'\s+', engine='python', comment='#')
+    if filepath is None:
+        filepath =	args.data_dir / filename
+    df = pd.read_csv(filepath, sep=r'\s+', engine='python', comment='#')
 
     if 'sfr_100Myr' in df.columns:
         print('\nReplacing sfr column with sfr_100My column')
