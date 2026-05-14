@@ -93,7 +93,6 @@ if __name__ == '__main__':
     if filename != '':
         list_of_fits = glob.glob(datadir + f'{filename.replace(".fits", "")}.fits')
     else:
-        #list_of_fits = glob.glob(datadir + f'*FRB_density*{extent:.1f}kpc*{scalekpc:.1f}kpc.fits') # all snapshots of this particular halo
         list_of_fits = glob.glob(datadir + f'*El_number_density*{extent:.1f}kpc*{scalekpc:.1f}kpc*.fits') # all snapshots of this particular halo
     total_snaps = len(list_of_fits)
 
@@ -122,7 +121,10 @@ if __name__ == '__main__':
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
 
-        profile_pkl_filename = datadir + fitsname + '_radprof.pkl'
+        if 'El' in fitsname: profdir = radialdir + 'electron_density/'
+        else: profdir = radialdir + 'gas_density/'
+        Path(profdir).mkdir(exist_ok=True, parents=True)
+        profile_pkl_filename = profdir + fitsname + '_radprof.pkl'
         
         if fitsname[-3:] == str(nfixpts): fitsname = fitsname[:-4]
         this_sim = fitsname.split('_')[:2]
