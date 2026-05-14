@@ -121,9 +121,9 @@ if __name__ == '__main__':
         thisfile = Path(list_of_fits[index])
         fitsname = thisfile.stem
 
-        if 'El' in fitsname: profsubdir = radialdir + 'electron_density/'
-        else: profsubdir = radialdir + 'gas_density/'
-        profdir = datadir + profsubdir
+        if 'El' in fitsname: profsubdir = 'electron_density/'
+        else: profsubdir = 'gas_density/'
+        profdir = radialdir + profsubdir
         Path(profdir).mkdir(exist_ok=True, parents=True)
         profile_pkl_filename = profdir + fitsname + '_radprof.pkl'
         
@@ -156,8 +156,9 @@ if __name__ == '__main__':
             with open(profile_pkl_filename, 'rb') as file_obj:
                 cubene = pkl.load(file_obj) # load the pickle file
             
-            Path(plotdir + profsubdir).mkdir(exist_ok=True, parents=True)
-            plot_nerad(cubene, incranges, plotdir + profsubdir + fitsname)
+            prof_figdir = plotradial + profsubdir
+            Path(prof_figdir).mkdir(exist_ok=True, parents=True)
+            plot_nerad(cubene, incranges, prof_figdir + fitsname)
 
         elif (exmode=='losdm'):
             print_mpi("\nEstimating LoS DMs...\n")

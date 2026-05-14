@@ -4,15 +4,15 @@ from collections import namedtuple
 
 #root_dir    =   "../data_260310/"
 #root_dir = "../"
-root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/May10/"
-#root_dir = "/nobackupp19/aachary2/foggie_craft/"
+#root_dir = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/May10/"
+root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 #datadir     =   root_dir                    #   Location of the FITS cubes
 datadir     =   root_dir + "data/"                #   Location of the FITS cubes
 losdir      =   root_dir + "losdms/"        #   Location of the LoS DMs
 radialdir   =   datadir + "radial_profiles/"                 #   Location of the radial profiles
 plotdir     =   root_dir + "plots/"        #   Location of the LoS DMs
-plotradial  =   plotdir + "density_profiles/"                   # 
+plotradial  =   plotdir + "radial_profiles/"                   # 
 
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
 

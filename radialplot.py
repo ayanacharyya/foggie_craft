@@ -10,6 +10,7 @@
   run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
   run radialplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
   run radialplot.py --mode indi --z_range 0,2
+  run radialplot.py --mode indi --z_range 0,2 --quant gas
   run radialplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run radialplot.py --mode lsmzsfr --lsm 9.5,10.5
   run radialplot.py --quant electron --mode lsmzsfr --lsm all
@@ -140,8 +141,8 @@ if __name__ == '__main__':
     #	--------------------------	Read inputs	-------------------------------
     args = parse_args()
     if not args.keep: plt.close('all')
-    args.radial_data_dir = args.data_dir / f'radial_profiles_{args.quant}_density'
-    args.radial_plot_dir = args.plot_dir / f'{args.quant}_density_profiles'
+    args.radial_data_dir = args.data_dir / 'radial_profiles' / f'{args.quant}_density'
+    args.radial_plot_dir = args.plot_dir / 'radial_profiles' / f'{args.quant}_density'
     args.quant_text = '_El_number' if args.quant == 'electron' else ''
     incranges	=	np.array([[item - dinc/2, item + dinc/2] for item in incvals])
 
