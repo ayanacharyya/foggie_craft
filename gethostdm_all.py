@@ -159,6 +159,7 @@ if __name__ == '__main__':
             prof_figdir = plotradial + profsubdir
             Path(prof_figdir).mkdir(exist_ok=True, parents=True)
             plot_nerad(cubene, incranges, prof_figdir + fitsname)
+            if total_snaps > 10: plt.close('all')
 
         elif (exmode=='losdm'):
             print_mpi("\nEstimating LoS DMs...\n")
