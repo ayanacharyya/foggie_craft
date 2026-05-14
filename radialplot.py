@@ -70,7 +70,9 @@ def execute_mode_indi(df_snap, incranges, args):
             if i % ncols > 0:
                 ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
                 ax.set_ylabel('')
-    
+        
+        if len(df_snap) > 10: plt.close('all')
+
     if args.multi_panel: save_fig(fig, args.fig_dir, f'{args.mode}_{args.quant}_density_multipanel_radprof.pdf', args)
     return
 
@@ -168,6 +170,7 @@ if __name__ == '__main__':
 
             #	-------------------------	Initialize	-----------------------------------
             df_snap = read_snap_list(args)
+            df_snap = df_snap.rename(columns={'log_star_mass':'lsm'})
             if (len(df_snap) < 1):
                 sys.exit('Exiting because no snapshot found... ')
             
