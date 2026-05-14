@@ -18,7 +18,7 @@
 
 #set output and error directories
 #PBS -j oe
-#PBS -o pbs_ldan_ghdm_all.out
+#PBS -o top_ldan_gmsfr.out
 
 ###### Load necessary modules #########
 module purge
