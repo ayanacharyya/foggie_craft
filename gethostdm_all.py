@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
         if 'El' in fitsname: profsubdir = radialdir + 'electron_density/'
         else: profsubdir = radialdir + 'gas_density/'
-        profdir = profdir + profsubdir
+        profdir = datadir + profsubdir
         Path(profdir).mkdir(exist_ok=True, parents=True)
         profile_pkl_filename = profdir + fitsname + '_radprof.pkl'
         
