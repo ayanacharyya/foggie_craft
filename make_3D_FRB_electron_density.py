@@ -206,7 +206,9 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
         # ---------------saving fig------------------------
         outfile_rootname = '%s_%s_diskrel_%s%s.pdf' % (args.output, args.halo, quant_label, args.upto_text)
         if args.do_all_sims: outfile_rootname = 'z=*_' + outfile_rootname[len(args.output) + 1:]
-        figname = args.fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
+        if 'el' in quant_label.lower(): fig_dir = args.fig_dir + 'electron_density/'
+        else: fig_dir = args.fig_dir + 'gas_density/'
+        figname = fig_dir + outfile_rootname.replace('*', '%.5F' % (args.current_redshift))
 
         if args.fortalk:
             mplcyberpunk.add_glow_effects()

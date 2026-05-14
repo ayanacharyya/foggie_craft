@@ -82,7 +82,9 @@ def plot_projections_from_frb(data_faceon, data_edgeon, args, crpix=None, cdelt=
         except: pass
 
     figname = f'{args.output}_{args.halo}_diskrel_{quant_label}{args.upto_text}.png'
-    save_fig(fig, Path(args.fig_dir), figname, args, dpi=dpi)
+    if 'el' in quant_label.lower(): fig_dir = args.fig_dir + 'electron_density/'
+    else: fig_dir = args.fig_dir + 'gas_density/'
+    save_fig(fig, Path(fig_dir), figname, args, dpi=dpi)
 
     return fig
 
