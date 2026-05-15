@@ -76,16 +76,19 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
 
         ax.errorbar(data_arr[0], data_arr[1], yerr=[data_arr[2], data_arr[3]], fmt=mark_arr[index], fillstyle=fill_arr[index], mfc=face_col_arr[index], mec=face_col_arr[index], ecolor=face_col_arr[index], lw=1, markersize=6, capsize=4)
         
-        dm_arr = 10 ** logradialexp3(data_arr[0], dmpars['r0'], dmpars['D0'])
+        dm_arr = schechter(data_arr[0], dmpars['r0'], dmpars['D0'])
         ax.plot(data_arr[0], dm_arr, color=face_col_arr[index], lw=1, ls='dashed')
-            
+
+        ax.text(x=impbinegs[-1], y=320 / (index+1), s=f"$D_0$ = {dmpars['D0']:.1f}", c=face_col_arr[index], fontsize=args.fontsize / args.fontfactor, ha='right', va='top')
+        ax.text(x=impbinegs[-1], y=200 / (index+1), s=f"$r_0$ = {dmpars['r0']:.1f}", c=face_col_arr[index], fontsize=args.fontsize / args.fontfactor, ha='right', va='top')
+
         if len(args.inc_bins) > 1:
             ax.text(x=0.4 * impbinegs[1], y=0.8 + index * 0.3, s=f'{args.inc_range[0]}' + r' < $i$ < ' + f'{args.inc_range[1]}', fontsize=args.fontsize / args.fontfactor, color=face_col_arr[index])
 
     # ------------plot based on expected DM from scaling relation-----------
-    if len(args.inc_bins) < 2:
-        dm_expected_arr = 10 ** logradialexp3(data_arr[0], 10.0 ** (0.61 -0.53 * (dmpars['medlsm'] - 10)), 10.0 ** (2.15 + 0.24 * (dmpars['medlsm'] - 10)))
-        ax.plot(data_arr[0], dm_expected_arr, color='r', lw=1, ls='dotted')
+    # if len(args.inc_bins) < 2:
+    #     dm_expected_arr = 10 ** logradialexp3(data_arr[0], 10.0 ** (0.61 -0.53 * (dmpars['medlsm'] - 10)), 10.0 ** (2.15 + 0.24 * (dmpars['medlsm'] - 10)))
+    #     ax.plot(data_arr[0], dm_expected_arr, color='r', lw=1, ls='dotted')
 
     # -------annotating plot----------------
     ax.set_xscale("log")
@@ -99,14 +102,15 @@ def plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=None):
     
     ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, set_ticks=False)
 
-    ax.text(x=0.4*impbinegs[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f"%(dmpars['lsm_bin'].left, dmpars['lsm_bin'].right), fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=0.4*impbinegs[1], y=300, s=rf'{args.z_range[0]} $< z <$ {args.z_range[1]}', fontsize=args.fontsize / args.fontfactor)
+    #ax.text(x=0.4*impbinegs[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f"%(dmpars['lsm_bin'].left, dmpars['lsm_bin'].right), fontsize=args.fontsize / args.fontfactor)
     #ax.text(x=0.4*impbinegs[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"% dmpars['medlsm'], fontsize=args.fontsize / args.fontfactor)
     #ax.text(x=0.4*impbinegs[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"% dmpars['medsfr'], fontsize=args.fontsize / args.fontfactor)	
     #ax.text(x=1.0*impbinegs[-4], y=150, s="$D_0$ = %d $\pm$ %d"%(dmpars['D0'], dmpars['eD0']), fontsize=args.fontsize / args.fontfactor)
     #ax.text(x=1.0*impbinegs[-4], y=75, s="$r_0$ = %.1f $\pm$ %.1f"%(dmpars['r0'], dmpars['er0']), fontsize=args.fontsize / args.fontfactor)
 
     if given_ax is None:
-        save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}.pdf', args)
+        save_fig(fig, args.fig_dir, f'DM_vs_impfact_inc{",".join(np.array(args.inc_bins).flatten().astype(str))}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}.pdf', args)
         plt.show(block=False)
 
     return ax
@@ -133,7 +137,8 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
         col = color_list[index]
 
         #ax.plot(data_arr[0], data_arr[1], color=col, lw=1)
-        dm_arr = 10 ** logradialexp3(data_arr[0], dmpars['r0'], dmpars['D0'])
+        dm_arr = schechter(data_arr[0], dmpars['r0'], dmpars['D0'])
+
         ax.plot(data_arr[0], dm_arr, color=col, lw=2, ls=lslist[index % len(lslist)], label=f'{dmpars["lsm_bin"].left:.1f}-{dmpars["lsm_bin"].right:.1f}')
         ax.fill_between(data_arr[0], data_arr[1] - data_arr[2], data_arr[1] + data_arr[3], color=col,alpha=0.1)
 		
@@ -150,7 +155,7 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
     
     ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, set_ticks=False)
         
-    save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_lsm_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_lsm_inc{args.inc_range[0]}-{args.inc_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}.pdf', args)
     plt.show(block=False)
 
     return fig
@@ -268,7 +273,7 @@ if __name__ == '__main__':
                     ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
                     ax.set_ylabel('')
         if args.multi_panel:
-            save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel.pdf', args)
+            save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel_zrange_{args.z_range[0]}_{args.z_range[1]}.pdf', args)
 
     if args.plot_dm_all_lsm:
         df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe

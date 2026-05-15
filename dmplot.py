@@ -367,9 +367,9 @@ if __name__ == '__main__':
                     ax = plot_dm_impfac_halo_combined(df_snap, args)
 
                 elif args.mode == 'indi' or args.mode == 'plot_indi':
-                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
+                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
                     #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_star_mass')
-                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
+                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
 
 
         if args.mode == 'lsmzsfr' and args.multi_panel:
