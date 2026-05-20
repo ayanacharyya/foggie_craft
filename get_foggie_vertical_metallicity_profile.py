@@ -6,8 +6,8 @@
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    29-04-2026
-    Examples :   run get_foggie_vertical_metallicity_profile.py --system ayan_ssd --halo 8508 --run nref11c_nref9f --output RD0027 --upto_kpc 20
-                 run get_foggie_vertical_metallicity_profile.py --system ayan_ssd --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 20
+    Examples :   run get_foggie_vertical_metallicity_profile.py --system ayan_ssd --halo 8508 --run nref11c_nref9f --output RD0027 --upto_kpc 15
+                 run get_foggie_vertical_metallicity_profile.py --system ayan_ssd --halo 2392 --run 2162_39 --output DD1360 --upto_kpc 5
 """
 from craft_header import *
 from craft_utils import *
@@ -31,7 +31,7 @@ def make_hdu(data, quant, name_suffix, args):
     header['WIDTH'] = (args.plot_width, 'kpc')
     
     for ind in range(2):
-        header[f'CRPIX{ind+1}'] = np.shape(data)[ind] / 2. + 0.5
+        header[f'CRPIX{ind+1}'] = np.shape(data)[ind] / 2.
         header[f'CRVAL{ind+1}'] = 0.
         header[f'CDELT{ind+1}'] = (args.kpc_per_pix_proj, 'kpc')
 
@@ -67,7 +67,7 @@ def write_projected_frb(quant_arr, args):
 
     # -------extract the required box------------
     box_center = ds.halo_center_kpc
-    box_width = args.galrad * 2  # in kpc
+    box_width = args.galrad * 2 * 1.44 # in kpc # factor of np.sqrt(2) so that the chosen box is larger than the final intended width, such that on rotation of the box there are no empty spaces visible
     box_width_kpc = ds.arr(box_width, 'kpc')
     box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2.]
 
@@ -77,7 +77,7 @@ def write_projected_frb(quant_arr, args):
     primary_hdu = fits.PrimaryHDU()
     img_hdu_list.append(primary_hdu)
 
-    args.plot_width = box_width/1.44
+    args.plot_width = box_width / 1.44 # back to the intended width of the FRB image
     args.ncell_buff = 800 # this buffer size is purely for visualising and saving the projected map
     args.kpc_per_pix_proj = args.plot_width / args.ncell_buff
 
@@ -107,16 +107,13 @@ def write_projected_frb(quant_arr, args):
     return hdul
 
 # --------------------------------------------------------------------------------------------------------
-def plot_projections_from_frb(data_proj, args, ax=None, crpix=None, cdelt=None, crval=0, quant_label='density', clim=None,  cmap='viridis', takelog=True, clabel=None, alpha=1, hide_cbar=False):
+def plot_projections_from_frb(data_proj, args, ax=None, clim=None,  cmap='viridis', takelog=True, clabel=None, alpha=1, hide_cbar=False):
     '''
     Plots the input face on and edge on FRBs onto the same figure
     Returns figure handle
     '''
     if takelog:
         data_proj = np.log10(data_proj)
-
-    if crpix is None:
-        crpix = np.shape(data_proj)[0]/2.
     
     # ------plotting onto a matplotlib figure--------------
     if ax is None:
@@ -127,7 +124,7 @@ def plot_projections_from_frb(data_proj, args, ax=None, crpix=None, cdelt=None, 
     fontsize = args.fontsize
 
     # ----------plotting axes----------------
-    p = ax.imshow(data_proj, origin='lower', cmap=cmap, vmin=clim[0] if clim is not None else None, vmax=clim[1] if clim is not None else None, alpha=alpha)
+    p = ax.imshow(data_proj, origin='lower', cmap=cmap, vmin=clim[0] if clim is not None else None, vmax=clim[1] if clim is not None else None, alpha=alpha, extent=args.extent)
 
     # ---------------making colorbar------------------------
     if not hide_cbar:
@@ -137,15 +134,14 @@ def plot_projections_from_frb(data_proj, args, ax=None, crpix=None, cdelt=None, 
         cbar.set_label(clabel, fontsize=fontsize) # this is to have more control on the display of the color label
 
     # ---------------prepping axes------------------------
-    ax.xaxis.set_major_locator(plt.MaxNLocator(5))
-    ax.yaxis.set_major_locator(plt.MaxNLocator(5))
-    if cdelt is None: ax.set_xticklabels(['%.1F' % item for item in ax.get_xticks()], fontsize=fontsize)
-    else: ax.set_xticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=fontsize)
+    ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+
     ax.set_xlabel('Offset (kpc)', fontsize=fontsize)
-    if cdelt is None: ax.set_yticklabels(['%.1F' % item for item in ax.get_yticks()], fontsize=fontsize)
-    else: ax.set_yticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_yticks()], fontsize=fontsize)
     ax.set_ylabel('Offset (kpc)', fontsize=fontsize)
-  
+
+    ax.tick_params(axis='both', labelsize=fontsize)
+
     # ---------------making annotations------------------------
     ax.text(0.97, 0.95, 'z = %.2F' % args.current_redshift, c='white', ha='right', va='top', transform=ax.transAxes, fontsize=fontsize, bbox=dict(facecolor='k', alpha=0.3, edgecolor='k'))
 
@@ -160,7 +156,7 @@ def plot_projections_from_frb(data_proj, args, ax=None, crpix=None, cdelt=None, 
     return ax
 
 # --------------------------------------------------------------------------------------------------------
-def bin_cones(data, center, opening_angle_deg, bin_edges):
+def bin_vertical_cones(data, center, opening_angle_deg, bin_edges):
     '''
     Computes the binned mean value in conical bins around the center of the image, within a given angle (in degrees)
     Returns the bin distances, binned mean values, conical mask and binned_map
@@ -179,11 +175,11 @@ def bin_cones(data, center, opening_angle_deg, bin_edges):
     mask_bottom = np.abs(theta + np.pi/2) < half_angle
     cone_mask = mask_top | mask_bottom
     
-    # 3. Extract data within the cones
+    # Extract data within the cones
     r_in_cone = r[cone_mask]
     metal_in_cone = data[cone_mask]
     
-    # 4. Perform Binning
+    # Perform Binning
     bin_means, edges, _ = binned_statistic(r_in_cone, metal_in_cone, statistic='mean', bins=bin_edges)
     bin_centers = (edges[:-1] + edges[1:]) / 2
     
@@ -200,29 +196,111 @@ def bin_cones(data, center, opening_angle_deg, bin_edges):
     return bin_centers, bin_means, cone_mask, binned_map
 
 # --------------------------------------------------------------------------------------------------------
-def overplot_bin_mask(xc, yc, angle, bins, ax):
+def bin_horizontal_cones(data, center, opening_angle_deg, bin_edges):
+    '''
+    Computes the binned mean value in conical bins around the center of the image, within a given angle (in degrees)
+    Returns the bin distances, binned mean values, conical mask and binned_map
+    '''
+    # Create coordinate grids
+    yc, xc = center
+    y, x = np.indices(data.shape)
+    r = np.sqrt((x - xc)**2 + (y - yc)**2)
+    theta = np.arctan2(y - yc, x - xc) # theta is 0 at +x axis, goes from -pi to pi
+    
+    # Define the Conical Mask (horizontal inflows)
+    # Left cone is centered at pi (180 deg), Right at 0 (0 deg)
+    half_angle = np.radians(opening_angle_deg / 2)
+    mask_left = (np.abs(theta - np.pi) < half_angle) | (np.abs(theta + np.pi) < half_angle)
+    mask_right = np.abs(theta - 0) < half_angle
+    cone_mask = mask_left | mask_right
+    
+    # Extract data within the cones
+    r_in_cone = r[cone_mask]
+    metal_in_cone = data[cone_mask]
+    
+    # Perform Binning
+    bin_means, edges, _ = binned_statistic(r_in_cone, metal_in_cone, statistic='mean', bins=bin_edges)
+    bin_centers = (edges[:-1] + edges[1:]) / 2
+    
+    # Create a 2D map of the binned metallicity for plotting
+    binned_map = np.full_like(data, np.nan)
+    # Digitize the entire radial grid
+    bin_indices = np.digitize(r, edges)
+    
+    for i in range(1, len(edges)):
+        # Apply the mean value to all pixels in that radial bin within the cone
+        bin_mask = (bin_indices == i) & cone_mask
+        binned_map[bin_mask] = bin_means[i-1]
+        
+    return bin_centers, bin_means, cone_mask, binned_map
+
+# --------------------------------------------------------------------------------------------------------
+def overplot_vertical_bin_mask(xc, yc, angle, bins, ax, color='white'):
     '''
     Overplot binned mask on data
     Returns axis handle
     '''
+    radial_extent = np.max(bins)
     # Draw cone boundaries
     for a in [90-angle/2, 90+angle/2, -90-angle/2, -90+angle/2]:
-        ax.plot([xc, xc + 150*np.cos(np.radians(a))], [yc, yc + 150*np.sin(np.radians(a))], color='white', lw=1, ls='--')
+        ax.plot([xc, xc + radial_extent * np.cos(np.radians(a))], [yc, yc + radial_extent * np.sin(np.radians(a))], color=color, lw=1, ls='-')
     
-    # Draw radial arcs
+    # Draw radial arcs ONLY within the cone angles
     for edge in bins:
-        circle = plt.Circle((xc, yc), edge, color='white', fill=False, alpha=0.3)
-        ax.add_artist(circle)
+        diameter = 2 * edge # Arc requires diameters, so multiply the radial edge by 2
+        
+        # Top Cone Arc (centered at 90 degrees)
+        arc_top = Arc((xc, yc), width=diameter, height=diameter, angle=0,
+                    theta1=90 - angle/2, theta2=90 + angle/2,
+                    color=color, fill=False, alpha=0.4, lw=0.5, ls='-')
+        ax.add_patch(arc_top)
+        
+        # Bottom Cone Arc (centered at 270 degrees)
+        arc_bottom = Arc((xc, yc), width=diameter, height=diameter, angle=0,
+                        theta1=270 - angle/2, theta2=270 + angle/2,
+                        color=color, fill=False, alpha=0.4, lw=0.5, ls='-')
+        ax.add_patch(arc_bottom)
 
     return ax
 
 # --------------------------------------------------------------------------------------------------------
-def overplot_binned_data(binned_map, ax, args, clim=None, clabel='Mean Metallicity', cmap='viridis'):
+def overplot_horizontal_bin_mask(xc, yc, angle, bins, ax, color='white'):
+    '''
+    Overplot binned mask on data
+    Returns axis handle
+    '''
+    radial_extent = np.max(bins)
+    # Draw cone boundaries
+    for a in [180-angle/2, 180+angle/2, 0-angle/2, 0+angle/2]:
+        ax.plot([xc, xc + radial_extent * np.cos(np.radians(a))], [yc, yc + radial_extent * np.sin(np.radians(a))], color=color, lw=1, ls='-')
+    
+    # Draw radial arcs ONLY within the cone angles
+    for edge in bins:
+        diameter = 2 * edge # Arc requires diameters, so multiply the radial edge by 2
+        
+        # Left Cone Arc (centered at 180 degrees)
+        arc_top = Arc((xc, yc), width=diameter, height=diameter, angle=0,
+                    theta1=180 - angle/2, theta2=180 + angle/2,
+                    color=color, fill=False, alpha=0.4, lw=0.5, ls='solid')
+        ax.add_patch(arc_top)
+        
+        # Right Cone Arc (centered at 0 degrees)
+        arc_bottom = Arc((xc, yc), width=diameter, height=diameter, angle=0,
+                        theta1=0 - angle/2, theta2=0 + angle/2,
+                        color=color, fill=False, alpha=0.4, lw=0.5, ls='solid')
+        ax.add_patch(arc_bottom)
+
+    return ax
+
+# --------------------------------------------------------------------------------------------------------
+def overplot_binned_data(vertical_binned_map, ax, args, clim=None, clabel='Mean Metallicity', cmap='viridis', horizontal_binned_map=None):
     '''
     Overplot binned data on data
     Returns axis handle
     '''
-    p = ax.imshow(binned_map, origin='lower', vmin=clim[0] if clim is not None else None, vmax=clim[1] if clim is not None else None, cmap=cmap)
+    p = ax.imshow(vertical_binned_map, origin='lower', vmin=clim[0] if clim is not None else None, vmax=clim[1] if clim is not None else None, cmap=cmap, extent=args.extent)
+    if horizontal_binned_map is not None:
+        p = ax.imshow(horizontal_binned_map, origin='lower', vmin=clim[0] if clim is not None else None, vmax=clim[1] if clim is not None else None, cmap=cmap, extent=args.extent)
 
     fig = ax.figure
     cbar = fig.colorbar(p, ax=ax, orientation='vertical', fraction=0.047, pad=0.01)
@@ -232,20 +310,16 @@ def overplot_binned_data(binned_map, ax, args, clim=None, clabel='Mean Metallici
     return ax
 
 # --------------------------------------------------------------------------------------------------------
-def plot_bin_profile(centers, means, ax, args, ylabel='Mean Metallicity'):
+def plot_bin_profile(centers, means, ax, args, ylabel='Mean Metallicity', color='k'):
     '''
     Plot radial binned profile
     Returns axis handle
     '''
-    ax.scatter(centers, means, color='black', lw=2)
+    ax.scatter(centers, means, color=color, lw=2)
+    ax.set_aspect('auto')
     ax = annotate_axes(ax, 'Radius (kpc)', ylabel, args=args)
 
     return ax
-
-# ----------global variables------------
-quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
-              'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7, 0.7, 'cornflowerblue', metal_color_map, True, r'Zsun', r'Z/Z$_\odot$'],
-              } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
 
 # ---------------------main code-----------------------------
 if __name__ == '__main__':
@@ -254,7 +328,20 @@ if __name__ == '__main__':
     args.fontfactor = 1.
     if not 'pleiades' in args.system: args.output_dir = args.output_dir.replace('CRAFT', 'sharing')
 
+    # ----------global variables------------
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -2.5, 2.5, 'cornflowerblue', density_color_map, True, 'Msun/pc**2', r'Gas density [M$_\odot$ pc$^{-2}$]'], 
+                'metal':['metallicity', 'Gas metallicity', r'Zsun', -1.7 if 'nref' in args.run else None, 0.7 if 'nref' in args.run else None, 'cornflowerblue', 'plasma', True, r'Zsun', r'Z/Z$_\odot$'],
+                } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
+
+    # ----------inputs to change-------------------
     quant_arr = ['metal', 'density']
+    quant = 'metal' # choose between 'metal' and 'gas'
+    proj = 'EDGE ON' # choose between 'EDGE ON' and 'FACE ON'
+
+    bin_upto_kpc = args.upto_kpc / 1.5
+    bin_width_kpc = 0.5
+    vertical_angle = 45 # total opening angle
+    horizontal_angle = 20 # total opening angle
 
     # -----------determining directories----------------
     args.fig_dir = args.output_dir + 'metallicity_plots/'
@@ -275,8 +362,8 @@ if __name__ == '__main__':
         hdul = fits.open(fitsname)
 
     # --------preparing data------------
-    quant = 'metal'
-    hdu = hdul[f'{quant_dict[quant][1].upper()} EDGE ON PROJ']
+    hdu = hdul[f'{quant_dict[quant][1].upper()} {proj} PROJ']
+    proj_text = proj.replace(' ', '_').lower()
     header = hdu.header
     crpix, crval, cdelt = header['CRPIX1'], header['CRVAL1'], header['CDELT1']
     data = hdu.data
@@ -284,27 +371,27 @@ if __name__ == '__main__':
     args.current_redshift = 1#header['REDSHIFT']
     
     # --------preparing cone bins------------
-    bin_upto_kpc = args.upto_kpc / 4
-    bin_width_kpc = 0.5
-    angle = 45 # total opening angle
-
     bin_upto_pix = bin_upto_kpc / cdelt
     nbins = int(bin_upto_kpc / bin_width_kpc)
     rad_bins = np.linspace(0, bin_upto_pix, nbins) 
     
-    centers, means, cone_mask, binned_map = bin_cones(data, (crpix, crpix), angle, rad_bins)
+    vertical_centers, vertical_means, vertical_cone_mask, vertical_binned_map = bin_vertical_cones(data, (crpix, crpix), vertical_angle, rad_bins)
     if quant_dict[quant][7]:
-        binned_map = np.log10(binned_map)
-        means = np.log10(means)
+        vertical_binned_map = np.log10(vertical_binned_map)
+        vertical_means = np.log10(vertical_means)
         quant_dict[quant][9] = 'Log' + quant_dict[quant][9]
+
+    horizontal_centers, horizontal_means, horizontal_cone_mask, horizontal_binned_map = bin_horizontal_cones(data, (crpix, crpix), horizontal_angle, rad_bins)
+    if quant_dict[quant][7]:
+        horizontal_binned_map = np.log10(horizontal_binned_map)
+        horizontal_means = np.log10(horizontal_means)
 
     # ----------------making projection plots-------------------
     fig, axes = plt.subplots(1, 3, figsize=(13, 4))#, constrained_layout=True)
-    fig.subplots_adjust(left=0.07, bottom=0.1, right=0.98, top=0.98, wspace=0.4)
-    
+    fig.subplots_adjust(left=0.07, bottom=0.12, right=0.98, top=0.98, wspace=0.65)
+    args.extent = (-args.upto_kpc, args.upto_kpc, -args.upto_kpc, args.upto_kpc)
+
     axes[0] = plot_projections_from_frb(data, args, ax=axes[0],
-                                            crpix=crpix, cdelt=cdelt, crval=crval, 
-                                            quant_label=quant_dict[quant][0], 
                                             clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
                                             cmap=quant_dict[quant][6], 
                                             takelog=quant_dict[quant][7], 
@@ -314,26 +401,38 @@ if __name__ == '__main__':
                                             )
 
     axes[1] = plot_projections_from_frb(data, args, ax=axes[1],
-                                            crpix=crpix, cdelt=cdelt, crval=crval, 
-                                            quant_label=quant_dict[quant][0], 
                                             clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None,  
                                             cmap=quant_dict[quant][6], 
                                             takelog=quant_dict[quant][7], 
                                             clabel=quant_dict[quant][9],
-                                            alpha=0.5,
+                                            alpha=0.4,
                                             hide_cbar=True,
                                             )
 
     # ----------------overplotting bins-------------------
-    axes[0] = overplot_bin_mask(crpix, crpix, angle, rad_bins, axes[0])
-    axes[1] = overplot_binned_data(binned_map, axes[1], args, clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None, clabel=quant_dict[quant][9], cmap=quant_dict[quant][6])
-    
+    axes[0] = overplot_vertical_bin_mask(crval, crval, vertical_angle, rad_bins * cdelt, axes[0])
+    axes[0] = overplot_horizontal_bin_mask(crval, crval, horizontal_angle, rad_bins * cdelt, axes[0])
+    axes[1] = overplot_binned_data(vertical_binned_map, axes[1], args, clim=[quant_dict[quant][3], quant_dict[quant][4]] if quant_dict[quant][3] is not None else None, clabel=quant_dict[quant][9], cmap=quant_dict[quant][6], horizontal_binned_map=horizontal_binned_map)
+
     # ----------------making profile plots-------------------
-    centers_kpc = centers * cdelt + crval
-    axes[2] = plot_bin_profile(centers_kpc, means, axes[2], args, ylabel=quant_dict[quant][9])
+    vertical_color = 'cornflowerblue'
+    vertical_centers_kpc = vertical_centers * cdelt + crval
+    axes[2] = plot_bin_profile(vertical_centers_kpc, vertical_means, axes[2], args, ylabel=quant_dict[quant][9], color=vertical_color)
+    axes[2].text(0.95, 0.97, 'Vertical', c=vertical_color, fontsize=args.fontsize/args.fontfactor, ha='right', va='top', transform=axes[2].transAxes)
+
+    horizontal_color = 'salmon'
+    horizontal_centers_kpc = horizontal_centers * cdelt + crval
+    axes[2] = plot_bin_profile(horizontal_centers_kpc, horizontal_means, axes[2], args, ylabel=quant_dict[quant][9], color=horizontal_color)
+    axes[2].text(0.95, 0.89, 'Horizontal', c=horizontal_color, fontsize=args.fontsize/args.fontfactor, ha='right', va='top', transform=axes[2].transAxes)
 
     # ------------saving figure--------------
-    figname = f'{args.output}_{args.halo}_binned_{quant}{args.upto_text}.png'
+    figname = f'{args.output}_{args.halo}_binned_{quant}{proj_text}{args.upto_text}.png'
     save_fig(fig, Path(args.fig_dir), figname, args)
     
+    # ------------saving txtfile--------------
+    df = pd.DataFrame({'radius_kpc': vertical_centers_kpc, 'Z_minor': vertical_means, 'Z_major': horizontal_means})
+    outfilename = args.data_dir / f'{args.output}_{args.halo}_binned_{quant}{proj_text}{args.upto_text}.txt'
+    df.to_csv(outfilename, sep='\t', index=False)
+    print(f'Saved radial profile in {outfilename}')
+
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

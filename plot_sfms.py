@@ -59,9 +59,9 @@ def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
     color_arr = ['cornflowerblue', 'salmon', 'sienna', 'goldenrod', 'darkgreen', 'teal']
     df = df.sort_values(by=xcol)
 
-    popt = np.polyfit(df[xcol] - 10, df[ycol], 1)
-    print(popt)
-    ax.plot(df[xcol], np.poly1d(popt)(df[xcol].values - 10), c='k')
+    # popt = np.polyfit(df[xcol] - 10, df[ycol], 1)
+    # print(popt)
+    # ax.plot(df[xcol], np.poly1d(popt)(df[xcol].values - 10), c='k')
 
     # -------------plotting-------------
     for index, this_halo in enumerate(pd.unique(df['halo'])):
@@ -72,8 +72,8 @@ def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
 
     # ----------annotating and saving-----------
     ax = annotate_axes(ax, label_dict[xcol], label_dict[ycol], args=args, label='', clabel=label_dict[colorcol] if colorcol is not None else '', hide_cbar=colorcol is None, p=p, cticks_integer=True)
-    ax.set_ylim(-0.4, 2)
-    ax.set_xlim(9.8, 11.6)
+    ax.set_ylim(-0.6, 1.8)
+    ax.set_xlim(10.2, 11.5)
 
     figname = f'{xcol}_vs_{ycol}_lsm_range_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_range_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}.png'
     save_fig(fig, args.plot_dir, figname, args=args, dpi=300)
