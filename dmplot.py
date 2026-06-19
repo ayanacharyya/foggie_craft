@@ -11,6 +11,7 @@
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode proj --halo 5036 --z_range 0,0.5
   run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
   run dmplot.py --mode indi --z_range 0,2
   run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
@@ -137,6 +138,7 @@ def execute_mode_halo(df_snap, args):
         thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_150.npy'
         dm_arr	= np.load(thisfile)
         this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm'])
+        this_df['distmin'] = np.sqrt(this_df['impf'] ** 2 - this_df['distmaj'] ** 2)
         this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
 
         print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
@@ -144,8 +146,8 @@ def execute_mode_halo(df_snap, args):
 
         outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
         
-        ax_list = pfns.pltdm_ind_imf(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
-        pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
+        ax_list = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='distmin', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
+        #pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -215,6 +217,57 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
     df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
 
     return ax
+
+# -----------------------------------------------------------------------------
+def execute_mode_projection(df_snap, args):
+    '''
+    Function to execute mode projection
+    Returns dataframe with fitted parameters
+    '''
+    print(f"\nTracking halo {args.halo} ...\n")
+    outdir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
+
+    if not args.plot_all:
+        df_snap = df_snap[df_snap["halo"].astype(str) == args.halo]
+        print (f'\t\tFound {len(df_snap)} snapshots, for halo {args.halo}')
+
+        df_snap = df_snap[df_snap["snap"].astype(str) == args.output] ##
+        print (f'\t\tFound {len(df_snap)} snapshots, for output {args.output}')
+
+    compiled_rows = [] # to store the fitted parameters later in a separate file
+
+    for i, snap in df_snap.iterrows():
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_150.npy'
+        dm_arr	= np.load(thisfile)
+        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm'])
+        this_df['distmin'] = np.sqrt(this_df['impf'] ** 2 - this_df['distmaj'] ** 2)
+        this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
+
+        print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
+        print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
+
+        outfile = str(outdir / f'{snap["halo"]}_{snap["snap"]}')
+        
+        data_col, bin_col1, bin_col2 = 'losdm', 'distmin', 'distmaj'
+        popt, perr = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.2, hide=args.hide, bin_col1=bin_col1, bin_col2=bin_col2, data_col=data_col, given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
+
+        fit_dict = {f'{data_col}0': popt[0], f'e_{data_col}0': perr[0],
+                    f'{bin_col1}0': popt[1], f'e_{bin_col1}0': perr[1],
+                    f'{bin_col2}0': popt[2], f'e_{bin_col2}0': perr[2],
+                    }
+        
+        combined_row = {**snap.to_dict(), **fit_dict}
+        compiled_rows.append(combined_row)
+    
+    df_results = pd.DataFrame(compiled_rows)
+    output_df = outdir / 'projection_fit.csv'
+    
+    if os.path.exists(output_df):
+        df_results.to_csv(output_df, index=None, mode='a', header=False)
+    else:
+        df_results.to_csv(output_df, index=None)
+
+    return df_results
 
 # ------------------------------------------------------------------------------------------------
 def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
@@ -348,6 +401,9 @@ if __name__ == '__main__':
                 elif (args.mode=='halo') :
                     execute_mode_halo(df_snap, args)     
                     
+                elif (args.mode=='proj' or args.mode=='projection') :
+                    df_fit = execute_mode_projection(df_snap, args)     
+
                 elif (args.mode=='lsmzsfr'):                
                     # ---------------make the plots-----------------
                     ax = execute_mode_lsmzsfr(df_snap, args, given_ax=axes[nrow][ncol] if args.multi_panel else None)

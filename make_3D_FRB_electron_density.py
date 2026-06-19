@@ -113,7 +113,7 @@ def plot_proj_frb(data, ax, args, label='', unit='', clim=None,  cmap='viridis',
     return ax
 
 # --------------------------------------------------------------------------
-def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300, do_plot=True, return_frb=False, ncell_buff=800):
+def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='density', unit='', clim=None,  cmap='viridis', takelog=True, clabel=None, annotate_labels=None, dpi=300, do_plot=True, return_frb=False, ncell_buff=800, field_type='gas'):
     '''
     Function to make a 2D projection plot along edge-on and face-on views given a dataset
     Borrowed a little from foggie_load()
@@ -126,7 +126,7 @@ def plot_projection_diskrel(box, field, box_width, norm_L, args, quant_label='de
     x /= np.linalg.norm(x)  # normalize it
     y = np.cross(norm_L, x)  # cross product with L
 
-    field = ('gas', field)
+    field = (field_type, field)
     fontsize = args.fontsize
 
     # ---------------making face on and edge on projections------------------------

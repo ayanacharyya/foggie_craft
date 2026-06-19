@@ -87,6 +87,14 @@ def schechter (x, x0, y0):
     return (y)
 
 #	------------------------------------------------------------------------------------------------------
+def schechter_2d(xy, x0, y0, z0):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    z = z0 * np.exp(-((xy[0]/x0) ** (1/2.) + (xy[1]/y0) ** (1/2.))) 
+
+    return (z)
+#	------------------------------------------------------------------------------------------------------
 def logbeselk (x, x0, a0):
 #   Return a radial Bessel k
 #	Arguments:	Radius, scale radius, normalization

@@ -65,7 +65,7 @@ def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle
     return ax
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=None, fortalk=False):
+def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide=False, bin_col1='impf', bin_col2='distmaj', data_col='losdm', given_ax=None, fortalk=False):
 	#	Plot LoSDM vs impact factor and dmaj_proj for a given inclination range 
 
     percentiles = [16, 25, 50, 75, 84]
@@ -80,33 +80,80 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
 
     # ------------plot the profile----------
     if given_ax is None:
-        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
-        ax1	 	= fig.add_axes([0.07,0.15,0.40,0.83])
-        ax2	 	= fig.add_axes([0.49,0.15,0.40,0.83])
-        ax3	 	= fig.add_axes([0.90,0.15,0.02,0.83])
+        fig 	= plt.figure(figsize=(2.6 * fig_size, fig_size))
+        ax1	 	= fig.add_axes([0.05,0.12,0.30,0.72])
+        ax1c	= fig.add_axes([0.05,0.83,0.30,0.02])
+
+        ax2	 	= fig.add_axes([0.35,0.12,0.30,0.72])
+        ax2c	= fig.add_axes([0.35,0.83,0.30,0.02])
+
+        ax3	 	= fig.add_axes([0.65,0.12,0.30,0.72])
+        ax3c	= fig.add_axes([0.65,0.83,0.30,0.02])
     else:
         ax1, ax2, ax3 = given_ax
     
-    medim	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0, vmax=maxdmcol)
+    # -------------------display median data---------------
+    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0)#, vmax=maxdmcol)
 
+    # -------------------display scatter data---------------
+    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0)#, vmax=maxdmcol)
+
+    # ---------fitting------------------
+    impbincen = (impbinegs[:-1] + impbinegs[1:])/2
+    X, Y = np.meshgrid(impbincen, impbincen)
+    flat_pairs = np.column_stack((X.ravel(), Y.ravel()))
+
+    dmavg_flat = dmavg.flatten()
+    coords_flat = flat_pairs
+
+    good_indices = np.isfinite(dmavg_flat) # this is to discard potential NaN bins before fitting
+    dmavg_flat = dmavg_flat[good_indices]
+    coords_flat = coords_flat[good_indices]
+
+    popt,pcov	= curve_fit(schechter_2d, coords_flat.T, dmavg_flat,  p0=(10.0, 10.0, 50))
+    perr 		= np.sqrt(np.diag(pcov))
+    
+    for ind in range(len(popt)):
+        print(f'{popt[ind]} +/- {perr[ind]}')
+
+    # -------------------display fit residuals---------------
+    dmfit = schechter_2d(flat_pairs.T, *popt).reshape(np.shape(dmavg))
+    dmres = (dmavg - dmfit)
+    cmax = np.max(np.abs(dmres))
+    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="RdBu_r", vmin=-cmax, vmax=cmax)
+
+    # --------------plot annotations---------------------
+    label_dict = {'distmaj': 'Offset from major axis (kpc)',
+                  'distmin': 'Offset from minor axis (kpc)',
+                  'impf': 'Impact factor (kpc)',
+                  }
+    
     ax1.text(x=0, y=len(impbinegs) - 2, s="Median")
-    ax1.text(x=0, y=len(impbinegs) - 3, s="z = %.1f"%redshift)
-    ax1.text(x=0, y=len(impbinegs) - 3.8, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
-    ax1.text(x=0, y=len(impbinegs) - 4.6, s="SFR = %.2f $M_{\odot} yr^{-1}$"%sfr)
+    #ax1.text(x=0, y=len(impbinegs) - 3, s="z = %.1f"%redshift)
+    #ax1.text(x=0, y=len(impbinegs) - 3.8, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
+    #ax1.text(x=0, y=len(impbinegs) - 4.6, s="SFR = %.2f $M_{\odot} yr^{-1}$"%sfr)
     ax1.set_xticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax1.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
-    ax1.set_xlabel("Impact factor (kpc)")
-    ax1.set_ylabel("Projected distance from major axis (kpc)")
+    ax1.set_xlabel(label_dict[bin_col1])
+    ax1.set_ylabel(label_dict[bin_col2])
 
-    ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0, vmax=maxdmcol)
     ax2.text(x=0, y=len(impbinegs) - 1-1, s="Scatter")
-    ax2.text(x=0, y=len(impbinegs) - 1-2, s="%.1f$^{\circ}$ < i < %.1f$^{\circ}$"%(inc_range[0],inc_range[1]))
+    #ax2.text(x=0, y=len(impbinegs) - 1-2, s="%.1f$^{\circ}$ < i < %.1f$^{\circ}$"%(inc_range[0],inc_range[1]))
     ax2.set_xticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax2.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax2.set_yticklabels([])
-    ax2.set_xlabel("Impact factor (kpc)")
+    ax2.set_xlabel(label_dict[bin_col1])
 
-    fig.colorbar(medim, cax=ax3, label="DM (pc cm$^{-3}$)")	
+    ax3.text(x=0, y=len(impbinegs) - 1-1, s="Best fit residuals")
+    ax3.set_xticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
+    ax3.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
+    ax3.set_yticklabels([])
+    ax3.set_xlabel(label_dict[bin_col1])
+
+    # ------------annotating colorbars-------------------
+    fig.colorbar(med, cax=ax1c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
+    fig.colorbar(scatter, cax=ax2c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
+    fig.colorbar(residual, cax=ax3c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
 
     if given_ax is None:
         figname = Path(outfilename + ".png")
@@ -114,7 +161,7 @@ def pltdm_ind_imf(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, hide
         if hide: plt.close()
         else: plt.show(block=False)
 
-    return ax1, ax2, ax3
+    return popt, perr
 
 #	----------------------------------------------------------------------------------------------------------	
 def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None):
