@@ -29,6 +29,8 @@ def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt", filepath=None)
         df = df.drop('sfr', axis=1)
         df = df.rename(columns={'sfr_100Myr':'sfr'})
     
+    df['sfr'] = df['sfr'].map(lambda x: np.nan if x == 'NAN' else float(x))
+    df['sfr'] = df['sfr'].astype(np.float64)
     df['log_sfr'] = np.log10(df['sfr'])
 
     df = df.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
