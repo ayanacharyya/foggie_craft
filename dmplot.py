@@ -280,8 +280,8 @@ def execute_mode_plot_projection(args):
     # -----------setting up figure-----------------
     #inc_ranges = [[0, 30], [80, 90]]
     inc_ranges = [[60, 90]]
-    col1, col2 = 'distmin0', 'distmaj0'
-    #col1, col2 = 'distmin0_indep', 'distmaj0_indep'
+    #col1, col2 = 'distmin0', 'distmaj0'
+    col1, col2 = 'distmin0_indep', 'distmaj0_indep'
     limits = [0.5, 300]
     
     # -----------setting up figure-----------------

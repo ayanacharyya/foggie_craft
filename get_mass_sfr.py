@@ -157,6 +157,13 @@ if __name__ == '__main__':
 
         # --------determining snapshots-----------
         else:
+            # ------------------reading existing file if any-------------------
+            if os.path.exists(output_dfname):
+                df_exists = pd.read_csv(output_dfname, comment='#')
+                existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
+            else:
+                existing_outputs = []
+
             # --------preparing to read in this halo-----------------
             df = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
@@ -165,13 +172,7 @@ if __name__ == '__main__':
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
             
-            # ------------------reading existing file if any-------------------
-            if os.path.exists(output_dfname):
-                df_exists = pd.read_csv(output_dfname, comment='#')
-                existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
-                outputs_todo = list(set(output_list) - set(existing_outputs))
-            else:
-                outputs_todo = output_list
+            outputs_todo = list(set(output_list) - set(existing_outputs))
 
             # --------domain decomposition; for mpi parallelisation-------------
             total_snaps = len(outputs_todo)
