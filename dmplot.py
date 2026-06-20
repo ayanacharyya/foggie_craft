@@ -7,16 +7,20 @@
   Examples of how to run (from within ipython):   
   run dmplot.py --mode lsmzsfr --rangekpc 200 --reskpc 0.5 --z_range 0,6 --inc 0,90 --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5 --lsfr 0,0.5 --resfile_prefix all_lsm
+
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
+  run dmplot.py --mode indi --z_range 0,2 --inc 0,90 --clobber
+  run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
+
   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
+  run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
+
   run dmplot.py --mode proj --halo 5036 --z_range 0,0.5
   run dmplot.py --mode proj --z_range 0,2 --inc 80,90 --plot_all --hide --clobber
   run dmplot.py --mode plot_proj --z_range 0,2 --fontsize 12
-  run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
-  run dmplot.py --mode indi --z_range 0,2
-  run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
+
   run dmplot.py --mode lsmzsfr --lsm 9.5,10.5
   run dmplot.py --mode lsmzsfr --lsm all --multi_panel
   run dmplot.py --mode lsmzsfr --lsm all
@@ -96,22 +100,16 @@ def execute_mode_indi(df_snap, args):
                 ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
                 ax.set_ylabel('')
 
-        # --------------initialise dataframe------------------
-        lgsm	= np.log10(10.0 ** snap["log_gas_mass"] + 10.0 ** snap["log_star_mass"])
-        df_out = pd.DataFrame({'inc_bin': pd.Interval(args.inc_range[0], args.inc_range[1]),
-                            'medlsm': snap["log_star_mass"],
-                            'medsfr': snap["sfr"],
-                            'medlgm': snap["log_gas_mass"],
-                            'medlgsm': lgsm,
-                            'ledssfr9': np.log10(snap["sfr"]) - snap["log_star_mass"] + 9,
-                            'medgsfr9': np.log10(snap["sfr"]) - snap["log_gas_mass"] + 9,
-                            'medgssfr9': np.log10(snap["sfr"]) - lgsm + 9,
-                            'r0': pars[0],
-                            'er0': epars[0],
-                            'D0': pars[1],
-                            'eD0': epars[1],
-                            }, index=[0])
+        # --------------initialise dataframe------------------        
+        fit_dict = {'r0': pars[0],
+                    'er0': epars[0],
+                    'D0': pars[1],
+                    'eD0': epars[1],
+                    }
         
+        combined_row = {**snap.to_dict(), **fit_dict}
+        df_out = pd.DataFrame(combined_row, index=[0])
+
         df_out.to_csv(param_outfile, mode='a', sep='\t', header=not os.path.exists(param_outfile), index=None)
         if len(df_snap) > 10 and not args.multi_panel: plt.close('all')
 
@@ -273,7 +271,6 @@ def execute_mode_projection(df_snap, args):
     return df_results
 
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 def execute_mode_plot_projection(args):
     '''
     Function to execute mode plot_rojection, which reads in the fitted parameter file and plots rx0 vs ry0
@@ -281,19 +278,21 @@ def execute_mode_plot_projection(args):
     Returns nothing
     '''
     # -----------setting up figure-----------------
-    inc_ranges = [[0, 30], [60, 90]]
+    #inc_ranges = [[0, 30], [80, 90]]
+    inc_ranges = [[60, 90]]
     col1, col2 = 'distmin0', 'distmaj0'
     #col1, col2 = 'distmin0_indep', 'distmaj0_indep'
     limits = [0.5, 300]
     
     # -----------setting up figure-----------------
-    fig, axes = plt.subplots(1, len(inc_ranges), figsize=(8,4), layout='constrained', sharey=True)
+    fig, axes = plt.subplots(1, len(inc_ranges), figsize=(4 * len(inc_ranges), 4), layout='constrained', sharey=True)
+    axes = np.atleast_1d(axes)
 
     color = 'cornflowerblue'
-    label_dict = {'distmaj0': 'Major-axis scale radius (kpc)',
-                  'distmin0': 'Minor-axis scale radius (kpc)',
-                  'distmaj0_indep': 'Major-axis scale radius (kpc): independent fit',
-                  'distmin0_indep': 'Minor-axis scale radius (kpc): independent fit',
+    label_dict = {'distmaj0': r'r$_{0,maj}$ (kpc)',
+                  'distmin0': r'r$_{0,min}$ (kpc)',
+                  'distmaj0_indep': r'r$_{0,maj}$ (kpc)',
+                  'distmin0_indep': r'r$_{0,min}$ (kpc)',
                   }
 
     # ---------looping over inc ranges----------
@@ -303,8 +302,8 @@ def execute_mode_plot_projection(args):
         print(f'For inc_range {inc_range} ({index + 1}/{len(inc_ranges)}): Reading projection fit parameters from {input_filename}..')
         df = pd.read_csv(input_filename)
 
-        axes[index].errorbar(df[col1], df[col2], xerr=df[f'e_{col1}'], yerr=df[f'e_{col2}'], fmt='none', color=color, lw=0.5)
-        axes[index].scatter(df[col1], df[col2], c=color, s=10, lw=0.5, ec='k')
+        axes[index].errorbar(df[col1], df[col2], xerr=df[f'e_{col1}'], yerr=df[f'e_{col2}'], fmt='none', color=color, lw=0.5, alpha=0.8, capsize=2)
+        axes[index].scatter(df[col1], df[col2], c=color, s=10, lw=0.5, ec='k', alpha=0.8)
 
         axes[index].set_xscale('log')
         axes[index].set_yscale('log')
@@ -314,10 +313,11 @@ def execute_mode_plot_projection(args):
         axes[index].plot([axes[index].get_xlim()[0], axes[index].get_xlim()[1]], [axes[index].get_xlim()[0], axes[index].get_xlim()[1]], c='k', ls='dashed', lw=1)
 
         mad = median_abs_deviation(df[col2] - df[col1])
-        axes[index] = annotate_axes(axes[index], label_dict[col1], label_dict[col2], args=args, label=f'{inc_range[0]} < inc < {inc_range[1]}\n\nMAD={mad:.2f}', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+        axes[index] = annotate_axes(axes[index], label_dict[col1], label_dict[col2], args=args, label=rf'{inc_range[0]}$^\circ$ $< i <$ {inc_range[1]}$^\circ$', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+        axes[index].text(0.05, 0.8, f'MAD={mad:.2f}', color='k', ha='left', va='top', transform=axes[index].transAxes, fontsize=args.fontsize)
 
     # ------------saving the figure----------------------
-    figname = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_2D_fit_r0_comparison.png'
+    figname = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_{len(inc_ranges)}_inc_ranges_2D_fit_r0_comparison.png'
     if '_indep' in col1 or '_indep' in col2:
         figname = figname.replace('.png', '_indep.png')
     save_fig(fig, args.plot_dir, figname, args=args)
