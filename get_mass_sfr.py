@@ -100,7 +100,7 @@ if __name__ == '__main__':
     smooth_over_snap = 20
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.txt'
+    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.csv'
     columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         else:
             # ------------------reading existing file if any-------------------
             if os.path.exists(output_dfname):
-                df_exists = pd.read_csv(output_dfname, sep=r'\s+', engine='python', comment='#')
+                df_exists = pd.read_csv(output_dfname, comment='#')
                 existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
 
             # --------preparing to read in this halo-----------------
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
                 # -----------saving dataframe---------------
                 file_exists = os.path.exists(output_dfname)
-                df_row.to_csv(output_dfname, sep='\t', index=False, mode='a' if file_exists else 'w', header=not file_exists)
+                df_row.to_csv(output_dfname, index=False, mode='a' if file_exists else 'w', header=not file_exists)
                 print_mpi(f'Completed snapshot {args.halo}:{args.output} in {timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds)}', args)
     
     # --------saving final figure---------
