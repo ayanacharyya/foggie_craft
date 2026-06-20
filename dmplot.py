@@ -12,6 +12,8 @@
   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
   run dmplot.py --mode proj --halo 5036 --z_range 0,0.5
+  run dmplot.py --mode proj --z_range 0,2 --inc 80,90 --plot_all --hide --clobber
+  run dmplot.py --mode plot_proj --z_range 0,2 --fontsize 12
   run dmplot.py --mode plot_halo --halo 5036 --z_range 0,2 --fontsize 15
   run dmplot.py --mode indi --z_range 0,2
   run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
@@ -224,7 +226,6 @@ def execute_mode_projection(df_snap, args):
     Function to execute mode projection
     Returns dataframe with fitted parameters
     '''
-    print(f"\nTracking halo {args.halo} ...\n")
     outdir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
 
     if not args.plot_all:
@@ -270,6 +271,58 @@ def execute_mode_projection(df_snap, args):
         df_results.to_csv(output_df, index=None, mode='a', header=False)
 
     return df_results
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+def execute_mode_plot_projection(args):
+    '''
+    Function to execute mode plot_rojection, which reads in the fitted parameter file and plots rx0 vs ry0
+    Saves the plots
+    Returns nothing
+    '''
+    # -----------setting up figure-----------------
+    inc_ranges = [[0, 30], [60, 90]]
+    col1, col2 = 'distmin0', 'distmaj0'
+    #col1, col2 = 'distmin0_indep', 'distmaj0_indep'
+    limits = [0.5, 300]
+    
+    # -----------setting up figure-----------------
+    fig, axes = plt.subplots(1, len(inc_ranges), figsize=(8,4), layout='constrained', sharey=True)
+
+    color = 'cornflowerblue'
+    label_dict = {'distmaj0': 'Major-axis scale radius (kpc)',
+                  'distmin0': 'Minor-axis scale radius (kpc)',
+                  'distmaj0_indep': 'Major-axis scale radius (kpc): independent fit',
+                  'distmin0_indep': 'Minor-axis scale radius (kpc): independent fit',
+                  }
+
+    # ---------looping over inc ranges----------
+    for index, inc_range in enumerate(inc_ranges):
+        outdir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{inc_range[0]:.1f}_{inc_range[1]:.1f}')
+        input_filename = args.data_dir / outdir / 'projection_fit.csv'
+        print(f'For inc_range {inc_range} ({index + 1}/{len(inc_ranges)}): Reading projection fit parameters from {input_filename}..')
+        df = pd.read_csv(input_filename)
+
+        axes[index].errorbar(df[col1], df[col2], xerr=df[f'e_{col1}'], yerr=df[f'e_{col2}'], fmt='none', color=color, lw=0.5)
+        axes[index].scatter(df[col1], df[col2], c=color, s=10, lw=0.5, ec='k')
+
+        axes[index].set_xscale('log')
+        axes[index].set_yscale('log')
+
+        axes[index].set_xlim(limits[0], limits[1])
+        axes[index].set_ylim(limits[0], limits[1])
+        axes[index].plot([axes[index].get_xlim()[0], axes[index].get_xlim()[1]], [axes[index].get_xlim()[0], axes[index].get_xlim()[1]], c='k', ls='dashed', lw=1)
+
+        mad = median_abs_deviation(df[col2] - df[col1])
+        axes[index] = annotate_axes(axes[index], label_dict[col1], label_dict[col2], args=args, label=f'{inc_range[0]} < inc < {inc_range[1]}\n\nMAD={mad:.2f}', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+
+    # ------------saving the figure----------------------
+    figname = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_2D_fit_r0_comparison.png'
+    if '_indep' in col1 or '_indep' in col2:
+        figname = figname.replace('.png', '_indep.png')
+    save_fig(fig, args.plot_dir, figname, args=args)
+             
+    return
 
 # ------------------------------------------------------------------------------------------------
 def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
@@ -405,6 +458,9 @@ if __name__ == '__main__':
                     
                 elif (args.mode=='proj' or args.mode=='projection') :
                     df_fit = execute_mode_projection(df_snap, args)     
+
+                elif (args.mode=='plot_proj') :
+                    execute_mode_plot_projection(args)     
 
                 elif (args.mode=='lsmzsfr'):                
                     # ---------------make the plots-----------------

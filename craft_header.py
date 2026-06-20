@@ -42,6 +42,7 @@ from scipy.optimize import curve_fit, fminbound
 from scipy.ndimage import gaussian_filter
 from scipy.stats import binned_statistic
 from scipy.stats import binned_statistic_2d
+from scipy.stats import median_abs_deviation
 
 from astropy.io import ascii, fits
 from astropy.table import Table
