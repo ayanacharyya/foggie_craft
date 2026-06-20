@@ -98,7 +98,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     # -------------------display scatter data---------------
     scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0)#, vmax=maxdmcol)
 
-    # ---------fitting------------------
+    # ---------2D fitting------------------
     impbincen = (impbinegs[:-1] + impbinegs[1:])/2
     X, Y = np.meshgrid(impbincen, impbincen)
     flat_pairs = np.column_stack((X.ravel(), Y.ravel()))
@@ -110,7 +110,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     dmavg_flat = dmavg_flat[good_indices]
     coords_flat = coords_flat[good_indices]
 
-    popt,pcov	= curve_fit(schechter_2d, coords_flat.T, dmavg_flat,  p0=(10.0, 10.0, 50))
+    popt,pcov	= curve_fit(schechter_2d, coords_flat.T, dmavg_flat,  p0=(10.0, 10.0, 50)) # rx0, ry0, D0
     perr 		= np.sqrt(np.diag(pcov))
     
     for ind in range(len(popt)):
@@ -121,6 +121,23 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     dmres = (dmavg - dmfit)
     cmax = np.max(np.abs(dmres))
     residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="RdBu_r", vmin=-cmax, vmax=cmax)
+
+    # ---------double 1D fitting: aking a thin slice along each direction and radially fitting------------------
+    dmavg_slice_x = dmavg[0,:]
+    good_indices_x = np.isfinite(dmavg_slice_x)
+    dmavg_slice_x = dmavg_slice_x[good_indices_x]
+    coords_x = impbincen[good_indices_x]
+    popt_x, pcov_x	= curve_fit(schechter, coords_x, dmavg_slice_x, p0=(10.0, 10.0)) # r0, D0
+    perr_x 		= np.sqrt(np.diag(pcov_x))
+    rx0_indep, e_rx0_indep = popt_x[0], perr_x[0]
+
+    dmavg_slice_y = dmavg[:,0]
+    good_indices_y = np.isfinite(dmavg_slice_y)
+    dmavg_slice_y = dmavg_slice_y[good_indices_y]
+    coords_y = impbincen[good_indices_y]
+    popt_y, pcov_y	= curve_fit(schechter, coords_y, dmavg_slice_y, p0=(10.0, 10.0)) # r0, D0
+    perr_y 		= np.sqrt(np.diag(pcov_y))
+    ry0_indep, e_ry0_indep = popt_y[0], perr_y[0]
 
     # --------------plot annotations---------------------
     label_dict = {'distmaj': 'Offset from major axis (kpc)',
@@ -145,6 +162,8 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     ax2.set_xlabel(label_dict[bin_col1])
 
     ax3.text(x=0, y=len(impbinegs) - 1-1, s="Best fit residuals")
+    #ax3.text(x=0, y=len(impbinegs) - 1-2, s=f'rx0_indep = {rx0_indep:.1f} +/- {e_rx0_indep:.1f}')
+    #ax3.text(x=0, y=len(impbinegs) - 1-3, s=f'ry0_indep = {ry0_indep:.1f} +/- {e_ry0_indep:.1f}')
     ax3.set_xticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax3.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax3.set_yticklabels([])
@@ -161,7 +180,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
         if hide: plt.close()
         else: plt.show(block=False)
 
-    return popt, perr
+    return popt, perr, rx0_indep, e_rx0_indep, ry0_indep, e_ry0_indep
 
 #	----------------------------------------------------------------------------------------------------------	
 def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None):

@@ -249,11 +249,13 @@ def execute_mode_projection(df_snap, args):
         outfile = str(outdir / f'{snap["halo"]}_{snap["snap"]}')
         
         data_col, bin_col1, bin_col2 = 'losdm', 'distmin', 'distmaj'
-        popt, perr = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.2, hide=args.hide, bin_col1=bin_col1, bin_col2=bin_col2, data_col=data_col, given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
+        popt, perr, rx0, e_rx0, ry0, e_ry0 = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.2, hide=args.hide, bin_col1=bin_col1, bin_col2=bin_col2, data_col=data_col, given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
 
-        fit_dict = {f'{data_col}0': popt[0], f'e_{data_col}0': perr[0],
-                    f'{bin_col1}0': popt[1], f'e_{bin_col1}0': perr[1],
-                    f'{bin_col2}0': popt[2], f'e_{bin_col2}0': perr[2],
+        fit_dict = {f'{bin_col1}0': popt[0], f'e_{bin_col1}0': perr[0],
+                    f'{bin_col2}0': popt[1], f'e_{bin_col2}0': perr[1],
+                    f'{data_col}0': popt[2], f'e_{data_col}0': perr[2],
+                    f'{bin_col1}0_indep': rx0, f'e_{bin_col1}0_indep': e_rx0,
+                    f'{bin_col2}0_indep': ry0, f'e_{bin_col2}0_indep': e_ry0,
                     }
         
         combined_row = {**snap.to_dict(), **fit_dict}
@@ -262,10 +264,10 @@ def execute_mode_projection(df_snap, args):
     df_results = pd.DataFrame(compiled_rows)
     output_df = outdir / 'projection_fit.csv'
     
-    if os.path.exists(output_df):
-        df_results.to_csv(output_df, index=None, mode='a', header=False)
-    else:
+    if not os.path.exists(output_df) or args.clobber:
         df_results.to_csv(output_df, index=None)
+    else:
+        df_results.to_csv(output_df, index=None, mode='a', header=False)
 
     return df_results
 
