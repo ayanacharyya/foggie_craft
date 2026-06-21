@@ -205,7 +205,7 @@ if __name__ == '__main__':
 
             # -------------loop over snapshots-----------------
             #print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
-            print_mpi(f'halo {thishalo}: outputs_todo = {outputs_todo}') ##
+            print_mpi(f'halo {thishalo}: outputs_todo = {outputs_todo}', args) ##
             print_mpi(f'Operating on snapshots {thishalo:} {outputs_todo[core_start : core_end + 1]} ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args) ##
             
             for index in range(core_start + args.start_index, core_end + 1):
