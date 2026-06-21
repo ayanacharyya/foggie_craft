@@ -214,7 +214,8 @@ if __name__ == '__main__':
                     sfr = sfr_df[sfr_df['output'] == args.output][f'sfr'].values[0]
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
-
+                    print(f'{thishalo}, {args.output}, {args.current_redshift}') ##
+                    continue
                     try:
                         # ------determining extent for computing mass--------
                         args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
