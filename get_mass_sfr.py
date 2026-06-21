@@ -204,7 +204,9 @@ if __name__ == '__main__':
                 core_end = split_at_cpu * nper_cpu2 + (rank - split_at_cpu + 1) * nper_cpu1 - 1
 
             # -------------loop over snapshots-----------------
-            print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
+            #print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
+            print_mpi(f'Operating on snapshots {outputs_todo[core_start : core_end + 1]}' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args) ##
+            continue ##
             for index in range(core_start + args.start_index, core_end + 1):
                 start_time_this_snapshot = datetime.now()
                 args.output = outputs_todo[index]
