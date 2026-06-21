@@ -221,6 +221,7 @@ if __name__ == '__main__':
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
                     df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth]], columns=['halo', 'snap', 'z', 'sfr', 'sfr_smooth'])
+                    print_mpi(f'{args.halo}, {args.output}, {args.current_redshift}, {sfr}, {sfr_smooth}', args)
                     '''
                     try:
                         # ------determining extent for computing mass--------
