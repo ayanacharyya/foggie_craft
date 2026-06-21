@@ -164,7 +164,7 @@ if __name__ == '__main__':
             # ------------------reading existing file if any-------------------
             if os.path.exists(output_dfname):
                 df_exists = pd.read_csv(output_dfname, comment='#')
-                print_mpi(f'Reading existing df from {output_dfname}')
+                print_mpi(f'Reading existing df from {output_dfname}', args)
                 existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
             else:
                 existing_outputs = []
