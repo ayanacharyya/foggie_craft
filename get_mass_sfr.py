@@ -112,6 +112,14 @@ if __name__ == '__main__':
     z_min, z_max, delta_z = 0, 2, 0.05
     redshift_list = np.arange(z_min, z_max + delta_z, delta_z)
 
+    # ------------------reading existing file if any-------------------
+    if os.path.exists(output_dfname):
+        print_master(f'Reading existing df from {output_dfname}', args)
+        df_existing = pd.read_csv(output_dfname, comment='#')
+        existing_combos = set(zip(df_existing['halo'].astype(int), df_existing['snap'].astype(int)))
+    else:
+        existing_combos = set()
+
     # -------setup SFH figure-------
     if args.plot_sfh:
         print_master(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option', args)
@@ -161,14 +169,6 @@ if __name__ == '__main__':
 
         # --------determining snapshots-----------
         else:
-            # ------------------reading existing file if any-------------------
-            if os.path.exists(output_dfname):
-                df_exists = pd.read_csv(output_dfname, comment='#')
-                print_mpi(f'Reading existing df from {output_dfname}', args)
-                existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
-            else:
-                existing_outputs = []
-
             # --------preparing to read in this halo-----------------
             df = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
             df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
@@ -177,7 +177,8 @@ if __name__ == '__main__':
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
             
-            outputs_todo = list(set(output_list) - set(existing_outputs))
+            outputs_existing = [snap for snap in output_list if (int(thishalo), int(snap)) in existing_combos]
+            outputs_todo = list(set(outputs_todo) - set(outputs_existing))
 
             # --------domain decomposition; for mpi parallelisation-------------
             total_snaps = len(outputs_todo)
@@ -185,7 +186,7 @@ if __name__ == '__main__':
             comm = MPI.COMM_WORLD
             ncores = comm.size
             rank = comm.rank
-            print_master(f'For halo {args.halo}: need to do only {len(outputs_todo)} of original {len(output_list)} outputs because {len(existing_outputs)} already exist', args)
+            print_master(f'For halo {args.halo}: need to do only {len(outputs_todo)} of original {len(output_list)} outputs because {len(outputs_existing)} already exist', args)
             if len(outputs_todo) == 0:
                 print_master(f'Therefore continuing to next halo..', args)
                 continue
