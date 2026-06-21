@@ -7,7 +7,8 @@
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    Jan 2026
-    Examples :   run get_mass_sfr.py --system ayan_pleiades
+    Examples :   run get_mass_sfr.py --system ayan_pleiades --do_all_halos
+                 run get_mass_sfr.py --system ayan_pleiades --halo 2878
                  run get_mass_sfr.py --system ayan_local --plot_sfh --fontsize 8
 """
 from foggie_header import *
@@ -104,7 +105,10 @@ if __name__ == '__main__':
     columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------
-    halos = ['8508', '5036', '5016', '4123', '2392', '2878']
+    if args.do_all_halos:
+        halos = ['8508', '5036', '5016', '4123', '2392', '2878']
+    else:
+        halos = args.halo_arr
     z_min, z_max, delta_z = 0, 2, 0.05
     redshift_list = np.arange(z_min, z_max + delta_z, delta_z)
 
