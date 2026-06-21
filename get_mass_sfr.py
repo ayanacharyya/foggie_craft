@@ -187,6 +187,7 @@ if __name__ == '__main__':
             comm = MPI.COMM_WORLD
             ncores = comm.size
             rank = comm.rank
+            print(f"RAW DEBUG: Process system PID {os.getpid()} reports Rank {rank} out of {ncores} total cores.")
             print_master(f'For halo {args.halo}: need to do only {len(outputs_todo)} of original {len(output_list)} outputs because {len(outputs_existing)} already exist', args)
             if len(outputs_todo) == 0:
                 print_master(f'Therefore continuing to next halo..', args)
