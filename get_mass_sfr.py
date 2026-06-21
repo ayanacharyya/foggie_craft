@@ -101,7 +101,7 @@ if __name__ == '__main__':
     smooth_over_snap = 20
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.csv'
+    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk_dummy.csv'
     columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------
@@ -215,7 +215,8 @@ if __name__ == '__main__':
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
                     print(f'{thishalo}, {args.output}, {args.current_redshift}') ##
-                    continue
+                    df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth]], columns=['halo', 'snap', 'z', 'sfr', 'sfr_smooth'])
+                    '''
                     try:
                         # ------determining extent for computing mass--------
                         args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
@@ -232,6 +233,7 @@ if __name__ == '__main__':
                     except Exception as e:
                         print_mpi(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and not adding to dataframe', args)
                         continue
+                    '''
                 else:
                     print_mpi(f'Snapshot {args.halo}:{args.output} is not in sfr_df, therefore skipping, and not adding to dataframe', args)
                     continue
