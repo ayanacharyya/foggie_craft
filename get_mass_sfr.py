@@ -178,7 +178,7 @@ if __name__ == '__main__':
                 output_list.append(df.loc[idx, 'snap'])
             
             outputs_existing = [snap for snap in output_list if (str(thishalo), str(snap)) in existing_combos]
-            outputs_todo = list(set(outputs_todo) - set(outputs_existing))
+            outputs_todo = list(set(output_list) - set(outputs_existing))
 
             # --------domain decomposition; for mpi parallelisation-------------
             total_snaps = len(outputs_todo)
