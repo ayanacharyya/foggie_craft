@@ -116,7 +116,7 @@ if __name__ == '__main__':
     if os.path.exists(output_dfname):
         print_master(f'Reading existing df from {output_dfname}', args)
         df_existing = pd.read_csv(output_dfname, comment='#')
-        existing_combos = set(zip(df_existing['halo'].astype(int), df_existing['snap'].astype(int)))
+        existing_combos = set(zip(df_existing['halo'].astype(str), df_existing['snap'].astype(str)))
     else:
         existing_combos = set()
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                 idx = (df['redshift'] - redshift).abs().idxmin()
                 output_list.append(df.loc[idx, 'snap'])
             
-            outputs_existing = [snap for snap in output_list if (int(thishalo), int(snap)) in existing_combos]
+            outputs_existing = [snap for snap in output_list if (str(thishalo), str(snap)) in existing_combos]
             outputs_todo = list(set(outputs_todo) - set(outputs_existing))
 
             # --------domain decomposition; for mpi parallelisation-------------
