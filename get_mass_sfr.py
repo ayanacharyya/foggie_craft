@@ -164,6 +164,7 @@ if __name__ == '__main__':
             # ------------------reading existing file if any-------------------
             if os.path.exists(output_dfname):
                 df_exists = pd.read_csv(output_dfname, comment='#')
+                print_mpi(f'Reading existing df from {output_dfname}')
                 existing_outputs = df_exists[df_exists['halo'].astype(str) == args.halo]['snap'].values
             else:
                 existing_outputs = []
@@ -214,7 +215,6 @@ if __name__ == '__main__':
                     sfr = sfr_df[sfr_df['output'] == args.output][f'sfr'].values[0]
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
-                    print(f'{thishalo}, {args.output}, {args.current_redshift}') ##
                     df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth]], columns=['halo', 'snap', 'z', 'sfr', 'sfr_smooth'])
                     '''
                     try:
