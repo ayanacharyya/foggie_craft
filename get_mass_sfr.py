@@ -222,8 +222,8 @@ if __name__ == '__main__':
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
                     df_row = pd.DataFrame([[args.halo, args.output, args.current_redshift, sfr, sfr_smooth]], columns=['halo', 'snap', 'z', 'sfr', 'sfr_smooth'])
-                    print_mpi(f'{args.halo}, {args.output}, {args.current_redshift}, {sfr}, {sfr_smooth}', args)
-                    '''
+                    print_mpi(f'{args.halo}, {args.output}, {args.current_redshift}, {sfr}, {sfr_smooth}', args) ##
+                    
                     try:
                         # ------determining extent for computing mass--------
                         args.diskrad, log_mstar_from_snap = get_stellar_mass(args)
@@ -240,7 +240,7 @@ if __name__ == '__main__':
                     except Exception as e:
                         print_mpi(f'Snapshot {args.halo}:{args.output} failed due to {e}, therefore skipping, and not adding to dataframe', args)
                         continue
-                    '''
+                    
                 else:
                     print_mpi(f'Snapshot {args.halo}:{args.output} is not in sfr_df, therefore skipping, and not adding to dataframe', args)
                     continue
