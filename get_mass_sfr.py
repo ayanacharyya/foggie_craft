@@ -101,7 +101,7 @@ if __name__ == '__main__':
     smooth_over_snap = 20
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk_dummy.csv'
+    output_dfname = args.output_dir + 'data/lsm_sfr_masses_upto_disk.csv'
     columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'disk_rad', 'log_star_mass_from_snap', 'log_star_mass_from_profile', 'log_gas_mass_from_profile', 'half_mass_rad']
 
     # ----------getting list of snapshots-----------

@@ -35,6 +35,7 @@ def get_stellar_mass(args, refine_box=None):
     Computes the extent of stllar disk, by using a threshold of successive fractional increase in stellar mass in radial shells
     Returns disk radius (in kpc), and the cumulative stellar mass up to that shell (in log Msun)
     '''
+    import gc
     field_dict = {'radius':('stars', 'radius_corrected'), 'mass':('stars', 'particle_mass')}
     unit_dict = {'radius':'kpc', 'mass':'Msun', 'stars_mass':'Msun', 'ystars_mass':'Msun', 'ystars_age':'Gyr'}
 
@@ -76,6 +77,10 @@ def get_stellar_mass(args, refine_box=None):
     log_stellar_mass = np.log10(mass_cum_sums[index])
 
     print(f'Obtained log stellar mass = {log_stellar_mass:.2f} within radius {disk_rad_kpc:.1f} kpc, for snap {args.halo}:{args.output}')
+
+    del ds
+    del refine_box
+    gc.collect()
 
     return disk_rad_kpc, log_stellar_mass
 
