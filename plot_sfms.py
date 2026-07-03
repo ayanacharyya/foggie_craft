@@ -15,7 +15,7 @@ setup_plot_style()
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------------------------------
-def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt", filepath=None):
+def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.csv", filepath=None):
     '''
     Reads in the list of FOGGIE simulation snapshots from <filename>
     Returns pandas dataframe
@@ -23,6 +23,7 @@ def read_snap_list(args, filename="lsm_sfr_masses_upto_disk.txt", filepath=None)
     if filepath is None:
         filepath =	args.data_dir / filename
     df = pd.read_csv(filepath, comment='#')
+    df = df.drop_duplicates(subset=['halo', 'snap'], keep='last')
 
     if 'sfr_100Myr' in df.columns:
         print('\nReplacing sfr column with sfr_100My column')

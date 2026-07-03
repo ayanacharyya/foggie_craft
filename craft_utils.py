@@ -422,13 +422,13 @@ def setup_plots_for_talks():
     plt.rcParams['xtick.top'] = True
 
 # --------------------------------------------------------------------------------------------------------------------
-def annotate_axes(ax, xlabel, ylabel, args=None, fontsize=10, fontfactor=1, label='', clabel='', hide_xaxis=False, hide_yaxis=False, hide_cbar=True, p=None, hide_cbar_ticks=False, cticks_integer=True, label_color='k', bbox=True, set_ticks=True):
+def annotate_axes(ax, xlabel, ylabel, xloc=0.05, yloc=0.9, args=None, fontsize=10, fontfactor=1, label='', clabel='', hide_xaxis=False, hide_yaxis=False, hide_cbar=True, p=None, hide_cbar_ticks=False, cticks_integer=True, label_color='k', bbox=True, set_ticks=True):
     '''
     Annotates the axis of a given 2D image
     Returns the axis handle
     '''
     if args is not None: fontsize, fontfactor = args.fontsize, args.fontfactor
-    ax.text(0.05, 0.9, label, c=label_color, fontsize=fontsize/fontfactor, ha='left', va='top', bbox=dict(facecolor='white', edgecolor='black', alpha=0.9) if bbox else None, transform=ax.transAxes)
+    ax.text(xloc, yloc, label, c=label_color, fontsize=fontsize/fontfactor, ha='left', va='top', bbox=dict(facecolor='white', edgecolor='black', alpha=0.9) if bbox else None, transform=ax.transAxes)
 
     if set_ticks:
         ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=3, prune='both'))
