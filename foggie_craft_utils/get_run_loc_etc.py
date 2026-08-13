@@ -7,7 +7,7 @@ def get_run_loc_etc(args):
         code_path = "/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/"
     elif args.system == "ayan_hd":
         #foggie_dir = "/Volumes/Elements/foggieforayan/"
-        foggie_dir = "/Volumes/Elements/acharyya_backup/models/simulation_output/foggie/"
+        foggie_dir = "/Volumes/Elements/acharyya_backup/Work/models/simulation_output/foggie/"
         output_path = "/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/May10/"
         code_path = "/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/"
     elif args.system == "ayan_ssd":
