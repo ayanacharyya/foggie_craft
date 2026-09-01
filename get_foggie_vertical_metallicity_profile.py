@@ -338,8 +338,8 @@ if __name__ == '__main__':
     quant = 'metal' # choose between 'metal' and 'gas'
     proj = 'EDGE ON' # choose between 'EDGE ON' and 'FACE ON'
 
-    bin_upto_kpc = args.upto_kpc / 1.5
-    bin_width_kpc = 2 # 0.5
+    bin_upto_kpc = args.upto_kpc #/ 1.5
+    bin_width_kpc = 0.5
     vertical_angle = 45 # total opening angle
     horizontal_angle = 20 # total opening angle
 
