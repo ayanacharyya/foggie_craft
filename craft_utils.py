@@ -569,6 +569,7 @@ def parse_args():
     parser.add_argument('--set_ylin', dest='set_ylin', action='store_true', default=False, help='Set y-axis scale to linear?, default is no')
     parser.add_argument('--cmap', metavar='cmap', type=str, action='store', default='tab20', help='colormap to use; default is None')
     parser.add_argument('--fit_robust', dest='fit_robust', action='store_true', default=False, help='Fit in the robust-fit method?, default is no')
+    parser.add_argument('--regres', type=str, default=None, help='Regression algorithm, default is none')
 
     parser.add_argument('--plot_foggie_snaps', dest='plot_foggie_snaps', action='store_true', default=False, help='Plot FOGGIE snapshot projections and radial profiles for a given redshift range and halo? Default is no.')
     parser.add_argument('--plot_dm_lsm', dest='plot_dm_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for a given mass range? Default is no.')

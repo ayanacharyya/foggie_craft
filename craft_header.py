@@ -32,7 +32,7 @@ from importlib import reload
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
 
-from mpi4py import MPI
+#rom mpi4py import MPI
 
 from scipy import optimize as op
 from scipy import stats

@@ -8,6 +8,8 @@
 #
 #	--------------------------	Import modules	---------------------------
 from craft_utils import *
+import scipy.stats as spst
+import statsmodels.api as stm
 setup_plot_style()
 
 #	----------------------------------------------------------------------------------------------------------
@@ -275,7 +277,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
 #	----------------------------------------------------------------------------------------------------------
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=True, coeff_label=['D', r'$\gamma$']):
+def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$']):
 	#   Annotate the DM0 or r0 vs stellar mass subplot
 
     if yscale_log: ax.set_yscale('log')
@@ -319,8 +321,48 @@ def plt_sfms(xdata_arr, ydata_arr, outfilename, fortalk=False):
 
     return fig
 
+#   ----------------------------------------------------------------------------------------------------------
+def fit_regres(df_fit, xcol, ycol, regres="linear"):
+    match regres:
+        case "linear":
+            lsr     = spst.linregress(df_fit[xcol], np.log10(df_fit[ycol]), nan_policy='omit')
+            print("\n Linear regession: ")
+            print(f"r = {lsr.rvalue} p = {lsr.pvalue}")
+            print(f"slope = {lsr.slope} +/- {lsr.stderr}")
+            print(f"intercept = {lsr.intercept} +/- {lsr.intercept_stderr}")
+            popt    = (lsr.slope,lsr.intercept)
+            perr    = (lsr.stderr,lsr.intercept_stderr)
+        case "siegel":
+            lsr     = spst.siegelslopes(np.log10(df_fit[ycol]), x=df_fit[xcol], nan_policy='omit')
+            print("\n Siegel regession: ")
+            print(f"slope = {lsr.slope}")
+            print(f"intercept = {lsr.intercept}")
+            popt    = (lsr.slope,lsr.intercept)
+            perr    = (np.nan,np.nan)
+        case "theils":
+            lsr     = spst.theilslopes(np.log10(df_fit[ycol]), x=df_fit[xcol], nan_policy='omit')
+            print("\n Theils regession: ")
+            print(f"slope = {lsr.slope} [{lsr.low_slope} {lsr.high_slope}]")
+            print(f"intercept = {lsr.intercept}")
+            popt    = (lsr.slope,lsr.intercept)
+            perr    = ((lsr.high_slope-lsr.low_slope)/2,np.nan)
+        case "rlm":
+            rlmodel = stm.RLM(np.log10(df_fit[ycol]), stm.add_constant(df_fit[xcol]), M=stm.robust.norms.HuberT())
+            rlmres  = rlmodel.fit()
+            print("\n Statsmodel RLM: ")
+            print(f"slope = {rlmres.params[xcol]} +/- {rlmres.bse[xcol]}")
+            print(f"intercept = {rlmres.params['const']} +/- {rlmres.bse['const']}")
+            popt    = (rlmres.params[xcol],rlmres.params['const'])
+            perr    = (rlmres.bse[xcol],rlmres.bse['const'])
+        case _:
+            print("Unfamiliar regression!")
+            print("Define it or use linear/siegel/theils/rlm")
+            popt    = np.nan
+            popt    = np.nan
+    return (popt,perr)
+
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=True, outfilename=None, fortalk=False):
+def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5):
     # Fit DM0 or r0 vs log stellar mass
     df = df.sort_values(by=xcol)
     color = 'b' # df['medlsm_offset'] # include this for color-coding by a given column
@@ -332,15 +374,15 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     # ------------now fitting D0-------------
     df_fit = df.copy()
-    if 'medsfr' in xcol: scale_fit_thresh = 2 # threshold for scaling relation robust fitting, in sigma
-    elif 'medlsm' in xcol: scale_fit_thresh = 2 # threshold for scaling relation robust fitting, in sigma
-    else: scale_fit_thresh = 2 # threshold for scaling relation robust fitting, in sigma
 
     # ------------fit the parameter D0----------
     do_fit = True       
     while do_fit:
-        popt,pcov	= np.polyfit(df_fit[xcol], np.log10(df_fit[ycol]), 1, cov=True)
-        perr 		= np.sqrt(np.diag(pcov))
+        if regres is not None:
+            popt,perr = fit_regres(df_fit, xcol, ycol, regres=regres)
+        else:
+            popt,pcov	= np.polyfit(df_fit[xcol], np.log10(df_fit[ycol]), 1, cov=True)
+            perr 		= np.sqrt(np.diag(pcov))
 
         dm0fit		= np.poly1d(popt)
         df_fit['devdex']		= np.log10(df_fit[ycol]) - dm0fit(df_fit[xcol])
@@ -358,28 +400,32 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
     df['devdex']		= np.log10(df[ycol]) - dm0fit(df[xcol])
 
     # ------------plot the parameter D0----------
-    ax.plot(df[xcol], 10.0 ** dm0fit(df[xcol]), 'k--')
+    ax.plot(df[xcol], dm0fit(df[xcol]), 'k--')
     #im = ax.scatter(df[xcol], df[ycol], c=color, lw=0.5) # include this for color-coding by a given column
-    ax.errorbar(df[xcol], df[ycol], df['e' + ycol], fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
-    if fit_robust: ax.errorbar(df_fit[xcol], df_fit[ycol], df_fit['e' + ycol], fmt='bo', markersize=5, lw=0.5, capsize=2)
+    ax.errorbar(df[xcol], np.log10(df[ycol]), df['e' + ycol]/(df[ycol]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
+    if fit_robust: ax.errorbar(df_fit[xcol], np.log10(df_fit[ycol]), df_fit['e' + ycol]/(df_fit[ycol]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
     if type(color) != str: plt.colorbar(im)
 
     mad = np.nanmedian(np.abs(df['devdex']))
-    sigma		= np.nanstd(df_fit['devdex'])
+    sigma		= np.nanstd(df['devdex'])
     ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'])
 
     # ------------now fitting r0-------------
-    popt2,pcov2	= np.polyfit(df_fit[xcol], np.log10(df_fit[ycol2]), 1, cov=True)
-    perr2 		= np.sqrt(np.diag(pcov2))
+    if regres is not None:
+        popt2,perr2 = fit_regres(df_fit, xcol, ycol2, regres=regres)
+    else:
+        popt2,pcov2	= np.polyfit(df_fit[xcol], np.log10(df_fit[ycol2]), 1, cov=True)
+        perr2 		= np.sqrt(np.diag(pcov2))
+
     r0fit		= np.poly1d(popt2)
     
     df['devdex2']		= np.log10(df[ycol2]) - r0fit(df[xcol])
 
     # ------------plot the parameter r0----------
-    ax2.plot(df[xcol], 10.0 ** r0fit(df[xcol]), 'k--')
+    ax2.plot(df[xcol], r0fit(df[xcol]), 'k--')
     #ax2.scatter(df[xcol], df[ycol2], c=color, lw=0.5) # include this for color-coding by a given column
-    ax2.errorbar(df[xcol], df[ycol2], df['e' + ycol2], fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
-    if fit_robust: ax2.errorbar(df_fit[xcol], df_fit[ycol2], df_fit['e' + ycol2], fmt='bo', markersize=5, lw=0.5, capsize=2)
+    ax2.errorbar(df[xcol], np.log10(df[ycol2]), df['e' + ycol2]/(df[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
+    if fit_robust: ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
 
     mad_to_display = np.nanmedian(np.abs(df['devdex2']))
     ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, mad_to_display, coeff_label=['R', r'$\eta$'])
@@ -483,20 +529,20 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, xlabel, ylabel, ylim, yti
     return popt, perr, popt2, perr2
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=True, fortalk=False):
+def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=False, regres=None, fortalk=False, scale_fit_thresh=5):
 	#	Plot LoSDM vs impact factor for a given inclination range
 	
     fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
     ax1	 	= fig.add_axes([0.08,0.15,0.42,0.83])
     ax2	    = fig.add_axes([0.57,0.15,0.42,0.83])
 
-    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$)" 
+    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$) - 10" 
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
     elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
 
-    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"$D_0\:(pc \: cm^{-3})$", [10,400], [50,100,200], 
-                                  y2col, ax2, r"$r_0$ (kpc)", [1.5, 300], [2,4,8,16,32],
-                                  fit_robust=fit_robust, outfilename=None, fortalk=fortalk)
+    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", None, None, 
+                                  y2col, ax2, r"log ($r_0$ / kpc)", None, None,
+                                  fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh)
     
     # ------------save figure-------------
     figname = Path(outfilename + f"_xcol_{xcol}_lsm.pdf")
