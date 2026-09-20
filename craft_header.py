@@ -32,7 +32,9 @@ from importlib import reload
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
 
-#rom mpi4py import MPI
+from mpi4py import MPI
+
+import pingouin as pg
 
 from scipy import optimize as op
 from scipy import stats

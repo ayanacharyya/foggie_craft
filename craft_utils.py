@@ -516,6 +516,40 @@ def get_grid_size(n_total):
     
     return nrows, ncols
 
+# --------------------------------------------------------------------------------------------------------------------
+def print_sr_corr(df, xcol, ycol, xcol2=None):
+    '''
+    Prints out the partial (if ycol2 is not None) Spearman Rank correlation coefficients
+    Returns a dictionary of the results
+    '''
+    corr_xcol = pg.corr(df[xcol], df[ycol], method='spearman')
+    corr_xcol_r, corr_xcol_p = corr_xcol.loc["spearman", "r"], corr_xcol.loc["spearman", "p-val"]
+    print(f'\nSpearman Rank correlation of {ycol} vs {xcol} is r={corr_xcol_r:.2f}, p-val={corr_xcol_p:.3f}')
+    
+    if xcol2 is not None:
+        corr_ccol = pg.corr(df[xcol2], df[ycol], method='spearman')
+        corr_ccol_r, corr_ccol_p = corr_ccol.loc["spearman", "r"], corr_ccol.loc["spearman", "p-val"]
+        print(f'Spearman Rank correlation of {ycol} vs {xcol2} is r={corr_ccol_r:.2f}, p-val={corr_ccol_p:.3f}')
+
+        pcorr_xcol = pg.partial_corr(data=df, x=xcol, y=ycol, covar=xcol2, method='spearman')
+        pcorr_xcol_r, pcorr_xcol_p = pcorr_xcol.loc["spearman", "r"], pcorr_xcol.loc["spearman", "p-val"]
+        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol} (keeping {xcol2} fixed) is r={pcorr_xcol_r:.2f}, p-val={pcorr_xcol_p:.3f}')
+
+        pcorr_ccol = pg.partial_corr(data=df, x=xcol2, y=ycol, covar=xcol, method='spearman')
+        pcorr_ccol_r, pcorr_ccol_p = pcorr_ccol.loc["spearman", "r"], pcorr_ccol.loc["spearman", "p-val"]
+        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol2} (keeping {xcol} fixed) is r={pcorr_ccol_r:.2f}, p-val={pcorr_ccol_p:.3f}')
+    else:
+        corr_ccol_r, corr_ccol_p, pcorr_xcol_r, pcorr_xcol_p, pcorr_ccol_r, pcorr_ccol_p = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+
+    results = {
+        'corr_x_r': corr_xcol_r, 'corr_x_p': corr_xcol_p,
+        'corr_c_r': corr_ccol_r, 'corr_c_p': corr_ccol_p,
+        'pcorr_x_r': pcorr_xcol_r, 'pcorr_x_p': pcorr_xcol_p,
+        'pcorr_c_r': pcorr_ccol_r, 'pcorr_c_p': pcorr_ccol_p,
+    }
+
+    return results
+
 # --------------------------------------------------------------------------------------------------------------
 def parse_args():
     '''

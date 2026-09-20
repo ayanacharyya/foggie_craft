@@ -536,7 +536,13 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     ax1	 	= fig.add_axes([0.08,0.15,0.42,0.83])
     ax2	    = fig.add_axes([0.57,0.15,0.42,0.83])
 
-    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$) - 10" 
+    df = df.dropna(subset=[xcol, y1col, y2col], axis=0)
+
+    # ------printing (to screen) the full and partial Spearman Rank correlation coefficients and p-values------
+    spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
+    spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
+
+    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$)" 
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
     elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
 
