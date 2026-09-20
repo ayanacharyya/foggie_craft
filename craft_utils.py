@@ -523,21 +523,21 @@ def print_sr_corr(df, xcol, ycol, xcol2=None):
     Returns a dictionary of the results
     '''
     corr_xcol = pg.corr(df[xcol], df[ycol], method='spearman')
-    corr_xcol_r, corr_xcol_p = corr_xcol.loc["spearman", "r"], corr_xcol.loc["spearman", "p-val"]
-    print(f'\nSpearman Rank correlation of {ycol} vs {xcol} is r={corr_xcol_r:.2f}, p-val={corr_xcol_p:.3f}')
+    corr_xcol_r, corr_xcol_p = corr_xcol.loc["spearman", "r"], corr_xcol.loc["spearman", "p_val"]
+    print(f'\nSpearman Rank correlation of {ycol} vs {xcol} is r={corr_xcol_r:.2f}, p_val={corr_xcol_p:.3f}')
     
     if xcol2 is not None:
         corr_ccol = pg.corr(df[xcol2], df[ycol], method='spearman')
-        corr_ccol_r, corr_ccol_p = corr_ccol.loc["spearman", "r"], corr_ccol.loc["spearman", "p-val"]
-        print(f'Spearman Rank correlation of {ycol} vs {xcol2} is r={corr_ccol_r:.2f}, p-val={corr_ccol_p:.3f}')
+        corr_ccol_r, corr_ccol_p = corr_ccol.loc["spearman", "r"], corr_ccol.loc["spearman", "p_val"]
+        print(f'Spearman Rank correlation of {ycol} vs {xcol2} is r={corr_ccol_r:.2f}, p_val={corr_ccol_p:.3f}')
 
         pcorr_xcol = pg.partial_corr(data=df, x=xcol, y=ycol, covar=xcol2, method='spearman')
-        pcorr_xcol_r, pcorr_xcol_p = pcorr_xcol.loc["spearman", "r"], pcorr_xcol.loc["spearman", "p-val"]
-        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol} (keeping {xcol2} fixed) is r={pcorr_xcol_r:.2f}, p-val={pcorr_xcol_p:.3f}')
+        pcorr_xcol_r, pcorr_xcol_p = pcorr_xcol.loc["spearman", "r"], pcorr_xcol.loc["spearman", "p_val"]
+        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol} (keeping {xcol2} fixed) is r={pcorr_xcol_r:.2f}, p_val={pcorr_xcol_p:.3f}')
 
         pcorr_ccol = pg.partial_corr(data=df, x=xcol2, y=ycol, covar=xcol, method='spearman')
-        pcorr_ccol_r, pcorr_ccol_p = pcorr_ccol.loc["spearman", "r"], pcorr_ccol.loc["spearman", "p-val"]
-        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol2} (keeping {xcol} fixed) is r={pcorr_ccol_r:.2f}, p-val={pcorr_ccol_p:.3f}')
+        pcorr_ccol_r, pcorr_ccol_p = pcorr_ccol.loc["spearman", "r"], pcorr_ccol.loc["spearman", "p_val"]
+        print(f'Partial Spearman Rank correlation of {ycol} vs {xcol2} (keeping {xcol} fixed) is r={pcorr_ccol_r:.2f}, p_val={pcorr_ccol_p:.3f}')
     else:
         corr_ccol_r, corr_ccol_p, pcorr_xcol_r, pcorr_xcol_p, pcorr_ccol_r, pcorr_ccol_p = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
 
@@ -614,7 +614,6 @@ def parse_args():
     # ------- args added for compute_host_dm.py ------------------------------
     parser.add_argument('--input_cat', metavar='input_cat', type=str, action='store', default='frbcat0.txt', help='where to look for the observed data? default is defined frbcat0.txt within args.root_dir')
     parser.add_argument('--input_fg_cat', metavar='input_fg_cat', type=str, action='store', default='fgcat0.txt', help='where to look for the observed FOREGROUND data? default is defined fgcat0.txt within args.root_dir')
-    parser.add_argument('--use_sfr', dest='use_sfr', action='store_true', default=False, help='Use observed SFRs to look for similation snapshots? Default is no.')
     parser.add_argument('--plot_compare', dest='plot_compare', action='store_true', default=False, help='Make plot comparing DMs obtained via different methods? Default is no.')
     parser.add_argument('--plot_distribution', dest='plot_distribution', action='store_true', default=False, help='Make plot of distribution of DMs? Default is no.')
     parser.add_argument('--plot_scaling', dest='plot_scaling', action='store_true', default=False, help='Make plot od scaling relations between DM and different host properties? Default is no.')

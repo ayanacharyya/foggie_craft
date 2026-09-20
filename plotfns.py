@@ -290,7 +290,7 @@ def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, ysc
     ax.set_xlabel(xlabel)
 
     if len(popt) <= 2:
-        ax.text(x=0.05, y=0.79, s="%s$_{10} = %.2f \pm %.2f$"%(coeff_label[0], popt[1],perr[1]), transform=ax.transAxes)
+        ax.text(x=0.05, y=0.79, s="%s$_{0} = %.2f \pm %.2f$"%(coeff_label[0], popt[1],perr[1]), transform=ax.transAxes)
         ax.text(x=0.05, y=0.86, s="%s $= %.2f \pm %.2f$"%(coeff_label[1], popt[0],perr[0]), transform=ax.transAxes)
     
     ax.text(x=0.05, y=0.93, s=rf"$\sigma$ = {madex:.2f} dex", transform=ax.transAxes)
@@ -464,7 +464,7 @@ def plot_3D_fit(x_data, y_data, z_data, popt, ylabel):
     return ax
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True, outfilename=None, fortalk=False):
+def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, yscale_log=True, fit_robust=True, outfilename=None, fortalk=False, scale_fit_thresh=10):
     
     df = df.sort_values(by=xcol)
     color = 'b' # df[x2col]
@@ -525,7 +525,7 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, xlabel, ylabel, ylim, yti
     mad_to_display = np.nanstd(df['devdex2'])
     ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, mad_to_display, yscale_log=yscale_log)
 
-    ax2_3d = plot_3D_fit(df_fit[xcol], df_fit[x2col], np.log10(df_fit[ycol2]), popt2, r"$\log D_0$")
+    ax2_3d = plot_3D_fit(df_fit[xcol], df_fit[x2col], np.log10(df_fit[ycol2]), popt2, r"$\log r_0$")
 
     return popt, perr, popt2, perr2
 
@@ -537,13 +537,13 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     ax1	 	= fig.add_axes([0.08,0.15,0.42,0.83])
     ax2	    = fig.add_axes([0.57,0.15,0.42,0.83])
 
-    df = df.dropna(subset=[xcol, y1col, y2col], axis=0)
+    df = df.dropna(subset=[xcol, y1col, y2col, x2col], axis=0)
 
     # ------printing (to screen) the full and partial Spearman Rank correlation coefficients and p-values------
     spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
     spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
 
-    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$)" 
+    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$) - 10" 
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
     elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
 
@@ -552,28 +552,29 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
                                   fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh)
     
     # ------------save figure-------------
-    figname = Path(outfilename + f"_xcol_{xcol}_lsm.pdf")
+    figname = Path(outfilename + f"_xcol_{xcol}.pdf")
     save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
-    '''
+    
     # --------------Multiparameter fit--------------------------------
-    fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
-    ax1	 	= fig.add_axes([0.09,0.15,0.40,0.83])
-    ax2	 	= fig.add_axes([0.59,0.15,0.40,0.83])
+    if 'medsfr_100Myr' in xcol:
+        fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
+        ax1	 	= fig.add_axes([0.09,0.15,0.40,0.83])
+        ax2	 	= fig.add_axes([0.59,0.15,0.40,0.83])
 
-    popt_d0, perr_d0, popt_r0, perr_r0 = plt_dmpars_fit_multipar(df, xcol, x2col, y1col, ax1, xlabel, r"$\Delta \log D_0$", None, None, 
-                                       y2col, ax2, r"$\Delta \log r_0$", None, None,
-                                       yscale_log=False, fit_robust=fit_robust, outfilename=None, fortalk=fortalk)
+        popt_d0, perr_d0, popt_r0, perr_r0 = plt_dmpars_fit_multipar(df, xcol, x2col, y1col, ax1, xlabel, r"$\Delta \log D_0$", None, None, 
+                                        y2col, ax2, r"$\Delta \log r_0$", None, None,
+                                        yscale_log=False, fit_robust=fit_robust, outfilename=None, fortalk=fortalk, scale_fit_thresh=scale_fit_thresh)
 
-    # ------------write fit params-------------
-    fit_params_2D = np.array([popt_d0, perr_d0, popt_r0, perr_r0])
-    fit_parms_1D = np.hstack([np.array([popt, perr, popt2, perr2]), np.atleast_2d(np.zeros(4)).transpose()])
-    np.savetxt(f'{outfilename}_multifit_params.txt', np.vstack([fit_params_2D, fit_parms_1D]), fmt='%.2f    %.2f    %.2f')
-    print(f'Saved figures {outfilename}_multifit_params.txt')
+        # ------------write fit params-------------
+        fit_params_2D = np.array([popt_d0, perr_d0, popt_r0, perr_r0])
+        fit_parms_1D = np.hstack([np.array([popt, perr, popt2, perr2]), np.atleast_2d(np.zeros(4)).transpose()])
+        np.savetxt(f'{outfilename}_multifit_params.txt', np.vstack([fit_params_2D, fit_parms_1D]), fmt='%.2f    %.2f    %.2f')
+        print(f'Saved figures {outfilename}_multifit_params.txt')
 
-    # ------------save figure-------------
-    figname = Path(outfilename + "_lsmsfr.pdf")
-    save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
-    '''
+        # ------------save figure-------------
+        figname = Path(outfilename + "_lsmsfr.pdf")
+        save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
+    
     return (0)
 
 #	----------------------------------------------------------------------------------------------------------
