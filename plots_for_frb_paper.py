@@ -196,7 +196,7 @@ def plot_dm_fit(df_dmpars, args):
     df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
     df_dmpars['log_medsfr'] = np.log10(df_dmpars['medsfr'])
     df_dmpars['log_medsfr_100Myr'] = np.log10(df_dmpars['medsfr_100Myr'])
-    
+
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)

@@ -365,7 +365,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
     if type(color) != str: plt.colorbar(im)
 
     mad = np.nanmedian(np.abs(df['devdex']))
-    sigma		= np.nanstd(df_fit['devdex'])
+    sigma		= np.nanstd(df['devdex'])
     ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'])
 
     # ------------now fitting r0-------------
@@ -381,8 +381,9 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
     ax2.errorbar(df[xcol], df[ycol2], df['e' + ycol2], fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
     if fit_robust: ax2.errorbar(df_fit[xcol], df_fit[ycol2], df_fit['e' + ycol2], fmt='bo', markersize=5, lw=0.5, capsize=2)
 
-    mad_to_display = np.nanmedian(np.abs(df['devdex2']))
-    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, mad_to_display, coeff_label=['R', r'$\eta$'])
+    mad = np.nanmedian(np.abs(df['devdex2']))
+    sigma		= np.nanstd(df['devdex2'])
+    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'])
 
     return popt, perr, popt2, perr2
 
@@ -489,6 +490,12 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
     ax1	 	= fig.add_axes([0.08,0.15,0.42,0.83])
     ax2	    = fig.add_axes([0.57,0.15,0.42,0.83])
+
+    df = df.dropna(subset=[xcol, y1col, y2col], axis=0)
+
+    # ------printing (to screen) the full and partial Spearman Rank correlation coefficients and p-values------
+    spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
+    spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
 
     if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$)" 
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
