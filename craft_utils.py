@@ -570,6 +570,7 @@ def parse_args():
     parser.add_argument('--cmap', metavar='cmap', type=str, action='store', default='tab20', help='colormap to use; default is None')
     parser.add_argument('--fit_robust', dest='fit_robust', action='store_true', default=False, help='Fit in the robust-fit method?, default is no')
 
+    parser.add_argument('--plot_foggie_snaps', dest='plot_foggie_snaps', action='store_true', default=False, help='Plot FOGGIE snapshot projections and radial profiles for a given redshift range and halo? Default is no.')
     parser.add_argument('--plot_dm_lsm', dest='plot_dm_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for a given mass range? Default is no.')
     parser.add_argument('--plot_dm_all_lsm', dest='plot_dm_all_lsm', action='store_true', default=False, help='Plot DM vs Impact factor for ALL mass ranges? Default is no.')
     parser.add_argument('--plot_dm_fit', dest='plot_dm_fit', action='store_true', default=False, help='Plot DM0 and r0 vs log stellar mass? Default is no.')

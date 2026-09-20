@@ -31,8 +31,6 @@ shlist      =   ['aqua', 'lightsalmon', 'lightgrey']
 lslist      =   ['-', '--', ':']
 marklist    =   ['*', 's', 'o']
 
-scale_fit_thresh = 3.0                                      # threshold for scaling relation robust fitting, in sigma
-
 # ----------------global variables for plotting routines-----------------
 #	A named tuple to store various parameters related to radial ne profile
 neradial		=	namedtuple('neradial',['logsm','logsfr','redshift','theta0','phi0','radkpc','theta','phi','inclination','neincrad'])
