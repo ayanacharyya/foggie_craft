@@ -48,6 +48,7 @@ def read_obs_catalog(filename, args, input_column_dict=None, add_columns=['dm_16
             df = df.rename(columns = inverted_col_dict)
 
         # ------------declaring dummy columsn to be filled inside the loop---------------
+        df = df.rename(columns={'SFR_low':'sfr_low', 'SFR_med':'sfr_med', 'SFR_up':'sfr_up', 'log(M_*)':'log_mass'})
         for col in ['sfr_low', 'sfr_med', 'sfr_up']:
             df[col] = np.log10(df[col])
         for col in add_columns:

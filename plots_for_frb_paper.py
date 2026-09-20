@@ -16,6 +16,8 @@
                  run plots_for_frb_paper.py --plot_dm_all_lsm
                  run plots_for_frb_paper.py --make_latex_table --resfile_prefix binby_lsm_lsfr
                  run plots_for_frb_paper.py --make_latex_table --resfile_prefix all_lsm
+                 run plots_for_frb_paper.py --plot_foggie_snaps --system ayan_local --halo 2878 --upto_kpc 100 --reskpc 0.5
+
 """
 from craft_header import *
 from craft_utils import *
@@ -25,7 +27,7 @@ import plotfns as pfns
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------------------------------
-def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
+def read_dataframe_txt(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
     '''
     Function to read txt file as pandas dataframe and properly parse intervals
     Returns dataframe
@@ -37,6 +39,27 @@ def read_dataframe(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
         temp_df = df[col].str.strip('()[]').str.split(',', expand=True).astype(float)
         df[col] = temp_df.apply(lambda x: pd.Interval(x[0], x[1], closed='right'), axis=1)
     
+    return df
+
+# ------------------------------------------------------------------------------------------------
+def read_dataframe_csv(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin']):
+    '''
+    Function to read csv file as pandas dataframe and properly parse intervals
+    Returns dataframe
+    '''
+    df = pd.read_csv(filename, comment='#')
+
+    for col in interval_cols:
+        temp_df = df[col].str.split('_', expand=True).astype(float)
+        df[col] = temp_df.apply(lambda x: pd.Interval(x[0], x[1], closed='right'), axis=1)
+
+    df = df.rename(columns={'e_r0':'er0', 
+                            'e_D0':'eD0',
+                            'log_star_mass': 'medlsm',
+                            'sfr': 'medsfr',
+                            'sfr_100Myr': 'medsfr_100Myr',
+                            'log_gas_mass': 'medlgsm',
+                            })    
     return df
 
 # ------------------------------------------------------------------------------------------------
@@ -172,8 +195,10 @@ def plot_dm_fit(df_dmpars, args):
     df_dmpars['medlgsm_offset'] = df_dmpars['medlgsm'] - 10
     df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
     df_dmpars['log_medsfr'] = np.log10(df_dmpars['medsfr'])
+    df_dmpars['log_medsfr_100Myr'] = np.log10(df_dmpars['medsfr_100Myr'])
     
-    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
     #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlgsm_offset', fit_robust=args.fit_robust, fortalk=args.fortalk)
     #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_ssfr', y1col='D0', y2col='r0', x2col='log_medsfr', fit_robust=args.fit_robust, fortalk=args.fortalk)
@@ -239,52 +264,233 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'ngal', 'medlsm', 'med
 
     return df_latex
 
+# ------------------------------------------------------------------------------------------------
+def plot_multipanel_foggie(args):
+    '''
+    Make a 3-row multi-panel plot for a given FOGGIE halo with gas projection, electron density projection, and electron density radial profile, for a series of redshifts
+    Saves the plot
+    Returns figure handle
+    '''
+    # --------setup plot parameters----------
+    redshift_arr = [0.05, 0.10, 0.15, 0.20, 0.25]
+    inc_ranges	=	np.array([[0,10], [80,90]])
+    colist	= ['cornflowerblue','salmon', 'k']
+    shlist	= ['aqua', 'coral','grey']
+
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 3.5, 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 220, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
+                } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
+    quant_arr = ['density', 'el_density']
+
+    # ------plotting onto a matplotlib figure--------------
+    ncols = len(redshift_arr)
+    fig = plt.figure(figsize=(1.6 * ncols, 7.))
+
+    # ------- 1. Outer & Sub GridSpec Setup -------
+    outer_gs = fig.add_gridspec(
+        nrows=3, ncols=1, 
+        height_ratios=[1.1, 1.1, 1.0], 
+        hspace=0.2, 
+        left=0.07, right=0.98, top=0.92, bottom=0.07
+    )
+
+    # Top GridSpec has 4 rows: [Cbar 0, Plot Row 0, Cbar 1, Plot Row 1]
+    top_gs1 = outer_gs[0].subgridspec(
+        nrows=2, ncols=ncols, 
+        height_ratios=[0.05, 1.0], 
+        wspace=0.0, hspace=0.0
+    )
+
+    top_gs2 = outer_gs[1].subgridspec(
+        nrows=2, ncols=ncols, 
+        height_ratios=[0.05, 1.0], 
+        wspace=0.0, hspace=0.0
+    )
+
+    bot_gs = outer_gs[2].subgridspec(1, ncols, wspace=0.0)
+
+    # Axes mapping to preserve axes[row, col] indexing
+    axes = np.empty((3, ncols), dtype=object)
+    for col in range(ncols):
+        axes[0, col] = fig.add_subplot(top_gs1[1, col]) # Plot Row 0
+        axes[1, col] = fig.add_subplot(top_gs2[1, col]) # Plot Row 1
+        axes[2, col] = fig.add_subplot(bot_gs[0, col]) # Plot Row 2 (Radial Profiles)
+
+    # Colorbar axes spanning all columns
+    cax0 = fig.add_subplot(top_gs1[0, :])
+    cax1 = fig.add_subplot(top_gs2[0, :])
+
+    # -----------determine snapshot list from redshift list---------
+    args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
+    df = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
+    df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
+    output_arr = []
+    for redshift in redshift_arr:
+        idx = (df['redshift'] - redshift).abs().idxmin()
+        output_arr.append(df.loc[idx, 'snap'])
+
+    # -------looping over redshift snapshots--------
+    for index, args.output in enumerate(output_arr):
+        print(f'\nDoing output {args.output} which is {index + 1} of {len(output_arr)}..')
+
+        # -----------read in FRB data-------------
+        fitsname = Path(args.fits_dir) / f'{args.output}_{args.halo}_FRB_{quant_dict["el_density"][0]}{args.upto_text}{args.res_text}.fits'
+        print(f'Trying to read {fitsname}..')
+        hdul = fits.open(fitsname)
+        sfr = hdul[0].header['SFR']
+        log_mstar = hdul[0].header['LOG_MSTAR']
+        if sfr == 'NaN': sfr = np.nan
+
+        # ----------plot gas and electron density projections-------
+        for index2, quant in enumerate(quant_arr):
+            ax = axes[index2, index]
+            clim = [quant_dict[quant][3], quant_dict[quant][4]]
+            cmap = quant_dict[quant][6]
+
+            # --------read in the quantity------
+            data = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].data
+            crpix = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CRPIX1']
+            cdelt = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CDELT1']
+            crval = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CRVAL1']
+            if quant_dict[quant][7]: data = np.log10(data)
+
+            # ---------plot projection-----------
+            p = ax.imshow(data, cmap=cmap, vmin=clim[0], vmax=clim[1])
+
+            # ---------------prepping axes------------------------
+            ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+            ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+
+            ax = annotate_axes(ax, 'Offset (kpc)', 'Offset (kpc)', args=args, xloc=0.05, 
+                               #label=rf'$\log$(M/M$_\odot$) = {log_mstar:.2f}' if index2 else rf'$\log$ SFR = {sfr:.2f}',# rf'$\log$(SFR/M$_\odot$ yr$^{-1}$) = {sfr:.2f}', 
+                               hide_xaxis=index2 == 0, hide_yaxis=index, bbox=True, set_ticks=False, 
+                               p=p, hide_cbar=True)
+
+            if index2 > 0:
+                ax.set_xticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
+
+            if index == 0:
+                ax.set_yticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_yticks()], fontsize=args.fontsize)
+
+            # ---------------making colorbar------------------------
+            if index == len(output_arr) - 1:
+                cax = [cax0, cax1][index2]
+                cbar = fig.colorbar(p, cax=cax, orientation='horizontal')
+                cax.xaxis.set_ticks_position('top')
+                cax.xaxis.set_label_position('top')
+                cbar.ax.tick_params(labelsize=args.fontsize, width=1.2, length=3)
+                clabel = fr'Log ({quant_dict[quant][9]})' if quant_dict[quant][7] else quant_dict[quant][9]
+                cbar.set_label(clabel, fontsize=args.fontsize)
+
+        # ----------read in radial electron density profile-------
+        fitsname = fitsname.stem
+        if 'El' in fitsname: profsubdir = 'electron_density/'
+        else: profsubdir = 'gas_density/'
+        profdir = radialdir + profsubdir
+        Path(profdir).mkdir(exist_ok=True, parents=True)
+        profile_pkl_filename = profdir + fitsname + '_radprof.pkl'
+
+        print("\nPlotting radial electron density profiles...\n")            
+        with open(profile_pkl_filename, 'rb') as file_obj:
+            cube = pkl.load(file_obj) # load the pickle file
+
+        # ----------plot gas and electron density projections-------
+        ax = axes[2, index]
+        
+        for i in range(0,len(inc_ranges)):
+            inclim	= inc_ranges[i]
+            relinds	= np.where((cube.inclination - np.deg2rad(inclim[0]))*(cube.inclination - np.deg2rad(inclim[1])) <= 0.0)	
+            relne	= cube.neincrad[relinds]
+            binned_ne	= np.zeros((len(radbins)-1, 6), dtype=np.float32)
+
+            for k in range (0,len(radbins)-1):
+                rel2inds		= np.where((cube.radkpc - radbins[k])*(cube.radkpc - radbins[k+1]) <= 0.0)
+                binned_ne[k,0]	= (radbins[k]+radbins[k+1])/2.0
+                binned_ne[k,1:6]= np.percentile(relne[:,rel2inds], (16, 25, 50, 75, 84))
+
+            ax.fill_between(binned_ne[:,0], binned_ne[:,1], binned_ne[:,5], color=shlist[i],alpha=0.2)
+            ax.plot(binned_ne[:,0], binned_ne[:,3], c=colist[i], marker='s', markersize=6, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
+
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax.set_ylim(1e-5, 1e0)
+        ax = annotate_axes(ax, 'Radius (kpc)', '$n_e$ (cm$^{-3}$)', args=args, xloc=0.6, 
+                               label=f'z ={redshift_arr[index]:.2f}', 
+                               hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+
+    # ---------------saving fig------------------------
+    if args.fortalk:
+        mplcyberpunk.add_glow_effects()
+        try: mplcyberpunk.make_lines_glow()
+        except: pass
+        try: mplcyberpunk.make_scatter_glow()
+        except: pass
+
+    save_fig(fig, Path(args.fig_dir), f'{args.halo}_multi_z_snapshots.pdf', args)
+    plt.show(block=False)
+    return fig
+
 # -----main code-----------------
 if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
 
-    # -------------determining directories------------------
-    if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc.txt'
-    else: catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.txt'
-    df_dmpars = read_dataframe(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
+    if args.plot_foggie_snaps:
+        # -----------determining directories----------------
+        args.fig_dir = root_dir + 'plots/'
+        Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
+        
+        args.fits_dir = root_dir + 'data/'
+        Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
-    # -------------calling plotting functions------------------
-    if args.plot_dm_lsm:
+        args.res_text = f'_res{args.reskpc:.1f}kpc'
+        args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving and args.upto_kpc is not None else '_upto%.1Fkpc' % args.upto_kpc if args.upto_kpc is not None else f'_upto{args.re:.1f}re'
 
-        # ------------setup multi-panel figure if needed-------
-        if args.multi_panel:
-            nrows, ncols = 1, len(args.lsm_bins)
-            fig, axes = plt.subplots(nrows, ncols, figsize=(3.0*np.array([len(args.lsm_bins),1])))
-            axes = np.atleast_2d(axes)
-            fig.subplots_adjust(left=0.1, bottom=0.15, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
+        fig = plot_multipanel_foggie(args)
 
-        # --------loop over log stellar mass bins------------
-        for index, this_lsm_bin in enumerate(args.lsm_bins):
-            print(f'\nRunning ({index + 1}/{len(args.lsm_bins)}) for stellar mass bin {this_lsm_bin}..\n')
-            args.lsm_range = this_lsm_bin
-            ax = plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=axes[index // ncols][index % ncols] if args.multi_panel else None)
-    
+    else:    
+        # -------------determining directories------------------
+        if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc.csv'
+        else: catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.csv'
+        #df_dmpars = read_dataframe_txt(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
+        df_dmpars = read_dataframe_csv(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
+
+        # -------------calling plotting functions------------------
+        if args.plot_dm_lsm:
+
+            # ------------setup multi-panel figure if needed-------
             if args.multi_panel:
-                if index // ncols < nrows - 1:
-                    ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)
-                    ax.set_xlabel('')
-                if index % ncols > 0:
-                    ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
-                    ax.set_ylabel('')
-        if args.multi_panel:
-            save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel_zrange_{args.z_range[0]}_{args.z_range[1]}.pdf', args)
+                nrows, ncols = 1, len(args.lsm_bins)
+                fig, axes = plt.subplots(nrows, ncols, figsize=(3.0*np.array([len(args.lsm_bins),1])))
+                axes = np.atleast_2d(axes)
+                fig.subplots_adjust(left=0.1, bottom=0.15, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
-    if args.plot_dm_all_lsm:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
-        ax = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
+            # --------loop over log stellar mass bins------------
+            for index, this_lsm_bin in enumerate(args.lsm_bins):
+                print(f'\nRunning ({index + 1}/{len(args.lsm_bins)}) for stellar mass bin {this_lsm_bin}..\n')
+                args.lsm_range = this_lsm_bin
+                ax = plot_dm_impfac_one_lsm_bin(df_dmpars, args, given_ax=axes[index // ncols][index % ncols] if args.multi_panel else None)
+        
+                if args.multi_panel:
+                    if index // ncols < nrows - 1:
+                        ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)
+                        ax.set_xlabel('')
+                    if index % ncols > 0:
+                        ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
+                        ax.set_ylabel('')
+            if args.multi_panel:
+                save_fig(fig, args.fig_dir, f'DM_vs_impfact_all_inc_all_lsm_multipanel_zrange_{args.z_range[0]}_{args.z_range[1]}.pdf', args)
 
-    if args.plot_dm_fit:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
-        ax = plot_dm_fit(df_dmpars, args)
-    
-    if args.make_latex_table:
-        df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
-        ax = make_latex_table(df_dmpars, args)
+        if args.plot_dm_all_lsm:
+            df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
+            ax = plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap=args.cmap)
+
+        if args.plot_dm_fit:
+            df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
+            ax = plot_dm_fit(df_dmpars, args)
+        
+        if args.make_latex_table:
+            df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
+            ax = make_latex_table(df_dmpars, args)
 
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

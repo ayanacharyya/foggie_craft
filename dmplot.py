@@ -19,6 +19,7 @@
 
   run dmplot.py --mode proj --halo 5036 --z_range 0,0.5
   run dmplot.py --mode proj --z_range 0,2 --inc 80,90 --plot_all --hide --clobber
+  run dmplot.py --mode plot_2d_radius_ratio --z_range 0,2 --fontsize 12
   run dmplot.py --mode plot_2d_param_comp --z_range 0,2 --fontsize 12
   run dmplot.py --mode plot_1d_param_comp --z_range 0,2 --fontsize 12
   run dmplot.py --mode plot_1d_2d_comp --z_range 0,2 --fontsize 12
@@ -91,7 +92,7 @@ def execute_mode_indi(df_snap, args):
         multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
         if not os.path.exists(multifit_par_filename): multifit_par_filename = None
         
-        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename)
+        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename, redshift=snap['redshift'])
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -282,12 +283,13 @@ def execute_mode_plot_2d_fit_param_comparison(args):
     # -----------setting up figure-----------------
     inc_ranges = [[0, 30], [60, 90], [80, 90]]
     #inc_ranges = [[60, 90]]
-    #col1, col2, figlabel = 'distmin0', 'distmaj0', 'rmin_rmaj' # this is for the scenario where the minor and major r0 have been fitted together as a 2D profile
-    #col1, col2, figlabel = 'distmin0_indep', 'distmaj0_indep', 'rmin_rmaj_indep' # this is for the scenario where the minor and major r0 have been fitted independently (individually)    
-    #rlimits = [0.5, 300]
 
-    col1, col2, figlabel = 'losdm0', 'r_sq', 'rsq_dm' # 
-    dlimits = [7e0, 2e4]
+    col1, col2, figlabel = 'distmin0', 'distmaj0', 'rmin_rmaj' # this is for the scenario where the minor and major r0 have been fitted together as a 2D profile
+    #col1, col2, figlabel = 'distmin0_indep', 'distmaj0_indep', 'rmin_rmaj_indep' # this is for the scenario where the minor and major r0 have been fitted independently (individually)    
+    rlimits = [0.5, 300]
+
+    # col1, col2, figlabel = 'losdm0', 'r_sq', 'rsq_dm' # 
+    # dlimits = [7e0, 2e4]
     rlimits = [1e-1, 5e2]
 
     # --------------dictionaries for labels and colors-------------
@@ -382,11 +384,11 @@ def execute_mode_plot_1d_fit_param_comparison(args):
     Returns nothing
     '''
     # -----------setting up figure-----------------
-    inc_ranges = [[0, 30], [60, 90], [80, 90]]
-    #inc_ranges = [[60, 90]]
+    #inc_ranges = [[0, 30], [60, 90], [80, 90]]
+    inc_ranges = [[0, 90]]
     col1, col2, figlabel = 'D0', 'r0', 'r_dm' # 
     dlimits = [7e0, 1e3]
-    rlimits = [1e-1, 5e2]
+    rlimits = [5e-1, 5e2]
 
     # --------------dictionaries for labels and colors-------------
     fixed_color = 'cornflowerblue'
@@ -406,7 +408,7 @@ def execute_mode_plot_1d_fit_param_comparison(args):
         print(f'\n\nDoing color by {colorby_col}..')
 
         # -----------setting up figure-----------------
-        fig, axes = plt.subplots(1, len(inc_ranges), figsize=(4 * len(inc_ranges), 4), layout='constrained', sharey=True)
+        fig, axes = plt.subplots(1, len(inc_ranges), figsize=(4 * len(inc_ranges), 3.6), layout='constrained', sharey=True)
         axes = np.atleast_1d(axes)
 
         # ---------reading in input file with fitted parameters for 1D fit (with all inc)-----------
@@ -433,7 +435,7 @@ def execute_mode_plot_1d_fit_param_comparison(args):
             axes[index].set_xlim(dlimits[0], dlimits[1])
             axes[index].set_ylim(rlimits[0], rlimits[1])
             
-            axes[index] = annotate_axes(axes[index], label_dict[col1], label_dict[col2], args=args, xloc=0.65 if 'losdm' in col1 or 'losdm' in col2 else 0.05, label=rf'{inc_range[0]}$^\circ$ $< i <$ {inc_range[1]}$^\circ$', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+            axes[index] = annotate_axes(axes[index], label_dict[col1], label_dict[col2], args=args, xloc=0.65 if 'losdm' in col1 or 'losdm' in col2 else 0.65, label=rf'{inc_range[0]}$^\circ$ $< i <$ {inc_range[1]}$^\circ$', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
 
         # --------color axis-----------
         if colorby_col is not None:
@@ -569,6 +571,93 @@ def execute_mode_plot_1d_2d_comparison(args):
              
     return
 
+# -----------------------------------------------------------------------------
+def execute_mode_plot_2d_fit_radius_ratio(args):
+    '''
+    Function to execute mode plot_2d_fit_radius_ratio, which reads in the 2D fitted parameter file and plots rx0 / ry0 vs global properties
+    Saves the plots
+    Returns nothing
+    '''
+    # -----------setting up figure-----------------
+    inc_ranges = [[0, 30], [60, 90], [80, 90]]
+    #inc_ranges = [[60, 90]]
+    
+    #col1, col2, figlabel = 'distmin0', 'distmaj0', 'rmin_rmaj_ratio' # this is for the scenario where the minor and major r0 have been fitted together as a 2D profile
+    col1, col2, figlabel = 'distmin0_indep', 'distmaj0_indep', 'rmin_rmaj_ratio_indep' # this is for the scenario where the minor and major r0 have been fitted independently (individually)    
+
+    # --------------dictionaries for labels and colors-------------
+    fixed_color = 'cornflowerblue'
+    label_dict = {'distmaj0': r'r$_{0,maj}$ (kpc)',
+                    'distmin0': r'r$_{0,min}$ (kpc)',
+                    'distmaj0_indep': r'r$_{0,maj}$ (kpc)',
+                    'distmin0_indep': r'r$_{0,min}$ (kpc)',
+                    'losdm0': r'D$_{0,2D}$ pc cm$^{-3}$',
+                    'r_sq': r'$\sqrt{r_{0,maj}^2 + r_{0,min}^2}$ (kpc)',
+                    'log_star_mass': r'$\log{(M_*/M_\odot)}$',
+                    'log_sfr': r'$\log{SFR/M_\odot yr^{-1}}$',
+                    'log_ssfr': r'$\log{sSFR/yr^{-1}}$',
+                    'redshift': 'Redshift',
+                    'log_r_ratio': r'$\log$ (r$_{0,maj}$ / r$_{0,min}$)'
+                    }
+
+    colorby_col_arr = ['log_sfr'] #[None, 'log_sfr', 'log_ssfr', 'redshift']
+    xcol = 'log_star_mass'
+
+    # ---------looping over color cols---------------
+    for colorby_col in colorby_col_arr:
+        print(f'\n\nDoing color by {colorby_col}..')
+
+        # -----------setting up figure-----------------
+        fig, axes = plt.subplots(1, len(inc_ranges), figsize=(3.6 * len(inc_ranges), 4), layout='constrained', sharey=True)
+        axes = np.atleast_1d(axes)
+
+        # ---------looping over inc ranges----------
+        for index, inc_range in enumerate(inc_ranges):
+            outdir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{inc_range[0]:.1f}_{inc_range[1]:.1f}')
+            input_filename = args.data_dir / outdir / 'projection_fit.csv'
+            print(f'For inc_range {inc_range} ({index + 1}/{len(inc_ranges)}): Reading projection fit parameters from {input_filename}..')
+            df = pd.read_csv(input_filename)
+
+            # -------computing sSFR---
+            df['log_ssfr'] = df['log_sfr'] - df['log_star_mass']
+
+            # ----computing r_min / r_maj ratio--------
+            quant = unp.log10(unp.uarray(df[col1], df[f'e_{col1}']) / unp.uarray(df[col2], df[f'e_{col2}']))
+            df['log_r_ratio'] = unp.nominal_values(quant)
+            df['e_log_r_ratio'] = unp.std_devs(quant)
+
+            # ---------doing the plot------
+            axes[index].errorbar(df[xcol], df['log_r_ratio'], yerr=df['e_log_r_ratio'], fmt='none', color=fixed_color, lw=0.5, alpha=0.8, capsize=2, zorder=-10)
+            im = axes[index].scatter(df[xcol], df['log_r_ratio'], c=fixed_color if colorby_col is None else df[colorby_col], s=10, lw=0.5, ec='k', alpha=0.8)
+
+            # -------axes limits-----------
+            axes[index].axhline(0, c='k', ls='--')
+            axes[index].set_ylim(-1.1, 1.1)
+            
+            axes[index] = annotate_axes(axes[index], label_dict[xcol], label_dict['log_r_ratio'], args=args, xloc=0.05, label=rf'{inc_range[0]}$^\circ$ $< i <$ {inc_range[1]}$^\circ$', hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+
+        # --------color axis-----------
+        if colorby_col is not None:
+            cbar = fig.colorbar(
+                im, 
+                ax=axes,          # Pass the entire array/list of axes here
+                location='top',   # Forces it above the subplots
+                orientation='horizontal', # Ensures the colorbar orientation is horizontal
+                shrink=1.,       # Optional: scales width (1.0 = 100% width of the axes grid)
+                pad=0.02,          # Optional: spacing between colorbar and subplots top edge
+                aspect = 70,       # higher value for thinner colorbar
+            )
+            cbar.set_label(label_dict[colorby_col], labelpad=10, fontsize=args.fontsize)
+
+        # ------------saving the figure----------------------
+        figname = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_{len(inc_ranges)}_inc_ranges_2D_fit_{figlabel}.png'
+        if colorby_col is not None:
+            figname = figname.replace('.png', f'_colby_{colorby_col}.png')
+
+        save_fig(fig, args.plot_dir, figname, args=args)
+             
+    return
+
 # ------------------------------------------------------------------------------------------------
 def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
     '''
@@ -618,9 +707,15 @@ def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis', colorcol='redshi
     Saves plot
     Returns axis handle
     '''
+    label_dict = {'log_star_mass': r'$\log{(M_*/M_\odot)}$',
+                    'log_sfr': r'$\log{SFR/M_\odot yr^{-1}}$',
+                    'log_ssfr': r'$\log{sSFR/yr^{-1}}$',
+                    'redshift': 'Redshift',
+                    }
+
     # ---------setup figure---------------
-    fig, ax = plt.subplots(1, figsize=(8, 5))
-    fig.subplots_adjust(left=0.12, bottom=0.12, right=0.99, top=0.98)
+    fig, ax = plt.subplots(1, figsize=(7, 5))
+    fig.subplots_adjust(left=0.12, bottom=0.12, right=0.93, top=0.98)
 
     norm = mplcolors.Normalize(vmin=df_snap[colorcol].min(), vmax=df_snap[colorcol].max())
     sm = mpl_cm.ScalarMappable(cmap=plt.get_cmap(cmap), norm=norm)
@@ -640,16 +735,18 @@ def plot_dm_impfac_indi_combined(df_snap, args, cmap='viridis', colorcol='redshi
         ax.set_yscale("log")
         ax.set_yticks(dm_ticks, dm_ticks)
         ax.set_ylim(ymin=0.7)
-    
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(colorcol, fontsize=args.fontsize)
+
+    colorlabel = label_dict[colorcol]
+    cbar = fig.colorbar(sm, ax=ax, pad=0.01)
+    cbar.set_label(colorlabel, fontsize=args.fontsize)
     cbar.ax.tick_params(labelsize=args.fontsize)
 
-    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel=colorcol, set_ticks=False)
-    ax.text(0.95, 0.95, rf'{args.lsm_range[0]} < $\log$(M/M$_\odot$) < {args.lsm_range[1]}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
-    ax.text(0.95, 0.85, rf'{args.lsfr_range[0]} < $\log$(SFR/M$_\odot$ yr$^{-1}$) < {args.lsfr_range[1]} [{len(df_snap)}]', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+    ax = annotate_axes(ax, "Impact factor (kpc)", "DM (pc cm$^{-3}$)", args=args, clabel=colorlabel, set_ticks=False)
+    ax.text(0.95, 0.95, rf'{args.z_range[0]} $\leq z <$ {args.z_range[1]}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+    #ax.text(0.95, 0.95, rf'{args.lsm_range[0]} < $\log$(M/M$_\odot$) < {args.lsm_range[1]}', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
+    #ax.text(0.95, 0.85, rf'{args.lsfr_range[0]} < $\log$(SFR/M$_\odot$ yr$^{-1}$) < {args.lsfr_range[1]} [{len(df_snap)}]', c='k', fontsize=args.fontsize, ha='right', va='top', transform=ax.transAxes)
 
-    save_fig(fig, args.fig_dir, f'DM_vs_impfact_indi_lsm_bin_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_bin_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}_inc{args.inc_range[0]}-{args.inc_range[1]}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_vs_impfact_indi_lsm_bin_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_bin_{args.lsfr_range[0]}_{args.lsfr_range[1]}_zrange_{args.z_range[0]}_{args.z_range[1]}_inc{args.inc_range[0]}-{args.inc_range[1]}_colorby_{colorcol}.pdf', args)
     plt.show(block=False)
 
     return ax
@@ -693,7 +790,7 @@ if __name__ == '__main__':
                     if args.multi_panel:
                         axes[nrow][ncol].remove()
                     continue
-                
+
                 #	-------------------------	Execute tasks	-------------------------------
                 if (args.mode=='indi'):
                     execute_mode_indi(df_snap, args)
@@ -710,10 +807,13 @@ if __name__ == '__main__':
                 elif (args.mode=='plot_1d_param_comp') : # to compare fitted parameters (r0, D0, etc) from 1D fitting
                     execute_mode_plot_1d_fit_param_comparison(args)     
 
-                elif (args.mode=='plot_1d_2d_comp') : # to compare fitted parameters (r0, D0, etc) across 2D and 2D fitting
-                    execute_mode_plot_1d_2d_comparison(args)  
+                elif (args.mode=='plot_1d_2d_comp') : # to compare fitted parameters (r0, D0, etc) across 1D and 2D fitting
+                    execute_mode_plot_1d_2d_comparison(args)
 
-                elif (args.mode=='lsmzsfr'):                
+                elif (args.mode=='plot_2d_radius_ratio') : # to compare r_min/r_max from 2D fitting
+                    execute_mode_plot_2d_fit_radius_ratio(args)
+
+                elif (args.mode=='lsmzsfr'):      
                     # ---------------make the plots-----------------
                     ax = execute_mode_lsmzsfr(df_snap, args, given_ax=axes[nrow][ncol] if args.multi_panel else None)
 
@@ -732,9 +832,10 @@ if __name__ == '__main__':
                     ax = plot_dm_impfac_halo_combined(df_snap, args)
 
                 if args.mode == 'plot_indi':
-                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
-                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_star_mass')
-                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
+                    #ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='redshift')
+                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_star_mass')
+                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_sfr')
+                    ax = plot_dm_impfac_indi_combined(df_snap, args, colorcol='log_ssfr')
 
 
         if args.mode == 'lsmzsfr' and args.multi_panel:
