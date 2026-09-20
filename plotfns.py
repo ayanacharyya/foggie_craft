@@ -427,8 +427,9 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
     ax2.errorbar(df[xcol], np.log10(df[ycol2]), df['e' + ycol2]/(df[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
     if fit_robust: ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
 
-    mad_to_display = np.nanmedian(np.abs(df['devdex2']))
-    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, mad_to_display, coeff_label=['R', r'$\eta$'])
+    mad = np.nanmedian(np.abs(df['devdex2']))
+    sigma		= np.nanstd(df['devdex2'])
+    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'])
 
     return popt, perr, popt2, perr2
 
