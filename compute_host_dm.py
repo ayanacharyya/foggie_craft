@@ -14,6 +14,25 @@ from craft_utils import *
 setup_plot_style()
 start_time = datetime.now()
 
+# --------------------------------------------------------------------------------------------------------------------
+def get_SFMS_Popesso23(log_mass, redshift):
+    '''
+    Computes an empirical SFMS based on Popesso+23 (https://arxiv.org/abs/2203.10487) Eq 10, for given redshift
+    Then returns a two-part log SFR array based on an input minimum and maximum log mass; the two part are based on the lower limit of this empirical relation and any extrapolation below it
+    Returns two tuples: (log_mass1, log_SFR1) and (log_mass2, log_SFR2)
+    '''
+    a0, a1, b0, b1, b2 = ufloat(0.2,0.02), ufloat(-0.034, 0.002), ufloat(-26.134,0.015), ufloat(4.722, 0.012), ufloat(-0.1925, 0.0011)  # Table 2, Eq 10
+    log_mass_low_lim = 8.7 # lower limit of mass they fitted up to
+
+    age_at_z = cosmo.age(redshift).value # Gyr
+
+    if log_mass < log_mass_low_lim: 
+        log_SFR = (a1 * age_at_z + b1) * log_mass + b2 * (log_mass) ** 2 + b0 + a0 * age_at_z
+    else: 
+        log_SFR = (a1 * age_at_z + b1) * log_mass + b2 * (log_mass) ** 2 + b0 + a0 * age_at_z
+
+    return log_SFR.n
+
 # ------------------------------------------------------------------------------------------------
 def read_foggie_catalog(filename):
     '''
@@ -21,15 +40,29 @@ def read_foggie_catalog(filename):
     Rename its columns if needed
     Returns pandas dataframe
     '''
-    df = pd.read_csv(filename, sep=r'\s+', engine='python')
-    df = df.rename(columns={f'{df.columns[0]}':f'{df.columns[0][1:]}'})
-    if 'sfr' in df:
+    if filename.suffix == '.txt':
+        df = pd.read_csv(filename, sep=r'\s+', engine='python')
+    elif filename.suffix == '.csv':
+        df = pd.read_csv(filename)
+
+    df = df.drop_duplicates(subset=['halo', 'snap'], keep='last')
+
+    if df.columns[0][0] == '#': # if the first column name ha a '#' then remove it
+        df = df.rename(columns={f'{df.columns[0]}':f'{df.columns[0][1:]}'})
+
+    if 'sfr' in df and 'log_sfr' not in df:
         df['log_sfr'] = np.log10(df['sfr'])
+
+    df = df.rename(columns={'log_star_mass_from_snap': 'log_star_mass', 'log_gas_mass_from_profile': 'log_gas_mass'})
+    df = df[(df['redshift'].between(args.z_range[0], args.z_range[1], inclusive='left'))].reset_index(drop=True)
+    df['log_ssfr'] = df['log_sfr'] - df['log_star_mass']
+
+    print (f'\t\tFound {len(df)} snapshots, within {args.z_range}')
 
     return df
 
 # ------------------------------------------------------------------------------------------------
-def read_obs_catalog(filename, args, input_column_dict=None, add_columns=['dm_16', 'dm_50', 'dm_84', 'dm_fit']):
+def read_obs_catalog(filename, args, input_column_dict=None, add_columns=['dm_16', 'dm_50', 'dm_84', 'dm_fit1d', 'dm_fit2d']):
     '''
     Function to read in the input observed catalog,
     Rename its columns as per input_column_dict, and
@@ -69,15 +102,15 @@ def get_param_ranges(obs):
     lsm_range = [obs['lsm'] - obs_lsm_allowance, max(obs['lsm'] + obs_lsm_allowance, min_max_lsm)]
 
     # ----------------determine SFR range-------------------
-    lsfr_range = [-10, 10]
-    if args.use_sfr:
-        if np.isfinite(obs['sfr_up']) and np.isfinite(obs['sfr_low']):
-            lsfr_range = [obs['sfr_low'], obs['sfr_up']]
-        elif np.isfinite(obs['sfr_med']):
-            lsfr_range = [obs['sfr_med'] - obs_lsm_allowance, obs['sfr_med'] + obs_lsm_allowance]
-        elif np.isfinite(obs['sfr_up']):
-            lsfr_range[1] = obs['sfr_up']
-
+    # lsfr_range = [-10, 10]
+    # if np.isfinite(obs['sfr_up']) and np.isfinite(obs['sfr_low']):
+    #     lsfr_range = [obs['sfr_low'], obs['sfr_up']]
+    # elif np.isfinite(obs['sfr_med']):
+    #     lsfr_range = [obs['sfr_med'] - obs_lsm_allowance, obs['sfr_med'] + obs_lsm_allowance]
+    # elif np.isfinite(obs['sfr_up']):
+    #     lsfr_range[1] = obs['sfr_up']
+    lsfr_range = [obs['sfr_to_use'] - obs_lsm_allowance, obs['sfr_to_use'] + obs_lsm_allowance]
+    
     # -----------------------determine inclination range----------------------
     if 'inc' in obs and np.isfinite(obs['inc']):
         inc_range = [obs['inc'] - obs_inc_allowance, obs['inc'] + obs_inc_allowance]
@@ -117,45 +150,57 @@ def find_los_in_range(df_snap, inc_range, impf_range, args):
 # ------------------------------------------------------------------------------------------------
 def get_fit_r0_d0(obs, args):
     '''
-    Function determine r0 and D0 from scaling relation fit, based on fit coeffciients in globalpars.py
+    Function determine r0 and D0 from scaling relation fit, based on fit coeffciients that are read in from the *multifit_params.txt file
     Returns fit_D0, fit_r0
     '''
-    if args.use_sfr and np.isfinite(obs['sfr_med']):
-        fit_D0 = 10 ** (lsm_lsfr_fit_D0[0] * (obs['lsm'] - 10) + lsm_lsfr_fit_D0[1] * obs['sfr_med'] + lsm_lsfr_fit_D0[2])     
-        fit_r0 = 10 ** (lsm_lsfr_fit_r0[0] * (obs['lsm'] - 10) + lsm_lsfr_fit_r0[1] * obs['sfr_med'] + lsm_lsfr_fit_r0[2])       
-    else:
-        fit_D0 = 10.0 ** np.poly1d(lsm_fit_D0)(obs['lsm'] - 10)
-        fit_r0 = 10.0 ** np.poly1d(lsm_fit_r0)(obs['lsm'] - 10)
+    paramfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
+    results = np.loadtxt(paramfilename)
+    lsm_lsfr_fit_D0 = results[0] # D0 vs SFR (100Myr) and mass
+    lsm_lsfr_fit_r0 = results[2] # r0 vs SFR (100Myr) and mass
 
-    return fit_D0, fit_r0
+    lsm_fit_D0 = results[4][:-1] # D0 vs SFR (100Myr)
+    lsm_fit_r0 = results[6][:-1] # r0 vs SFR (100Myr)
+
+    fit2d_D0 = 10 ** (lsm_lsfr_fit_D0[0] * obs['sfr_to_use'] + lsm_lsfr_fit_D0[1] * (obs['lsm'] - 10) + lsm_lsfr_fit_D0[2])     
+    fit2d_r0 = 10 ** (lsm_lsfr_fit_r0[0] * obs['sfr_to_use'] + lsm_lsfr_fit_r0[1] * (obs['lsm'] - 10) + lsm_lsfr_fit_r0[2])       
+
+    fit1d_D0 = 10 ** np.poly1d(lsm_fit_D0)(obs['sfr_to_use'])
+    fit1d_r0 = 10 ** np.poly1d(lsm_fit_r0)(obs['sfr_to_use'])
+
+    return fit1d_D0, fit1d_r0, fit2d_D0, fit2d_r0
 
 # ------------------------------------------------------------------------------------------------
-def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'lsm', 'impf', 'impf_low', 'impf_up', 'redshift', 'dm_16', 'dm_50', 'dm_84', 'dm_fit']):
+def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sfr_med', 'impf', 'impf_low', 'impf_up', 'redshift', 'dm_16', 'dm_50', 'dm_84', 'dm_fit1d', 'dm_fit2d']):
     '''
     Convert the input dataframe into a latex table
     Saves latex table
     Returns latex dataframe
     '''    
     colnames_dict = {'id': 'FRB',
-                     'lsm':r'\makecell{$\log(M_*/M_\odot$)\\range}', 
+                     'lsm':r'\makecell{$\log(M_*/M_\odot$)}', 
+                     'sfr_med':r'\makecell{$\log$(SFR /M$_\odot$ yr$^{\rm -1}$)}', 
                      'impf':r'\makecell{Offset\\(kpc)}', 
                      'redshift':r'\makecell{Redshift}', 
-                     'dm_16':r'\makecell{$DM_{16}$\\($pc\: cm^{-3}$)}',
-                     'dm_50':r'\makecell{$DM_{50}$\\($pc\: cm^{-3}$)}',
-                     'dm_84':r'\makecell{$DM_{84}$\\($pc\: cm^{-3}$)}',
-                     'dm_fit':r'\makecell{$DM_{\rm fit}$\\($pc\: cm^{-3}$)}',
+                     'dm':r'\makecell{DM$_{\rm los}$\\($pc\: cm^{-3}$)}',
+                     'dm_fit1d':r'\makecell{DM$_{\rm fit, 1D}$\\($pc\: cm^{-3}$)}',
+                     'dm_fit2d':r'\makecell{DM$_{\rm fit, 2D}$\\($pc\: cm^{-3}$)}',
                      }
 
-    columns_with_err = ['impf']
+    columns_with_err = ['impf', 'dm']
     columns_onedec = ['lsm']
     columns_threedec = ['redshift']
+    columns_with_nans = ['sfr_med', 'dm_fit1d', 'dm_fit2d']
 
-    df_latex = df_dmpars[columns_to_publish]
+    df_latex = df[columns_to_publish]
+    df_latex = df_latex.rename(columns={'dm_50':'dm', 'dm_16': 'dm_low', 'dm_84':'dm_up'})
     df_mread = df_latex.copy()   
     
     for col in columns_with_err:
-        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.2f} $^{{+{row[col+"_up"] :.2f}}}_{{-{row[col+"_low"] :.2f}}}$' if row[col+"_up"] > 0.1 else rf'{row[col] :.2f}', axis=1)
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f} $^{{+{(row[col+"_up"] - row[col]) :.1f}}}_{{-{(row[col] - row[col+"_low"]) :.1f}}}$' if row[col+"_up"] > 0.1 and not np.isnan(row[col]) else rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
         df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
+
+    for col in columns_with_nans:
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
 
     for col in columns_onedec:
         df_latex[col] = df_latex[col].map('{:.1f}'.format)
@@ -163,7 +208,7 @@ def make_latex_table(df_dmpars, outfilename, args, columns_to_publish=['id', 'ls
     for col in columns_threedec:
         df_latex[col] = df_latex[col].map('{:.3f}'.format)
 
-    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_onedec, columns_threedec, ['id']]))):
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_onedec, columns_threedec, columns_with_nans, ['id']]))):
         df_latex[col] = df_latex[col].map('{:.0f}'.format)
 
     df_latex = df_latex.rename(columns=colnames_dict)
@@ -185,14 +230,15 @@ def plot_dm_comparison(df, args):
     Returns figure handle
     '''
     fig, ax = plt.subplots(figsize=(3, 2.8), layout='constrained')
-    ax.errorbar(df['dm_fit'], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6)
+    ax.errorbar(df['dm_fit1d'], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6)
+    ax.errorbar(df['dm_fit2d'], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='s', capsize=2, markersize=6)
     ax.plot([7, 120], [7, 120], ls='--')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
 
     ax = annotate_axes(ax, r'DM from scaling relation (pc cm$^{-3}$)', r'DM from LoS (pc cm$^{-3}$)', args=args, set_ticks=False)
-    save_fig(fig, args.fig_dir, f'DM_comparison{sfr_text}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_comparison.pdf', args)
 
     return fig
 
@@ -205,7 +251,8 @@ def plot_dm_distribution(df, args):
     '''
     fig, ax = plt.subplots(figsize=(3, 2.8), layout='constrained')
     delta_hist = 0.1
-    ydata, bins, _ = ax.hist(np.log10(df['dm_fit']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='salmon', alpha=0.5)
+    ydata, bins, _ = ax.hist(np.log10(df['dm_fit1d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='goldenrod', alpha=0.5)
+    ydata, bins, _ = ax.hist(np.log10(df['dm_fit2d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='salmon', alpha=0.5)
     ydata, bins, _ = ax.hist(np.log10(df['dm_50']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='cornflowerblue', alpha=0.5)
 
     bin_centers = (bins[1:] + bins[:-1]) / 2
@@ -215,7 +262,7 @@ def plot_dm_distribution(df, args):
     ax.text(0.05, 0.85, r'$\sigma$=' + f'{popt[2]:.2f}', color='k', transform=ax.transAxes, ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
 
     ax = annotate_axes(ax, r'$\log$ (DM /pc cm$^{-3}$)', 'Number', args=args, set_ticks=False)
-    save_fig(fig, args.fig_dir, f'DM_distribution{sfr_text}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_distribution.pdf', args)
     
     return fig
 
@@ -226,19 +273,28 @@ def plot_dm_scaling(df, args):
     Saves the plot
     Returns figure handle
     '''
-    xcols = ['lsm', 'sfr_med', 'impf']
-    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_med':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact factor (kpc)'}
-    
+    xcols = ['lsm', 'sfr_to_use', 'impf']
+    ycol = 'dm_fit1d'
+    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_to_use':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact factor (kpc)'}
+
+    df_high = df[df['lsm'] > 10.5]
+    df_low = df[df['lsm'] <= 10.5]
+
     # --------------looping over each panel-----------
     fig, axes = plt.subplots(1, len(xcols), figsize=(9, 2.8), layout='constrained')
     for index, xcol in enumerate(xcols):
-        axes[index].errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6, markeredgecolor='k', markerfacecolor='cornflowerblue')
+        #axes[index].errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6, markeredgecolor='k', markerfacecolor='cornflowerblue')
+        axes[index].plot(df_high[xcol], df_high[ycol], 'bo', label=r'$\log(M_*/M_\odot$) > 10.5')
+        axes[index].plot(df_low[xcol], df_low[ycol], 'bo', fillstyle='none', label=r'$\log(M_*/M_\odot$) < 10.5')
 
         axes[index].set_yscale('log')
-        if 'log' not in label_dict[xcol]: axes[index].set_xscale('log')
-        axes[index] = annotate_axes(axes[index], label_dict[xcol], r'DM from LoS (pc cm$^{-3}$)', args=args, set_ticks=False, hide_yaxis=index)
+        axes[index].set_yticks([1, 3, 10, 30], [1, 3, 10, 30])
+        #if 'log' not in label_dict[xcol]: axes[index].set_xscale('log')
+        axes[index] = annotate_axes(axes[index], label_dict[xcol], r'DM$_{\rm host}$ (pc cm$^{-3}$)', args=args, set_ticks=False, hide_yaxis=index)
+        if index == 1:
+            axes[index].legend(loc='upper left', fontsize=args.fontsize)
     
-    save_fig(fig, args.fig_dir, f'DM_scaling{sfr_text}.pdf', args)
+    save_fig(fig, args.fig_dir, f'DM_scaling.pdf', args)
     
     return fig
 
@@ -259,13 +315,12 @@ if __name__ == '__main__':
     }                                           # the user will need to modify this dict
 
     # ---------reading input catalogs------------------
-    df_snap = read_foggie_catalog(args.data_dir / "lsm_sfr_masses_upto_disk.txt")
-    add_columns = ['dm_16', 'dm_50', 'dm_84', 'dm_fit']
+    df_snap = read_foggie_catalog(args.data_dir / "lsm_sfr_masses_upto_disk.csv")
+    add_columns = ['sfr_to_use', 'dm_16', 'dm_50', 'dm_84', 'dm_fit1d', 'dm_fit2d']
     df_obs, args.input_cat = read_obs_catalog(args.input_cat, args, input_column_dict=input_column_dict, add_columns=add_columns)
 
     # ---------setting output filenames------------------
-    sfr_text = '_with_sfr' if args.use_sfr else ''
-    outfilename = args.input_cat.parent / f'{args.input_cat.stem}_with_dm{sfr_text}.txt'
+    outfilename = args.input_cat.parent / f'{args.input_cat.stem}_with_dm.csv'
 
     # ---------making output catalog with DMs------------------
     if not os.path.exists(outfilename) or args.clobber:
@@ -274,6 +329,17 @@ if __name__ == '__main__':
         # -------------looping over observed data------------------
         for index, obs in df_obs.iterrows():
             print(f'\nDoing object {obs["id"]} ({index + 1}/{len(df_obs)})...')
+            # ---------derive SFR from SFMS if it does not exist----------------
+            if np.isnan(obs['sfr_med']):
+                obs['sfr_to_use'] = get_SFMS_Popesso23(obs['lsm'], obs['redshift'])
+            else:
+                obs['sfr_to_use'] = obs['sfr_med']
+            df_obs.at[index, 'sfr_to_use'] = obs['sfr_to_use']
+
+            # --------------------------derive fitted DM------------------------
+            fit1d_D0, fit1d_r0, fit2d_D0, fit2d_r0 = get_fit_r0_d0(obs, args)
+            df_obs.at[index, 'dm_fit1d'] = schechter(obs['impf'], fit1d_r0, fit1d_D0) # update dataframe
+            df_obs.at[index, 'dm_fit2d'] = schechter(obs['impf'], fit2d_r0, fit2d_D0) # update dataframe
 
             # ------------find snapshots--------------------------
             lsm_range, lsfr_range, inc_range, impf_range = get_param_ranges(obs)
@@ -289,18 +355,15 @@ if __name__ == '__main__':
             stats = np.nanpercentile(combined_df['losdm'], (16, 50, 84))/2.0
             df_obs.at[index, 'dm_16'], df_obs.at[index, 'dm_50'], df_obs.at[index, 'dm_84'] = list(stats) # update dataframe
 
-            # --------------------------derive fitted DM------------------------
-            fit_D0, fit_r0 = get_fit_r0_d0(obs, args)
-            df_obs.at[index, 'dm_fit'] = 10 ** logradialexp3(obs['impf'], fit_r0, fit_D0) # update dataframe
 
         # ------------save output files---------------
-        df_obs.to_csv(outfilename, sep='\t', index=None)
+        df_obs.to_csv(outfilename, index=None)
         print(f'Saved output as {outfilename}')
     else:
         print(f'Reading output file from existing {outfilename}; use --clobber to over-write')
     
     # -----------Read output file-----------------
-    df_output = pd.read_table(outfilename, sep='\t')
+    df_output = pd.read_csv(outfilename)
     texfilename =  args.fig_dir / Path(str(Path(outfilename).stem) + '.tex')
     df_latex = make_latex_table(df_output, texfilename, args)
 
