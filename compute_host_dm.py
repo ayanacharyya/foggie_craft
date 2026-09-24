@@ -186,7 +186,8 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
                      'dm_fit2d':r'\makecell{DM$_{\rm fit, 2D}$\\($pc\: cm^{-3}$)}',
                      }
 
-    columns_with_err = ['impf', 'dm']
+    columns_with_err = ['dm']
+    columns_with_percentiles = ['impf']
     columns_onedec = ['lsm']
     columns_threedec = ['redshift']
     columns_with_nans = ['sfr_med', 'dm_fit1d', 'dm_fit2d']
@@ -199,6 +200,10 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
         df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f} $^{{+{(row[col+"_up"] - row[col]) :.1f}}}_{{-{(row[col] - row[col+"_low"]) :.1f}}}$' if row[col+"_up"] > 0.1 and not np.isnan(row[col]) else rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
         df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
 
+    for col in columns_with_percentiles:
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col]:.1f} $^{{+{row[col+"_up"]:.1f}}}_{{-{row[col+"_low"]:.1f}}}$' if row[col+"_up"] > 0.1 and not np.isnan(row[col]) else rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
+        df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
+
     for col in columns_with_nans:
         df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
 
@@ -208,7 +213,7 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
     for col in columns_threedec:
         df_latex[col] = df_latex[col].map('{:.3f}'.format)
 
-    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_onedec, columns_threedec, columns_with_nans, ['id']]))):
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_percentiles, columns_onedec, columns_threedec, columns_with_nans, ['id']]))):
         df_latex[col] = df_latex[col].map('{:.0f}'.format)
 
     df_latex = df_latex.rename(columns=colnames_dict)

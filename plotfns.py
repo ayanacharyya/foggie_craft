@@ -124,7 +124,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     cmax = np.max(np.abs(dmres))
     residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="RdBu_r", vmin=-cmax, vmax=cmax)
 
-    # ---------double 1D fitting: aking a thin slice along each direction and radially fitting------------------
+    # ---------double 1D fitting: taking a thin slice along each direction and radially fitting------------------
     dmavg_slice_x = dmavg[0,:]
     good_indices_x = np.isfinite(dmavg_slice_x)
     dmavg_slice_x = dmavg_slice_x[good_indices_x]
