@@ -35,12 +35,12 @@ exmode		=	sys.argv[2]					#	What to do
 nfixpts     =   int(sys.argv[3])            #   Number of fixed points on each face to simulate LoSs
 scalekpc	=	float(sys.argv[4])			#	Scale radius in kpc
 
-incranges	=	np.array([[0,20],[40,50],[80,90]])
+incranges	=	np.array([[0,20],[80,90]])
 
 #	-------------------------	Load the fits file	---------------------------
 
-print("Reading "+fitsname)
-necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
+print("Reading "+datadir+fitsname)
+necub,dkpc,theta0,phi0	=	fitld(datadir+fitsname,3.2)
 print("Ne cube dimensions ")
 print(necub.shape)
 print("Spatial resolutions (kpc)")
@@ -53,11 +53,11 @@ print(np.rad2deg(theta0),np.rad2deg(phi0))
 if (exmode=='profile'):
 	print("\nGenerating radial electron density profiles...\n")
 	cubene	= neprofinc(necub,dkpc,1.0,theta0,phi0,1.0,1.0,1.0)
-	plot_nerad(cubene, incranges)
+	plot_nerad(cubene, incranges, plotradial+"/trial")
 
 elif (exmode=='losdm'):
 	print("\nEstimating LoS DMs...\n")
-	losdms(fitsname,necub,dkpc,theta0,phi0,nfixpts,1.0,1.0,1.0)
+	losdms(fitsname,necub,dkpc,theta0,phi0,nfixpts,1.0,1.0,1.0,scalekpc)
 
 elif (exmode=='pltdm'):
 	print("\nPloting LoS DMs...\n")

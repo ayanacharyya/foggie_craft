@@ -29,7 +29,7 @@ def plot_nerad(radne,inclims, plot_name):
 		#	The ugly binning in radius
 		for k in range (0,len(radbins)-1):
 			rel2inds		= np.where((radne.radkpc - radbins[k])*(radne.radkpc - radbins[k+1]) <= 0.0)
-			binned_ne[k,0]	= (radbins[k]+radbins[k+1])/2.0
+			binned_ne[k,0]	= np.nanmedian(radne.radkpc[rel2inds]) #(radbins[k]+radbins[k+1])/2.0
 			binned_ne[k,1:6]= np.percentile(relne[:,rel2inds], (16, 25, 50, 75, 84))
 		'''
 		medne	= np.nanmedian(relne, axis=0)
@@ -49,7 +49,7 @@ def plot_nerad(radne,inclims, plot_name):
 	plt.xscale('log')
 	plt.xlabel('Radius (kpc)')
 	plt.ylabel('$n_e$ (cm$^{-3}$)')
-	plt.savefig(plot_name + '_radprof.pdf', transparent=True)
+	plt.savefig(plot_name + '_radprof.png', transparent=True)
 		
 	plt.show(block=False)
 	

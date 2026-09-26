@@ -5,7 +5,7 @@ from collections import namedtuple
 #root_dir    =   "../data_260310/"
 #root_dir = "../"
 #root_dir = "../../Jun20/"
-root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
+root_dir = '../../sep24/'
 #root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 #datadir     =   root_dir                    #   Location of the FITS cubes
@@ -16,8 +16,11 @@ plotdir     =   root_dir + "plots/"        #   Location of the LoS DMs
 plotradial  =   plotdir + "radial_profiles/"                   # 
 
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
+r_lim_uni   =   10          # Limiting radius on the disk for uniformly distributed FRB locations in kpc
+r_scl_exp   =   5           # Scale radius on the disk for exponentially distributed FRB locations in kpc
 
-impbinegs   =   np.array([0,1,2,4,8,16,32,64,128])              #   Impact parameter bins
+#impbinegs   =   np.arange(0.0,27.0,2.0)
+impbinegs   =   np.array([0,1,2,4,8,16,32,64])              #   Impact parameter bins
 maxdmcol    =   205.0                                             #   Maximum DM for colour scale
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff

@@ -10,6 +10,7 @@
 from craft_utils import *
 import scipy.stats as spst
 import statsmodels.api as stm
+from matplotlib import colors
 setup_plot_style()
 
 #	----------------------------------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ def plot_nerad(cubes, inc_ranges, title, outfile, fig_size, hide=False, subtitle
         #	The ugly binning in radius
         for k in range (0,len(radbins)-1):
             rel2inds		= np.where((cubes[0].radkpc - radbins[k]) * (cubes[0].radkpc - radbins[k+1]) <= 0.0)
-            binned_ne[k,0]	= (radbins[k]+radbins[k+1])/2.0
+            binned_ne[k,0]	= np.nanmedian(cubes[0].radkpc[rel2inds]) #(radbins[k]+radbins[k+1])/2.0
             binned_ne[k,1:6]= np.percentile(binrelne[:,rel2inds], (16, 25, 50, 75, 84))
 
         ax.fill_between(binned_ne[:,0], binned_ne[:,1], binned_ne[:,5], color=shlist[i],alpha=0.1)
@@ -75,7 +76,10 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     
     for p in percentiles:
         ret = binned_statistic_2d(df[bin_col1], df[bin_col2], df[data_col], statistic=lambda x, p_val=p: np.nanpercentile(x, p_val) if len(x) > 0 else np.nan, bins=[impbinegs, impbinegs])
-        maps[f'p{p}'] = 0.5 * ret.statistic
+        maps[f'p{p}'] = ret.statistic
+
+    medianc1= binned_statistic_2d(df[bin_col1], df[bin_col2], df[bin_col1], statistic='median', bins=[impbinegs, impbinegs]).statistic
+    medianc2= binned_statistic_2d(df[bin_col1], df[bin_col2], df[bin_col2], statistic='median', bins=[impbinegs, impbinegs]).statistic
 
     dmavg	= maps['p50']	
     dmdiff	= maps['p84'] - maps['p16']
@@ -94,15 +98,10 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     else:
         ax1, ax2, ax3 = given_ax
     
-    # -------------------display median data---------------
-    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0)#, vmax=maxdmcol)
-
-    # -------------------display scatter data---------------
-    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", vmin=0)#, vmax=maxdmcol)
-
     # ---------2D fitting------------------
-    impbincen = (impbinegs[:-1] + impbinegs[1:])/2
-    X, Y = np.meshgrid(impbincen, impbincen)
+    #impbincen = (impbinegs[:-1] + impbinegs[1:])/2
+    #X, Y = np.meshgrid(impbincen, impbincen)
+    X, Y    = medianc1,medianc2
     flat_pairs = np.column_stack((X.ravel(), Y.ravel()))
 
     dmavg_flat = dmavg.flatten()
@@ -118,17 +117,24 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     for ind in range(len(popt)):
         print(f'{popt[ind]} +/- {perr[ind]}')
 
-    # -------------------display fit residuals---------------
     dmfit = schechter_2d(flat_pairs.T, *popt).reshape(np.shape(dmavg))
     dmres = (dmavg - dmfit)
-    cmax = np.max(np.abs(dmres))
-    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="RdBu_r", vmin=-cmax, vmax=cmax)
+    cmax = max(np.max(np.abs(dmres)), np.max(dmavg), np.max(dmdiff))
+    cmin = np.min(dmres)
+    # -------------------display median data---------------
+    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
+    
+    # -------------------display scatter data---------------
+    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
+
+    # -------------------display fit residuals---------------
+    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
 
     # ---------double 1D fitting: aking a thin slice along each direction and radially fitting------------------
     dmavg_slice_x = dmavg[0,:]
     good_indices_x = np.isfinite(dmavg_slice_x)
     dmavg_slice_x = dmavg_slice_x[good_indices_x]
-    coords_x = impbincen[good_indices_x]
+    coords_x = medianc1[0]
     popt_x, pcov_x	= curve_fit(schechter, coords_x, dmavg_slice_x, p0=(10.0, 10.0)) # r0, D0
     perr_x 		= np.sqrt(np.diag(pcov_x))
     rx0_indep, e_rx0_indep = popt_x[0], perr_x[0]
@@ -136,7 +142,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     dmavg_slice_y = dmavg[:,0]
     good_indices_y = np.isfinite(dmavg_slice_y)
     dmavg_slice_y = dmavg_slice_y[good_indices_y]
-    coords_y = impbincen[good_indices_y]
+    coords_y = medianc2[0]
     popt_y, pcov_y	= curve_fit(schechter, coords_y, dmavg_slice_y, p0=(10.0, 10.0)) # r0, D0
     perr_y 		= np.sqrt(np.diag(pcov_y))
     ry0_indep, e_ry0_indep = popt_y[0], perr_y[0]
@@ -197,19 +203,20 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     stats = df.groupby('bin')[data_col].quantile(percentiles).unstack()
     
     stats.columns = [f'p{int(p*100)}' for p in percentiles]
-    for col in stats.columns: stats[col] *= 0.5
+    #for col in stats.columns: stats[col] *= 0.5
     #stats = stats[np.isfinite(stats['p50'])]
 
     dmavg	= stats['p50']
     dmlower	= stats['p50'] - stats['p16']
     dmhier	= stats['p84'] - stats['p50']
 
-    impx	= (impbinegs_short[:-1] + impbinegs_short[1:]) / 2.0
+    impx	= df.groupby('bin')[bin_col].quantile(0.50)
 
-    impx_fit = (impbinegs_short[start_impbinegs_indices:-1] + impbinegs_short[start_impbinegs_indices + 1:]) / 2.0
-    dmavg_fit = dmavg[start_impbinegs_indices:]
+    impx_fit = impx     #[start_impbinegs_indices:]
+    dmavg_fit = dmavg   #[start_impbinegs_indices:]
 
     popt,pcov	= curve_fit(schechter, impx_fit[np.isfinite(dmavg_fit)], dmavg_fit[np.isfinite(dmavg_fit)], p0=(10.0, 10.0))
+    #popt,pcov	= curve_fit(powexp, impx_fit[np.isfinite(dmavg_fit)], dmavg_fit[np.isfinite(dmavg_fit)], p0=(10.0, 10.0,0.0))
     perr 		= np.sqrt(np.diag(pcov))
     print(popt,perr)
 
@@ -223,9 +230,11 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
     else:
         ax = given_ax
-    
+
+    ax.plot(df[bin_col], df[data_col],'co',markersize=1,alpha=0.5,rasterized=True)
     ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='bo',lw=1,markersize=4,capsize=4)
     ax.plot(impx, schechter(impx, *popt),'k--',lw=1)
+    #ax.plot(impx, powexp(impx, *popt),'k--',lw=1)
     
     if multifit_par_filename is not None:
         popt_multipar = np.loadtxt(multifit_par_filename)
@@ -243,16 +252,16 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         ax.text(x=1.0*impbinegs_short[-5], y=100, s=f"Fitted $D_0$ 1D = {fitted_D0_1D:.1f}", c='g')
         ax.text(x=1.0*impbinegs_short[-5], y=60, s=f"Fitted $r_0$ 1D = {fitted_r0_1D:.1f}", c='g')
 
-    ax.set_xscale("log")
+    #ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_ylim([0.5, 3 * maxdmcol])
-    ax.set_xlim([0.4 * impbinegs_short[1], 0.9 * impbinegs_short[-1]])
+    ax.set_ylim(ymin=0.9)
+    ax.set_xlim([0,impbinegs[-1]+5])
     ax.set_yticks(dm_ticks, dm_ticks)
     ax.set_ylabel("DM (pc cm$^{-3}$)")	
     ax.set_xlabel("Impact factor (kpc)")
 
     if lsfr_lims is None:
-        ax.set_xticks(impbinegs_short[1:-1], impbinegs_short[1:-1])
+        #ax.set_xticks(impbinegs_short[1:-1], impbinegs_short[1:-1])
         nobj_text = '' if nobj is None else f' ({nobj})'
         #ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
         ax.text(x=0.6*impbinegs_short[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
@@ -271,7 +280,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         figname = Path(outfilename + ".pdf")
         save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
         if hide: plt.close()
-        else: plt.show(block=False)
+        else: plt.show()
 
     return (popt, perr, ax)
 

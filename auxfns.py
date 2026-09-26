@@ -1,9 +1,14 @@
-from craft_utils import *
+#	******************************************************************************************************
+#	Functions defined in this file are obsolete and SHOULD NOT BE USED ANYMORE !!!!!
+# 
+# 	Revised versions of all functions are are in craft_utils.py
+# 	Thesse are kept for back-up only
+#	******************************************************************************************************
+#
+# Auxiliary function to calculate DM related quantities
 
-#	Auxiliary function to calculate DM related quantities
 
-
-#	----------------------------------------------------------------------------------------------------------
+#	------------------------------------------------------------------------------------------------------
 def neprofile (necube, dkpc, theta, phi, cenpx, radius):
 	#	Calculate radial electron density profiles along theta, phi	
 	
@@ -16,8 +21,7 @@ def neprofile (necube, dkpc, theta, phi, cenpx, radius):
 
 
 
-
-def inclinvec (vecomps, theta0, phi0):
+def inclinvec_old (vecomps, theta0, phi0):
 #   Return inclination (in degrees) of a vector w.r.t. z axis
 #	Arguments:	A 3-component vector, orientation of the galaxy
 
@@ -30,8 +34,7 @@ def inclinvec (vecomps, theta0, phi0):
 
 
 
-
-def impactfac (pt1, pt2):
+def impactfac_old (pt1, pt2):
 #   Return the impact factor for a given LoS in units of "pixels"
 #	Arguments:	Two fixed points on the LoS
     
@@ -67,7 +70,6 @@ def logradialgaus (x, x0, a0):
 
 
 
-
 def logradialexp3 (x, x0, a0):
 #   Return a radial exponential
 #	Arguments:	Radius, scale radius, normalization
@@ -100,7 +102,6 @@ def radialexp (x, x0, a0):
 
 
 
-
 def radialexpower (x, x0, a0, power):
 #   Return a radial powered exponential
 #	Arguments:	Radius, normalization, exponent
@@ -112,11 +113,10 @@ def radialexpower (x, x0, a0, power):
 
 
 
-
-
-def distfrmajorax (theta0, phi0, pt1, pt2):
-#   Return the projected distance of the LoS from the apparent major axis
+def distfrmajorax_old (theta0, phi0, pt1, pt2):
+#   Return the projected distance of the LoS from the apparent major axis (i.e. along the minor axis)
 #	Arguments:	LoS vector, Normal vector
+#	This function is not in use
     
 	normvec		= np.array([ np.sin(theta0) * np.cos(phi0), np.sin(theta0) * np.sin(phi0), np.cos(theta0)])
 
@@ -129,6 +129,25 @@ def distfrmajorax (theta0, phi0, pt1, pt2):
 	mindist		= np.abs( np.dot(crpdct, (pt1 - majaxpt)) ) / np.sqrt(np.dot(crpdct, crpdct))
 	
 	return (mindist)
+#	------------------------------------------------------------------------------------------------------
+
+
+
+def distfrmajorax (theta0, phi0, pt1, pt2):
+#   Return the projected distance of the LoS from the apparent major axis (i.e. along the minor axis)
+#	Arguments:	LoS vector, Normal vector
+    
+	normvec		= np.array([ np.cos(theta0) * np.cos(phi0), np.cos(theta0) * np.sin(phi0), np.sin(theta0)])
+
+	major_axis_dir 	= np.cross(normvec, pt2)
+	d_major			= 0.0
+
+	if (np.linalg.norm(major_axis_dir) > 1e-6):
+		minor_axis_dir 	= np.cross(pt2, major_axis_dir)
+		u_minor			= minor_axis_dir / np.linalg.norm(minor_axis_dir)
+		d_major = np.abs(np.dot(pt1, u_minor))
+	
+	return (d_major)
 #	------------------------------------------------------------------------------------------------------
 
 

@@ -32,7 +32,8 @@ def print_instructions ():
 	#	Print instructions to terminal
 	
 	print("\n            You probably need some assistance here!\n")
-	print("\n Arguments are     --- <mode> <zmin/zmax> <args.lsm_range[0]/args.lsm_range[1]> <args.lsfr_range[0]/args.lsfr_range[1]> <rangkpc> <reskpc> <args.inc_range[0]/args.inc_range[1]> <halo> <figname> <args.resfile_prefix>\n")
+	print("\n Arguments are     --- <mode> <zmin/zmax> <args.lsm_range[0]/args.lsm_range[1]> <args.lsfr_range[0]/args.lsfr_range[1]> \
+                                            <rangkpc> <reskpc> <args.inc_range[0]/args.inc_range[1]> <halo> <figname> <args.resfile_prefix>\n")
 	print(" Supported Modes are --- indi     (Plot individual files)")
 	print("                     --- halo     (Track a particular halo)")
 	print("                     --- lsmzsfr  (Combine all wihin the lsm and z range)")
