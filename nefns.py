@@ -171,9 +171,9 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, exten
     
 	dmarr	= np.array(dmarr)
 
-	plt.plot(dmarr[:,4], dmarr[:,3] ,'bo')
-	plt.yscale('log')
-	plt.show()
+	# plt.plot(dmarr[:,4], dmarr[:,3] ,'bo')
+	# plt.yscale('log')
+	# plt.show()
 	
 	print("Total number of LoS = ",dmarr.shape[0])
 	print("Saving LoS DMs to "+losdir+fitsname+"_"+r_dist_disk+"_"+str(nfixpts)+".npy")
