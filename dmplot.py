@@ -138,7 +138,7 @@ def execute_mode_halo(df_snap, args):
         fig.subplots_adjust(left=0.07, bottom=0.07, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
     for i, snap in df_snap.iterrows():
-        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_uniform_200.npy'
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_exp_200.npy'
         dm_arr	= np.load(thisfile)
         this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm', 'radial_dist', 'azimuth'])
         this_df['distmin'] = np.sqrt(this_df['impf'] ** 2 - this_df['distmaj'] ** 2)

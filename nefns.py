@@ -20,7 +20,7 @@ from globalpars import *
 from plotdm import *
 from scipy.ndimage import map_coordinates
 
-#	----------------------------------------------------------------------------------------------------------
+#	------------------------------------------------------------------------------------------------------
 def fitld(fitsname, fsize):	
 #	Reads a FITS cube and returns a 3D numpy array and the spatial resolutions in kpc
 	
@@ -57,9 +57,7 @@ def fitld(fitsname, fsize):
 	# plt.show(block=False)
 	
 	return (necube,reskpc,theta0,phi0)
-#	----------------------------------------------------------------------------------------------------------
-
-
+#	------------------------------------------------------------------------------------------------------
 
 def neprofinc(necube,dkpc,dangdeg,theta0,phi0,logsm,logsfr,redshift):	
 #	Calculate radial electron density profile and inclinations along many radial directions 
@@ -87,8 +85,6 @@ def neprofinc(necube,dkpc,dangdeg,theta0,phi0,logsm,logsfr,redshift):
 	return(neres)
 #	------------------------------------------------------------------------------------------------------
 
-
-
 def genxyzfromrtheta(rr,theta,abc):	
 #	Convert r,theta on a plane with normal vecor (a,b,c) to x,y,z
 
@@ -103,8 +99,6 @@ def genxyzfromrtheta(rr,theta,abc):
 
 	return (xyz)
 #	------------------------------------------------------------------------------------------------------
-
-
 
 def intnelos(necube,dkpc,xyz1,xyz2):	
 #	Integrate ne along a given LoS
@@ -128,8 +122,6 @@ def intnelos(necube,dkpc,xyz1,xyz2):
 
 	return (dmlos)
 #	------------------------------------------------------------------------------------------------------
-
-
 
 def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, extent_kpc):	
 #	Calculate DMs integrating over LoS
@@ -155,13 +147,18 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, exten
 
 	#	Points on the disk of the galaxy
 	thetarr	= np.random.uniform(low=0.0, high=1.0, size=2*nfixpts) * 2*np.pi
-	runiform= (r_lim_uni/np.mean(dkpc)) * np.sqrt(np.random.uniform(low=0.0, high=1.0, size=2*nfixpts))		#	Uniform distribution
-	rexpo	= np.random.exponential(scale=r_scl_exp/np.mean(dkpc), size=2*nfixpts)		#	Exponential distribution
 
-	diskptsuni	= genxyzfromrtheta(runiform,thetarr,(np.cos(theta0)*np.cos(phi0), np.cos(theta0)*np.sin(phi0), np.sin(theta0)))
+	if (r_dist_disk=='exp'):									#	Exponential distribution
+		revent	= np.random.exponential(scale=r_scl_disk/np.mean(dkpc), size=2*nfixpts)	
+	elif (r_dist_disk=='uni'):									#	Uniform distribution
+		revent	= (r_lim_disk/np.mean(dkpc)) * np.sqrt(np.random.uniform(low=0.0, high=1.0, size=2*nfixpts))
+	else:														#	(Default) Pseudo-uniform distribution	
+		revent	= (r_lim_disk/np.mean(dkpc)) * np.random.uniform(low=0.0, high=1.0, size=2*nfixpts)		
 
-	for pi in range(0,len(diskptsuni)):
-		pt1		= diskptsuni[pi]
+	diskpts	= genxyzfromrtheta(revent,thetarr,(np.cos(theta0)*np.cos(phi0), np.cos(theta0)*np.sin(phi0), np.sin(theta0)))
+
+	for pi in range(0,len(diskpts)):
+		pt1		= diskpts[pi]
 		for pts in ptslist:
 			for pt2 in pts:
 				vec		= pt2 - pt1
@@ -170,7 +167,7 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, exten
 				mindmaj = distfrmajorax (theta0, phi0, pt1, pt2)*np.mean(dkpc)
 				dmlos	= intnelos(necube,dkpc,pt1,pt2)
 				#	incdeg, impf, dist_from_major_axis, dmlos, radial_dist, azimuth
-				dmarr.append([incdeg, impf, mindmaj, dmlos, np.mean(dkpc)*runiform[pi], thetarr[pi]])
+				dmarr.append([incdeg, impf, mindmaj, dmlos, np.mean(dkpc)*revent[pi], thetarr[pi]])
     
 	dmarr	= np.array(dmarr)
 
@@ -179,37 +176,11 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, exten
 	plt.show()
 	
 	print("Total number of LoS = ",dmarr.shape[0])
-	print("Saving LoS DMs to "+losdir+fitsname+"_uniform_"+str(nfixpts)+".npy")
-	np.save(losdir+fitsname+"_uniform_"+str(nfixpts)+".npy",dmarr)
-
-	diskptsexp	= genxyzfromrtheta(rexpo,thetarr,(np.cos(theta0)*np.cos(phi0), np.cos(theta0)*np.sin(phi0), np.sin(theta0)))
-	
-	for pi in range(0,len(diskptsexp)):
-		pt1		= diskptsexp[pi]
-		for pts in ptslist:
-			for pt2 in pts:
-				vec		= pt2 - pt1
-				incdeg	= inclinvec(vec, theta0, phi0)
-				impf 	= impactfac(pt1, pt2)*np.mean(dkpc)
-				mindmaj = distfrmajorax (theta0, phi0, pt1, pt2)*np.mean(dkpc)
-				dmlos	= intnelos(necube,dkpc,pt1,pt2)
-				#	incdeg, impf, dist_from_major_axis, dmlos, radial_dist, azimuth
-				dmarr2.append([incdeg, impf, mindmaj, dmlos, np.mean(dkpc)*rexpo[pi], thetarr[pi]])
-
-	dmarr2	= np.array(dmarr2)
-
-	plt.plot(dmarr2[:,4], dmarr2[:,3] ,'bo')
-	plt.yscale('log')
-	plt.show()
-	
-	print("Total number of LoS = ",dmarr2.shape[0])
-	print("Saving LoS DMs to "+losdir+fitsname+"_exponential_"+str(nfixpts)+".npy")
-	np.save(losdir+fitsname+"_exponential_"+str(nfixpts)+".npy",dmarr2)
+	print("Saving LoS DMs to "+losdir+fitsname+"_"+r_dist_disk+"_"+str(nfixpts)+".npy")
+	np.save(losdir+fitsname+"_"+r_dist_disk+"_"+str(nfixpts)+".npy",dmarr)
 	
 	return(0)
 #	------------------------------------------------------------------------------------------------------
-
-
 
 def losdms_old(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, extent_kpc):	
 #	Calculate DMs integrating over LoS
@@ -251,8 +222,6 @@ def losdms_old(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, e
 	return(0)
 #	------------------------------------------------------------------------------------------------------
 
-
-
 def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):	
 #	Plots maximum DMs along different LoSs
 	
@@ -263,8 +232,6 @@ def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):
 
 	return(0)
 #	------------------------------------------------------------------------------------------------------
-
-
 
 def plotdm2d(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):	
 #	Plots maximum DMs along different LoSs
