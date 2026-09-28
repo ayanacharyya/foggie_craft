@@ -18,7 +18,7 @@ plotradial  =   plotdir + "radial_profiles/"                   #
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
 
 r_dist_disk =   "exp"       # exp / pse (default) / uni
-r_lim_disk  =   30          # Limiting radius on the disk for uniformly distributed FRB locations in kpc
+r_lim_disk  =   50          # Limiting radius on the disk for uniformly distributed FRB locations in kpc
 r_scl_disk  =   5           # Scale radius on the disk for exponentially/power-law distributed FRB locations in kpc
 
 #impbinegs   =   np.arange(0.0,27.0,2.0)

@@ -261,7 +261,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     ax.set_xlabel("Impact factor (kpc)")
 
     if lsfr_lims is None:
-        ax.set_xticks(impbinegs_short[1:], impbinegs_short[1:])
+        ax.set_xticks(impbinegs_short, impbinegs_short)
         nobj_text = '' if nobj is None else f' ({nobj})'
         #ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
         #ax.text(x=0.6*impbinegs_short[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
