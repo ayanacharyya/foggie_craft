@@ -10,7 +10,7 @@
 """
 from craft_header import *
 from craft_utils import *
-setup_plot_style()
+setup_plot_style() 
 
 start_time = datetime.now()
 
