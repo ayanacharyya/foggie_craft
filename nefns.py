@@ -14,12 +14,13 @@
 #	--------------------------	Import modules	---------------------------
 
 from craft_header import *
+from craft_utils import *
 
 from globalpars import *
-from auxfns import *
 from plotdm import *
+from scipy.ndimage import map_coordinates
 
-#	----------------------------------------------------------------------------------------------------------
+#	------------------------------------------------------------------------------------------------------
 def fitld(fitsname, fsize):	
 #	Reads a FITS cube and returns a 3D numpy array and the spatial resolutions in kpc
 	
@@ -38,27 +39,25 @@ def fitld(fitsname, fsize):
 	theta0		=	np.arctan2(nvecz, np.sqrt(nvecx*nvecx + nvecy*nvecy))
 	phi0		=	np.arctan2(nvecy, nvecx)
 	
-	fig 	= plt.figure(figsize=(3*fsize, fsize))
-	ax0 		= fig.add_axes([0.05,0.10,0.31,0.88])
-	ax0.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
-	plt.imshow(np.nansum(necube,axis=0),interpolation='none',origin='lower')
+	# fig 	= plt.figure(figsize=(3*fsize, fsize))
+	# ax0 		= fig.add_axes([0.05,0.10,0.31,0.88])
+	# ax0.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
+	# plt.imshow(np.nansum(necube,axis=0),interpolation='none',origin='lower')
 	
-	ax1 		= fig.add_axes([0.36,0.10,0.31,0.88])
-	ax1.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
-	plt.imshow(np.nansum(necube,axis=1),interpolation='none',origin='lower')
-	ax1.set_yticks([])
+	# ax1 		= fig.add_axes([0.36,0.10,0.31,0.88])
+	# ax1.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
+	# plt.imshow(np.nansum(necube,axis=1),interpolation='none',origin='lower')
+	# ax1.set_yticks([])
 	
-	ax2 		= fig.add_axes([0.67,0.10,0.31,0.88])
-	ax2.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
-	plt.imshow(np.nansum(necube,axis=2),interpolation='none',origin='lower')
-	ax2.set_yticks([])
+	# ax2 		= fig.add_axes([0.67,0.10,0.31,0.88])
+	# ax2.tick_params(axis="both",direction="in",bottom=True,right=True,top=True,left=True)
+	# plt.imshow(np.nansum(necube,axis=2),interpolation='none',origin='lower')
+	# ax2.set_yticks([])
 
-	plt.show(block=False)
+	# plt.show(block=False)
 	
 	return (necube,reskpc,theta0,phi0)
-#	----------------------------------------------------------------------------------------------------------
-
-
+#	------------------------------------------------------------------------------------------------------
 
 def neprofinc(necube,dkpc,dangdeg,theta0,phi0,logsm,logsfr,redshift):	
 #	Calculate radial electron density profile and inclinations along many radial directions 
@@ -86,31 +85,104 @@ def neprofinc(necube,dkpc,dangdeg,theta0,phi0,logsm,logsfr,redshift):
 	return(neres)
 #	------------------------------------------------------------------------------------------------------
 
+def genxyzfromrtheta(rr,theta,abc):	
+#	Convert r,theta on a plane with normal vecor (a,b,c) to x,y,z
 
+	a,b,c	= (abc[0],abc[1],abc[2])
+	absq	= np.sqrt(a*a + b*b)
+	abcsq	= np.sqrt(a*a + b*b + c*c)
+
+	x		= (rr / absq) * ( -b * np.cos(theta) - (a*c / abcsq) * np.sin(theta))
+	y		= (rr / absq) * ( a * np.cos(theta) - (b*c / abcsq) * np.sin(theta))
+	z		= (rr * absq / abcsq) * np.sin(theta)
+	xyz		= np.column_stack((x,y,z))
+
+	return (xyz)
+#	------------------------------------------------------------------------------------------------------
 
 def intnelos(necube,dkpc,xyz1,xyz2):	
 #	Integrate ne along a given LoS
 #	Arguments:	ne cube
 #				cell/pixel size in kpc
-#	
+
 	vec		= xyz2 - xyz1
 	lenlos	= np.sqrt(np.sum(vec**2))		
+	dt 	    = 1.0/lenlos
 	#	Parameter of the parametric equation of a straight line
-	tarr 	= np.arange(0.0, 1.0, 1.0/lenlos)
+	tarr 	= np.arange(-dt, 1.0 - (dt/2), dt)
 		
 	xarr	= np.rint(vec[0]*tarr + xyz1[0] + necube.shape[0]/2).astype(int) % necube.shape[0]
 	yarr	= np.rint(vec[1]*tarr + xyz1[1] + necube.shape[1]/2).astype(int) % necube.shape[1]
 	zarr	= np.rint(vec[2]*tarr + xyz1[2] + necube.shape[2]/2).astype(int) % necube.shape[2]
 	
-	#print(np.array([xarr,yarr,zarr]).T)
-	dmlos	= np.nansum(necube[xarr, yarr, zarr])*np.mean(dkpc)*1.0e3
+	dmlos	= np.nanmean(necube[xarr,yarr,zarr]) * lenlos * np.mean(dkpc) * 1.0e3
+
+	#plt.plot(tarr,np.log10(necube[xarr,yarr,zarr]),'bo-')
+	#plt.show()
 
 	return (dmlos)
 #	------------------------------------------------------------------------------------------------------
 
-
-
 def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, extent_kpc):	
+#	Calculate DMs integrating over LoS
+#	Calculates DM long LoS starting on the plane of the disk
+
+	dmarr	= []
+	dmarr2	= []
+
+	extent_pixel = int(min(extent_kpc / dkpc[0], necube.shape[0]/2))
+	print(f'Computing LoS up to +/- {extent_pixel} pixels')
+
+	#	Points on the surface of the cube
+	ptpairs	= np.random.uniform(low=-extent_pixel, high=extent_pixel, size=(6,2,nfixpts))
+	
+	ptsxl	= np.array([-(necube.shape[0]/2)*np.ones(nfixpts,dtype=float), ptpairs[0,0], ptpairs[0,1]]).T
+	ptsxr	= np.array([ (necube.shape[0]/2)*np.ones(nfixpts,dtype=float), ptpairs[1,0], ptpairs[1,1]]).T
+	ptsyl	= np.array([ptpairs[2,0], -(necube.shape[0]/2)*np.ones(nfixpts,dtype=float), ptpairs[2,1]]).T
+	ptsyr	= np.array([ptpairs[3,0],  (necube.shape[0]/2)*np.ones(nfixpts,dtype=float), ptpairs[3,1]]).T
+	ptszl	= np.array([ptpairs[4,0], ptpairs[4,1], -(necube.shape[0]/2)*np.ones(nfixpts,dtype=float)]).T
+	ptszr	= np.array([ptpairs[5,0], ptpairs[5,1],  (necube.shape[0]/2)*np.ones(nfixpts,dtype=float)]).T
+	
+	ptslist	= [ptsxl, ptsxr, ptsyl, ptsyr, ptszl, ptszr]
+
+	#	Points on the disk of the galaxy
+	thetarr	= np.random.uniform(low=0.0, high=1.0, size=2*nfixpts) * 2*np.pi
+
+	if (r_dist_disk=='exp'):									#	Exponential distribution
+		revent	= np.random.exponential(scale=r_scl_disk/np.mean(dkpc), size=2*nfixpts)	
+	elif (r_dist_disk=='uni'):									#	Uniform distribution
+		revent	= (r_lim_disk/np.mean(dkpc)) * np.sqrt(np.random.uniform(low=0.0, high=1.0, size=2*nfixpts))
+	else:														#	(Default) Pseudo-uniform distribution	
+		revent	= (r_lim_disk/np.mean(dkpc)) * np.random.uniform(low=0.0, high=1.0, size=2*nfixpts)		
+
+	diskpts	= genxyzfromrtheta(revent,thetarr,(np.cos(theta0)*np.cos(phi0), np.cos(theta0)*np.sin(phi0), np.sin(theta0)))
+
+	for pi in range(0,len(diskpts)):
+		pt1		= diskpts[pi]
+		for pts in ptslist:
+			for pt2 in pts:
+				vec		= pt2 - pt1
+				incdeg	= inclinvec(vec, theta0, phi0)
+				impf 	= impactfac(pt1, pt2)*np.mean(dkpc)
+				mindmaj = distfrmajorax (theta0, phi0, pt1, pt2)*np.mean(dkpc)
+				dmlos	= intnelos(necube,dkpc,pt1,pt2)
+				#	incdeg, impf, dist_from_major_axis, dmlos, radial_dist, azimuth
+				dmarr.append([incdeg, impf, mindmaj, dmlos, np.mean(dkpc)*revent[pi], thetarr[pi]])
+    
+	dmarr	= np.array(dmarr)
+
+	# plt.plot(dmarr[:,4], dmarr[:,3] ,'bo')
+	# plt.yscale('log')
+	# plt.show()
+	
+	print("Total number of LoS = ",dmarr.shape[0])
+	print("Saving LoS DMs to "+losdir+fitsname+"_"+r_dist_disk+"_"+str(nfixpts)+".npy")
+	np.save(losdir+fitsname+"_"+r_dist_disk+"_"+str(nfixpts)+".npy",dmarr)
+	
+	return(0)
+#	------------------------------------------------------------------------------------------------------
+
+def losdms_old(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, extent_kpc):	
 #	Calculate DMs integrating over LoS
 
 	dmarr	= []
@@ -150,8 +222,6 @@ def losdms(fitsname,necube,dkpc,theta0,phi0,nfixpts,logsm,logsfr,redshift, exten
 	return(0)
 #	------------------------------------------------------------------------------------------------------
 
-
-
 def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):	
 #	Plots maximum DMs along different LoSs
 	
@@ -163,9 +233,6 @@ def plotdms(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):
 	return(0)
 #	------------------------------------------------------------------------------------------------------
 
-
-
-
 def plotdm2d(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):	
 #	Plots maximum DMs along different LoSs
 	
@@ -176,70 +243,3 @@ def plotdm2d(fitsname,nfixpts,logsm,logsfr,redshift,scalekpc):
 
 	return(0)
 #	------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

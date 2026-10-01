@@ -11,7 +11,7 @@
 from craft_header import *
 from globalpars import *
 
-###################### Following routines are from auxfns.py ######################################
+###################### Following routines are from the old auxfns.py ######################################
 #	------------------------------------------------------------------------------------------------------
 def neprofile (necube, dkpc, theta, phi, cenpx, radius):
 	#	Calculate radial electron density profiles along theta, phi	
@@ -27,7 +27,7 @@ def inclinvec (vecomps, theta0, phi0):
 #   Return inclination (in degrees) of a vector w.r.t. z axis
 #	Arguments:	A 3-component vector, orientation of the galaxy
 
-	dotpabs	= np.abs(vecomps[0] * np.sin(theta0) * np.cos(phi0) + vecomps[1] * np.sin(theta0) * np.sin(phi0) + vecomps[2] * np.cos(theta0))
+	dotpabs	= np.abs(vecomps[0] * np.cos(theta0) * np.cos(phi0) + vecomps[1] * np.cos(theta0) * np.sin(phi0) + vecomps[2] * np.sin(theta0))
 	
 	inclin  = np.rad2deg(np.arccos(dotpabs / np.sqrt(np.sum(vecomps**2))))
 
@@ -38,10 +38,11 @@ def impactfac (pt1, pt2):
 #   Return the impact factor for a given LoS in units of "pixels"
 #	Arguments:	Two fixed points on the LoS
     
-    crosq	= (pt1[0]*pt2[1]-pt1[1]*pt2[0])**2 +(pt1[0]*pt2[2]-pt1[2]*pt2[0])**2 + (pt1[2]*pt2[1]-pt1[1]*pt2[2])**2
-    modsq	= (pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2 + (pt1[2]-pt2[2])**2
-    
-    impactf = np.sqrt(crosq / modsq) 
+    vec     = (pt2 - pt1)
+    tt      = - np.dot(pt1,vec) / np.sum(vec**2)
+    pclst   = pt1 + tt * vec
+
+    impactf = np.sqrt(np.sum(pclst**2))
     
     return (impactf)
 
@@ -75,6 +76,24 @@ def logradialexp3 (x, x0, a0):
 	radexp	= np.log10(a0 * np.exp(-((x-1)/x0)**0.33))
 
 	return (radexp)
+
+#	------------------------------------------------------------------------------------------------------
+def powexp (x, x0, y0, alpha):
+#   Exponentially truncated power law
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    y = y0 * ((x/x0) ** alpha) * np.exp(-(x/x0)) 
+
+    return (y)
+
+#	------------------------------------------------------------------------------------------------------
+def powexp2d (xy, x0, y0, z0, alphax, alphay):
+#   Exponentially truncated power law
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    z = z0 * ((xy[0]/x0) ** alphax) * ((xy[1]/y0) ** alphay)* np.exp(-(xy[0]/x0) - (xy[1]/y0)) 
+
+    return (z)
 
 #	------------------------------------------------------------------------------------------------------
 def schechter (x, x0, y0):
@@ -124,20 +143,20 @@ def radialexpower (x, x0, a0, power):
 
 #	------------------------------------------------------------------------------------------------------
 def distfrmajorax (theta0, phi0, pt1, pt2):
-#   Return the projected distance of the LoS from the apparent major axis
+#   Return the projected distance of the LoS from the apparent major axis (i.e. along the minor axis)
 #	Arguments:	LoS vector, Normal vector
     
-	normvec		= np.array([ np.sin(theta0) * np.cos(phi0), np.sin(theta0) * np.sin(phi0), np.cos(theta0)])
+	normvec		= np.array([ np.cos(theta0) * np.cos(phi0), np.cos(theta0) * np.sin(phi0), np.sin(theta0)])
 
-	losvec		= pt2 - pt1
+	major_axis_dir 	= np.cross(normvec, pt2)
+	d_major			= 0.0
 
-	majaxpt		= np.array([0.0, 0.0, 0.0])
-	majaxvec	= np.cross(losvec, normvec)
-
-	crpdct		= np.cross(majaxvec, losvec)
-	mindist		= np.abs( np.dot(crpdct, (pt1 - majaxpt)) ) / np.sqrt(np.dot(crpdct, crpdct))
+	if (np.linalg.norm(major_axis_dir) > 1e-6):
+		minor_axis_dir 	= np.cross(pt2, major_axis_dir)
+		u_minor			= minor_axis_dir / np.linalg.norm(minor_axis_dir)
+		d_major = np.abs(np.dot(pt1, u_minor))
 	
-	return (mindist)
+	return (d_major)
 
 #	------------------------------------------------------------------------------------------------------
 def linearxy (xy, a, b, c):

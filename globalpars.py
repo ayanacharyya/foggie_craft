@@ -5,8 +5,10 @@ from collections import namedtuple
 #root_dir    =   "../data_260310/"
 #root_dir = "../"
 #root_dir = "../../Jun20/"
-root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
-#root_dir = "/nobackupp19/aachary2/foggie_craft/"
+# root_dir = '../../sep24/'
+#root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
+root_dir = "/nobackupp19/aachary2/foggie_craft/"
+
 
 #datadir     =   root_dir                    #   Location of the FITS cubes
 datadir     =   root_dir + "data/"                #   Location of the FITS cubes
@@ -17,7 +19,12 @@ plotradial  =   plotdir + "radial_profiles/"                   #
 
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
 
-impbinegs   =   np.array([0,1,2,4,8,16,32,64,128])              #   Impact parameter bins
+r_dist_disk =   "exp"       # event (FRB) radial distribution on the disk; options: exp / pse (default) / uni
+r_lim_disk  =   20          # Limiting radius on the disk for uniformly distributed FRB locations in kpc
+r_scl_disk  =   5           # Scale radius on the disk for exponentially/power-law distributed FRB locations in kpc
+
+#impbinegs   =   np.arange(0.0,27.0,2.0)
+impbinegs   =   np.array([0,1,2,4,8,16,32,64])              #   Impact parameter bins
 maxdmcol    =   205.0                                             #   Maximum DM for colour scale
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff
@@ -45,16 +52,3 @@ obs_lsm_allowance = 0.2                                     # log stellar mass h
 obs_lsfr_allowance = 0.2                                    # log SFR half-window for searching snapshots around observed SFR, only used --use_sfr mode
 obs_inc_allowance = 0.5                                       # inclination half-window for searching LoS
 obs_impf_frac_allow = 0.5                                   # fractional impact factor window for searching LoS
-
-
-
-
-
-
-
-
-
-
-
-
-
