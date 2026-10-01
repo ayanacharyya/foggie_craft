@@ -24,7 +24,7 @@ from scipy.ndimage import map_coordinates
 def fitld(fitsname, fsize):	
 #	Reads a FITS cube and returns a 3D numpy array and the spatial resolutions in kpc
 	
-	fitsfile	=	fits.open(datadir+fitsname+".fits")
+	fitsfile	=	fits.open(fitsname+".fits")
 	fitshdr		=	fitsfile[0].header
 	dxkpc		=	fitshdr['CDELT1']
 	dykpc		=	fitshdr['CDELT2']
