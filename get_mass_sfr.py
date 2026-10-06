@@ -13,6 +13,8 @@
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
+from mpi4py import MPI
+
 start_time = datetime.now()
 
 # -----------------------------------------------------------------------------

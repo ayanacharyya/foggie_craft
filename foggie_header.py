@@ -49,8 +49,6 @@ import mplcyberpunk
 from pathlib import Path
 from importlib import reload
 
-from mpi4py import MPI
-
 from numpy import exp
 from scipy import optimize as op
 from scipy import stats
