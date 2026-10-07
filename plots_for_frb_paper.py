@@ -235,8 +235,8 @@ def make_latex_table(df_dmpars, args, columns=['lsm_bin', 'ngal', 'medlsm', 'med
         df_latex[col] = df_latex[col].apply(lambda x: f"{x.left:.2f} -- {x.right:.2f}")
     
     for col in columns_with_err:
-        if 'D0' in col: df_latex[col] = df_latex.apply(lambda x: f"{x[col]:.0f} $\pm$ {x['e' + col]:.0f}", axis=1) # 0 floating point precision for D0
-        else: df_latex[col] = df_latex.apply(lambda x: f"{x[col]:.1f} $\pm$ {x['e' + col]:.1f}", axis=1)
+        if 'D0' in col: df_latex[col] = df_latex.apply(lambda x: rf"{x[col]:.0f} $\pm$ {x['e' + col]:.0f}", axis=1) # 0 floating point precision for D0
+        else: df_latex[col] = df_latex.apply(lambda x: rf"{x[col]:.1f} $\pm$ {x['e' + col]:.1f}", axis=1)
         df_latex.drop(columns=['e' + col], inplace=True)
     
     for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_interval, ['ngal']]))):
@@ -320,7 +320,7 @@ def plot_multipanel_foggie(args):
     cax1 = fig.add_subplot(top_gs2[0, :])
 
     # -----------determine snapshot list from redshift list---------
-    args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
+    args.code_dir = root_dir
     df = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
     df = df.dropna(axis=1, how='all')[['snap', 'redshift']]
     output_arr = []
@@ -395,7 +395,7 @@ def plot_multipanel_foggie(args):
 
         # ----------plot gas and electron density projections-------
         ax = axes[2, index]
-        
+
         for i in range(0,len(inc_ranges)):
             inclim	= inc_ranges[i]
             relinds	= np.where((cube.inclination - np.deg2rad(inclim[0]))*(cube.inclination - np.deg2rad(inclim[1])) <= 0.0)	
@@ -404,14 +404,16 @@ def plot_multipanel_foggie(args):
 
             for k in range (0,len(radbins)-1):
                 rel2inds		= np.where((cube.radkpc - radbins[k])*(cube.radkpc - radbins[k+1]) <= 0.0)
-                binned_ne[k,0]	= (radbins[k]+radbins[k+1])/2.0
+                binned_ne[k,0]	= np.nanmedian(cube.radkpc[rel2inds])
                 binned_ne[k,1:6]= np.percentile(relne[:,rel2inds], (16, 25, 50, 75, 84))
 
             ax.fill_between(binned_ne[:,0], binned_ne[:,1], binned_ne[:,5], color=shlist[i],alpha=0.2)
-            ax.plot(binned_ne[:,0], binned_ne[:,3], c=colist[i], marker='s', markersize=6, label=str(inclim[0])+"$^{\circ}$ < $i$ < "+str(inclim[1])+"$^{\circ}$")
+            ax.plot(binned_ne[:,0], binned_ne[:,3], c=colist[i], ls='-', label=str(inclim[0])+r"$^{\circ}$ < $i$ < "+str(inclim[1])+r"$^{\circ}$")
 
         ax.set_yscale('log')
-        ax.set_xscale('log')
+        ax.set_xscale('asinh')
+        ax.set_xticks([1,2,5,10,50],[1,2,5,10,50])
+        ax.set_xlim([0.3,100])
         ax.set_ylim(1e-5, 1e0)
         ax = annotate_axes(ax, 'Radius (kpc)', '$n_e$ (cm$^{-3}$)', args=args, xloc=0.6, 
                                label=f'z ={redshift_arr[index]:.2f}', 
@@ -429,7 +431,14 @@ def plot_multipanel_foggie(args):
     plt.show(block=False)
     return fig
 
-# -----main code-----------------
+
+
+
+
+
+# ******************************************************************************************************************************************************
+#                       main code
+
 if __name__ == '__main__':
     args = parse_args()
     if not args.keep: plt.close('all')
@@ -443,7 +452,7 @@ if __name__ == '__main__':
         Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
         args.res_text = f'_res{args.reskpc:.1f}kpc'
-        args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving and args.upto_kpc is not None else '_upto%.1Fkpc' % args.upto_kpc if args.upto_kpc is not None else f'_upto{args.re:.1f}re'
+        args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving and args.upto_kpc is not None else '_upto%.1Fkpc' % args.upto_kpc if args.upto_kpc is not None else f'_upto{args.reskpc:.1f}reskpc'
 
         fig = plot_multipanel_foggie(args)
 

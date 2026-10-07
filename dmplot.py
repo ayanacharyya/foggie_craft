@@ -138,7 +138,7 @@ def execute_mode_halo(df_snap, args):
         fig.subplots_adjust(left=0.07, bottom=0.07, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
     for i, snap in df_snap.iterrows():
-        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_exp_200.npy'
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_{r_dist_disk}_300.npy'
         dm_arr	= np.load(thisfile)
         this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm', 'radial_dist', 'azimuth'])
         this_df['distmin'] = np.sqrt(this_df['impf'] ** 2 - this_df['distmaj'] ** 2)
@@ -147,10 +147,10 @@ def execute_mode_halo(df_snap, args):
         print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
         print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
 
-        outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}'
+        outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_{r_dist_disk}_{args.dm_bin_par}'
         
         #ax_list = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.0, hide=False, bin_col1='distmin', bin_col2='distmaj', data_col='losdm', given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
-        pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 3.0, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk)
+        pars, epars, ax_1d	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.8, hide=args.hide, bin_col=args.dm_bin_par, data_col='losdm', given_ax=axes_1d[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk,incrange=(args.inc_range[0], args.inc_range[1]))
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -674,7 +674,7 @@ def plot_dm_impfac_halo_combined(df_snap, args, cmap='viridis'):
 
     # -----------loop through mass bins--------------------
     for index, snap in df_snap.iterrows(): 
-        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_1d.npy'
+        infile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}/{snap["halo"]}_{snap["snap"]}_{r_dist_disk}_{args.dm_bin_par}_1d.npy'
         col = sm.to_rgba(snap['redshift'])
 
         data_arr = np.load(infile) # data_arr is of the format [impx, dmavg, dmlower, dmhier]

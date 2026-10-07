@@ -40,7 +40,7 @@ incranges	=	np.array([[0,20],[80,90]])
 #	-------------------------	Load the fits file	---------------------------
 
 print("Reading "+datadir+fitsname)
-necub,dkpc,theta0,phi0	=	fitld(datadir+fitsname,3.2)
+necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
 print("Ne cube dimensions ")
 print(necub.shape)
 print("Spatial resolutions (kpc)")

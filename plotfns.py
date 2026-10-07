@@ -83,7 +83,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
 
     dmavg	= maps['p50']	
     dmdiff	= maps['p84'] - maps['p16']
-
+    
     # ------------plot the profile----------
     if given_ax is None:
         fig 	= plt.figure(figsize=(2.6 * fig_size, fig_size))
@@ -111,45 +111,49 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     dmavg_flat = dmavg_flat[good_indices]
     coords_flat = coords_flat[good_indices]
 
-    popt,pcov	= curve_fit(schechter_2d, coords_flat.T, dmavg_flat,  p0=(10.0, 10.0, 50)) # rx0, ry0, D0
+    popt,pcov	= curve_fit(schechter_2d, coords_flat.T, dmavg_flat,  p0=(1.0, 10.0, 10.0, 100, 100)) # rx0, ry0, D0
+    #popt,pcov	= curve_fit(logpower2d, coords_flat.T, np.log10(dmavg_flat),  p0=(2.0, -0.5, -0.5)) # rx0, ry0, D0
+    #popt,pcov   = fitaplane(coords_flat.T, np.log10(dmavg_flat))
     perr 		= np.sqrt(np.diag(pcov))
     
     for ind in range(len(popt)):
         print(f'{popt[ind]} +/- {perr[ind]}')
 
     dmfit = schechter_2d(flat_pairs.T, *popt).reshape(np.shape(dmavg))
+    #dmfit = 10**logpower2d(flat_pairs.T, *popt).reshape(np.shape(dmavg))
     dmres = (dmavg - dmfit)
-    cmax = max(np.max(np.abs(dmres)), np.max(dmavg), np.max(dmdiff))
-    cmin = np.min(dmres)
+
     # -------------------display median data---------------
-    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
+    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.3))
     
     # -------------------display scatter data---------------
-    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
+    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.3))
 
     # -------------------display fit residuals---------------
-    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.SymLogNorm(vmin=cmin, vmax=cmax, linthresh=10))
+    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.PowerNorm(gamma=1))
 
     # ---------double 1D fitting: aking a thin slice along each direction and radially fitting------------------
-    dmavg_slice_x = dmavg[0,:]
-    good_indices_x = np.isfinite(dmavg_slice_x)
-    dmavg_slice_x = dmavg_slice_x[good_indices_x]
-    coords_x = medianc1[0]
-    popt_x, pcov_x	= curve_fit(schechter, coords_x, dmavg_slice_x, p0=(10.0, 10.0)) # r0, D0
-    perr_x 		= np.sqrt(np.diag(pcov_x))
+    dmavg_slice_x   = dmavg[0,:]
+    good_indices_x  = np.isfinite(dmavg_slice_x)
+    dmavg_slice_x   = dmavg_slice_x[good_indices_x]
+    coords_x        = (medianc1[0])[good_indices_x]
+    popt_x, pcov_x	= curve_fit(schechter_log, coords_x, np.log10(dmavg_slice_x), p0=(1.0, 10.0, 100.0, 100.0)) # r0, D0
+    #popt_x, pcov_x  = np.polyfit(np.log10(coords_x), np.log10(dmavg_slice_x), 0, cov=True)
+    perr_x 		    = np.sqrt(np.diag(pcov_x))
     rx0_indep, e_rx0_indep = popt_x[0], perr_x[0]
 
     dmavg_slice_y = dmavg[:,0]
     good_indices_y = np.isfinite(dmavg_slice_y)
     dmavg_slice_y = dmavg_slice_y[good_indices_y]
-    coords_y = medianc2[0]
-    popt_y, pcov_y	= curve_fit(schechter, coords_y, dmavg_slice_y, p0=(10.0, 10.0)) # r0, D0
+    coords_y = (medianc2[0])[good_indices_y]
+    popt_y, pcov_y	= curve_fit(schechter_log, coords_y, np.log10(dmavg_slice_y), p0=(1.0, 10.0, 100.0, 100.0)) # r0, D0
+    #popt_y, pcov_y  = np.polyfit(np.log10(coords_y), np.log10(dmavg_slice_y), 0, cov=True)
     perr_y 		= np.sqrt(np.diag(pcov_y))
     ry0_indep, e_ry0_indep = popt_y[0], perr_y[0]
 
     # --------------plot annotations---------------------
-    label_dict = {'distmaj': 'Offset from major axis (kpc)',
-                  'distmin': 'Offset from minor axis (kpc)',
+    label_dict = {'distmaj': r'$r_{min}$ (kpc)',
+                  'distmin': r'$r_{maj}$ (kpc)',
                   'impf': 'Impact factor (kpc)',
                   }
     
@@ -191,11 +195,11 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     return popt, perr, rx0_indep, e_rx0_indep, ry0_indep, e_ry0_indep
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None):
+def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None, incrange=None):
 	#	Plot LoSDM vs impact factor for a given inclination range 
 	
     indices = np.where(impbinegs < df[bin_col].max())[0]
-    impbinegs_short = impbinegs[indices]
+    impbinegs_short = impbinegs #[indices]
     start_impbinegs_indices = 1
     
     df['bin'] = pd.cut(df[bin_col], bins=impbinegs_short, include_lowest=True)
@@ -215,8 +219,8 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     impx_fit = impx     #[start_impbinegs_indices:]
     dmavg_fit = dmavg   #[start_impbinegs_indices:]
 
-    #popt,pcov	= curve_fit(schechter, impx_fit[np.isfinite(dmavg_fit)], dmavg_fit[np.isfinite(dmavg_fit)], p0=(10.0, 10.0))
-    popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
+    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0))
+    #popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
     perr 		= np.sqrt(np.diag(pcov))
     print(popt,perr)
 
@@ -226,15 +230,17 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
     # ------------plot the profile----------
     if given_ax is None:
-        fig 	= plt.figure(figsize=(1. * fig_size, fig_size))
+        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
         ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
     else:
         ax = given_ax
 
-    ax.plot(df[bin_col], df[data_col],'co',markersize=1,alpha=0.5,rasterized=True)
-    ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='bo',lw=1,markersize=4,capsize=4)
-    #ax.plot(impx, schechter(impx, *popt),'k--',lw=1)
-    ax.plot(impx, 10.0**np.poly1d(popt)(np.log10(impx)),'k--',lw=1)
+    ax.plot(df[bin_col], df[data_col],'co',markersize=1,alpha=0.3,rasterized=True,fillstyle="none")
+    ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='b*',lw=1,markersize=6,capsize=2)
+    limparr      = np.linspace(0,impbinegs_short[-1]+5,1000)
+    ax.plot(limparr, 10.0**schechter_log(limparr, *popt),'k--',lw=1)
+    #limparr      = np.linspace(-1,impbinegs_short[-1]+5,100)
+    #ax.plot((10.0**limparr), 10.0**np.poly1d(popt)(limparr),'k--',lw=1)
     
     if multifit_par_filename is not None:
         popt_multipar = np.loadtxt(multifit_par_filename)
@@ -254,22 +260,31 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
     ax.set_xscale("asinh")
     ax.set_yscale("log")
-    ax.set_ylim(ymin=0.9)
-    #ax.set_xlim([0,impbinegs[-1]+5])
-    ax.set_yticks(dm_ticks, dm_ticks)
+    ax.set_ylim([0.9,2500])
+    ax.set_xlim([0,impbinegs_short[-1]/1.2])
+    #ax.set_yticks(dm_ticks, dm_ticks)
     ax.set_ylabel("DM (pc cm$^{-3}$)")	
-    ax.set_xlabel("Impact factor (kpc)")
+    if (bin_col=="impf"):
+        ax.set_xlabel(r"$r$ (kpc)")
+    if (bin_col=="distmaj"):
+        ax.set_xlabel(r"$r_{min}$ (kpc)")
+    if (bin_col=="distmin"):
+        ax.set_xlabel(r"$r_{maj}$ (kpc)")
 
     if lsfr_lims is None:
-        ax.set_xticks(impbinegs_short, impbinegs_short)
+        ax.set_xticks(impbinegs_short[:-1], impbinegs_short[:-1])
         nobj_text = '' if nobj is None else f' ({nobj})'
         #ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
-        #ax.text(x=0.6*impbinegs_short[1], y=1.6, s="log ($M_* / M_{\odot}$) = %.2f"%lsm)
-        #ax.text(x=0.6*impbinegs_short[1], y=0.8, s="SFR = %.2f $M_{\odot} yr^{-1}$"%sfr)
-        #ax.text(x=0.8*impbinegs_short[-4], y=320, s="$D_0$ = %d $\pm$ %d"%(popt[1],perr[1]))
-        #ax.text(x=0.8*impbinegs_short[-4], y=200, s="$r_0$ = %.1f $\pm$ %.1f"%(popt[0],perr[0]))
+        #ax.text(0.05, 0.10, transform=ax.transAxes, s="log ($M_* / M_{\odot}$) = %.1f"%lsm)
+        #ax.text(0.05, 0.04, transform=ax.transAxes, s="SFR = %.1f $M_{\odot} yr^{-1}$"%sfr)
+        ax.text(0.05, 0.10, transform=ax.transAxes, s="$D_0$ = %d $\pm$ %d"%(popt[2],perr[2]))
+        ax.text(0.05, 0.04, transform=ax.transAxes, s=r"$r_0$ = %.2f $\pm$ %.2f"%(popt[0],perr[0]))
+        ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %d $\pm$ %d"%(popt[3],perr[3]))
+        ax.text(0.65, 0.76, transform=ax.transAxes, s=r"$r_1$ = %.1f $\pm$ %.1f"%(popt[1],perr[1]))
         if redshift is not None:
             ax.text(x=0.8*impbinegs_short[-4], y=100, s=f"z={redshift:.2f}")
+        if incrange is not None:
+            ax.text(0.5, 0.92, transform=ax.transAxes, s=r"%d$^{\circ}$ < i < %d$^{\circ}$"%(incrange[0], incrange[1]), weight="bold")
     else:
         ax.set_xticks(impbinegs_short[1::2], impbinegs_short[1::2])
         nobj_text = ''# if nobj is None else f' ({nobj})'

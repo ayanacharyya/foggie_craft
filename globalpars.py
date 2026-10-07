@@ -22,14 +22,14 @@ r_lim_disk  =   50          # Limiting radius on the disk for uniformly distribu
 r_scl_disk  =   5           # Scale radius on the disk for exponentially/power-law distributed FRB locations in kpc
 
 #impbinegs   =   np.arange(0.0,27.0,2.0)
-impbinegs   =   np.array([0,1,2,4,8,16,32,64])              #   Impact parameter bins
+impbinegs   =   np.array([0,0.5,1,2,4,8,16,32])                #   Impact parameter bins
 maxdmcol    =   205.0                                             #   Maximum DM for colour scale
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff
 
 incvals     =   [5.0,45.0,85.0]                                   #   Central values of inclination bins in deg
 dinc        =   10.0                                              #   Width of the inclination bins in deg
-radbins     =   [0, 1, 2, 4, 8, 16, 32, 64, 128]                #   Radial )bin edges (in kpc)
+radbins     =   [0,1,2,3,4,6,8,10,15,20,25,30,40,50,60,80,100]                #   Radial )bin edges (in kpc)
 dm_ticks    =   [1, 3, 10, 30, 100, 300]
 
 clist       =   ['b', 'r', 'k']
