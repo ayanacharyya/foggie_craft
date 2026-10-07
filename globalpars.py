@@ -24,7 +24,7 @@ r_lim_disk  =   20          # Limiting radius on the disk for uniformly distribu
 r_scl_disk  =   5           # Scale radius on the disk for exponentially/power-law distributed FRB locations in kpc
 
 #impbinegs   =   np.arange(0.0,27.0,2.0)
-impbinegs   =   np.array([0,1,2,4,8,16,32,64])              #   Impact parameter bins
+impbinegs   =   np.array([0,0.5,1,2,4,8,16,32,64,128])              #   Impact parameter bins
 maxdmcol    =   205.0                                             #   Maximum DM for colour scale
 impbins     =   20                  #   Number of bins in impact factor
 maximpa     =   100.0               #   Maximum value of impact factor in units of R_eff

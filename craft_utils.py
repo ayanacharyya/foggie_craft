@@ -10,6 +10,8 @@
 """
 from craft_header import *
 from globalpars import *
+import scipy.linalg as sclin
+
 
 ###################### Following routines are from the old auxfns.py ######################################
 #	------------------------------------------------------------------------------------------------------
@@ -96,7 +98,7 @@ def powexp2d (xy, x0, y0, z0, alphax, alphay):
     return (z)
 
 #	------------------------------------------------------------------------------------------------------
-def schechter (x, x0, y0):
+def schechter_backup (x, x0, y0):
 #   Return a Schechter function
 #	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
     
@@ -106,11 +108,56 @@ def schechter (x, x0, y0):
     return (y)
 
 #	------------------------------------------------------------------------------------------------------
-def schechter_2d(xy, x0, y0, z0):
+def schechter (x, x0, x1, y0, y1):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    y = y0 * np.exp(-(x/x0)**4) + y1 * np.exp(-(x/x1)**1) 
+
+    return (y)
+
+#	------------------------------------------------------------------------------------------------------
+def schechter_log (x, x0, x1, y0, y1):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    y = np.log10(y0 * np.exp(-(x/x0)**4) + y1 * np.exp(-(x/x1)**1)) 
+
+    return (y)
+
+#	------------------------------------------------------------------------------------------------------
+def schechter_newback (x, x0, y0, alpha):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    y = y0 * (1.0 - np.heaviside(x-x0, 0.0)) * np.exp(-(x/x0)**4) + np.heaviside(x-x0, 1.0) * (y0/np.e) * (x/x0)**alpha 
+
+    return (y)
+
+#	------------------------------------------------------------------------------------------------------
+def schechter_2d_backup(xy, x0, y0, z0):
 #   Return a Schechter function
 #	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
     
     z = z0 * np.exp(-((xy[0]/x0) ** (1/2.) + (xy[1]/y0) ** (1/2.))) 
+
+    return (z)
+
+#	------------------------------------------------------------------------------------------------------
+def schechter_2d(xy, r0, x0, y0, z0 ,z1):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    r = np.sqrt(xy[0]*xy[0] + xy[1]*xy[1])
+    z = z0 * np.exp(-(r/r0)**4) + z1 * np.exp(-(xy[0]/x0)**1 -(xy[1]/y0)**1) 
+
+    return (z)
+
+#	------------------------------------------------------------------------------------------------------
+def logpower2d (xy, z0, alphax, alphay):
+#   Symmetric 2D power law
+    
+    z = z0  + alphax * np.log10(np.abs(xy[0])) + alphay * np.log10(np.abs(xy[1])) 
 
     return (z)
 
@@ -166,6 +213,23 @@ def linearxy (xy, a, b, c):
 	z	= a*xy[0] + b*xy[1] + c 
 
 	return (z)
+
+#	------------------------------------------------------------------------------------------------------
+def fitaplane (xy, z):
+#	Retruns best-fit coefficients for
+# 	z	=	ax + by + c	
+
+    x   = np.log10(xy[0])
+    y   = np.log10(xy[1])
+    xymat   = np.column_stack((x, y, np.ones(x.shape)))
+    cc, resid, ran, s = sclin.lstsq(xymat, z)
+
+    N, p    = xymat.shape
+    dof     = N - p
+    MSE     = resid / dof
+    cov_mat = MSE * np.linalg.inv(np.dot(xymat.T, xymat))
+
+    return (cc,cov_mat)
 
 
 ###################### Following routines are from foggie_utils.py ######################################
@@ -610,6 +674,7 @@ def parse_args():
     parser.add_argument('--rangekpc', metavar='rangekpc', type=float, action='store', default=-1, help='Range (extent) in kpc; default is -1, i.e. 100 kpc for massive galaxies and 50 kpc for dwarf galaxies')
     parser.add_argument('--reskpc', metavar='reskpc', type=float, action='store', default=0.5, help='Resolution (cell size) in kpc; default is 0.5')
     parser.add_argument('--resfile_prefix', metavar='resfile_prefix', type=str, action='store', default='all_lsm', help='where to save the resulting data? default is defined later')
+    parser.add_argument('--dm_bin_par', type=str, default='impf', help='Parameter for DM radial binning, default is impact parameter')
 
     # ------- args added for radialplot.py ------------------------------
     parser.add_argument('--quant', metavar='quant', type=str, action='store', default='electron', help='which quantity to make radial profile of (choose from electron or gas)? default is electron')
