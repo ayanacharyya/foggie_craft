@@ -79,9 +79,9 @@ def execute_mode_indi(df_snap, args):
         fig.subplots_adjust(left=0.07, bottom=0.07, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
 
     for i, snap in df_snap.iterrows():
-        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_150.npy'
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_exp_300.npy'
         dm_arr	= np.load(thisfile)
-        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm'])
+        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm', 'radial_dist', 'azimuth'])
         print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
         
         print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
@@ -106,8 +106,12 @@ def execute_mode_indi(df_snap, args):
         fit_dict = {'inc_bin': f'{args.inc_range[0]}_{args.inc_range[1]}',
                     'r0': pars[0],
                     'er0': epars[0],
-                    'D0': pars[1],
-                    'eD0': epars[1],
+                    'r1': pars[1],
+                    'er1': epars[1],
+                    'D0': pars[2],
+                    'eD0': epars[2],
+                    'D1': pars[3],
+                    'eD1': epars[3],
                     }
         
         combined_row = {**snap.to_dict(), **fit_dict}

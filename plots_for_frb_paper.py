@@ -56,6 +56,8 @@ def read_dataframe_csv(filename, interval_cols=['lsm_bin', 'lsfr_bin', 'inc_bin'
 
     df = df.rename(columns={'e_r0':'er0', 
                             'e_D0':'eD0',
+                            'e_r1':'er1', 
+                            'e_D1':'eD1',
                             'log_star_mass': 'medlsm',
                             'sfr': 'medsfr',
                             'sfr_100Myr': 'medsfr_100Myr',
@@ -192,15 +194,30 @@ def plot_dm_fit(df_dmpars, args):
     Returns axis handle
     '''
     outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
-    df_dmpars['log_ssfr'] = np.log10((10 ** df_dmpars['medlsm']) / df_dmpars['medsfr']) + 20
+    df_dmpars['log_ssfr'] = np.log10(df_dmpars['medsfr_100Myr']) - df_dmpars['medlsm'] + 9
     df_dmpars['medlgsm_offset'] = df_dmpars['medlgsm'] - 10
     df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
     df_dmpars['log_medsfr'] = np.log10(df_dmpars['medsfr'])
     df_dmpars['log_medsfr_100Myr'] = np.log10(df_dmpars['medsfr_100Myr'])
-    
+
+    nobulge = np.union1d(np.where(np.log10(df_dmpars['eD0']) > 5.0)[0],np.where(df_dmpars['D0'] < 0.2*df_dmpars['D1'])[0])
+    print(nobulge)
+    df_dmpars.loc[df_dmpars.index[nobulge], 'D0'] = np.nan
+    df_dmpars.loc[df_dmpars.index[nobulge], 'eD0'] = np.nan
+    df_dmpars.loc[df_dmpars.index[nobulge], 'r0'] = np.nan
+    df_dmpars.loc[df_dmpars.index[nobulge], 'er0'] = np.nan
+
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D1', y2col='r1', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_ssfr', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_ssfr', y1col='D1', y2col='r1', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D1', y2col='r1', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D1', y2col='r1', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
 
     return res
 
@@ -500,5 +517,5 @@ if __name__ == '__main__':
         if args.make_latex_table:
             df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
             ax = make_latex_table(df_dmpars, args)
-
+    
     print('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

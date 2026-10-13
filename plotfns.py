@@ -11,6 +11,7 @@ from craft_utils import *
 import scipy.stats as spst
 import statsmodels.api as stm
 from matplotlib import colors
+from matplotlib.ticker import MultipleLocator
 setup_plot_style()
 
 #	----------------------------------------------------------------------------------------------------------
@@ -219,7 +220,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     impx_fit = impx     #[start_impbinegs_indices:]
     dmavg_fit = dmavg   #[start_impbinegs_indices:]
 
-    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0))
+    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0), bounds=([0.0, 0.0, 0.0, 0.0], [5.0, 50.0, 1000, 1000]))
     #popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
     perr 		= np.sqrt(np.diag(pcov))
     print(popt,perr)
@@ -246,14 +247,14 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         popt_multipar = np.loadtxt(multifit_par_filename)
         fitted_D0 = 10 ** linearxy(np.array([lsm - 10, np.log10(sfr)]), *popt_multipar[0])
         fitted_r0 = 10 ** linearxy(np.array([lsm - 10, np.log10(sfr)]), *popt_multipar[2])
-        ax.plot(impx, schechter(impx, *[fitted_r0, fitted_D0]), 'r:',lw=1)
+        #ax.plot(impx, schechter(impx, *[fitted_r0, fitted_D0]), 'r:',lw=1)
 
         ax.text(x=0.8*impbinegs_short[1], y=320, s=f"Fitted $D_0$ = {fitted_D0:.1f}", c='r')
         ax.text(x=0.8*impbinegs_short[1], y=200, s=f"Fitted $r_0$ = {fitted_r0:.1f}", c='r')
 
         fitted_D0_1D = 10 ** np.poly1d(popt_multipar[4][:-1])(np.log10(sfr))
         fitted_r0_1D = 10 ** np.poly1d(popt_multipar[6][:-1])(np.log10(sfr))
-        ax.plot(impx, schechter(impx, *[fitted_r0_1D, fitted_D0_1D]), 'g:',lw=1)
+        #ax.plot(impx, schechter(impx, *[fitted_r0_1D, fitted_D0_1D]), 'g:',lw=1)
 
         ax.text(x=1.0*impbinegs_short[-5], y=100, s=f"Fitted $D_0$ 1D = {fitted_D0_1D:.1f}", c='g')
         ax.text(x=1.0*impbinegs_short[-5], y=60, s=f"Fitted $r_0$ 1D = {fitted_r0_1D:.1f}", c='g')
@@ -277,9 +278,9 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         #ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
         #ax.text(0.05, 0.10, transform=ax.transAxes, s="log ($M_* / M_{\odot}$) = %.1f"%lsm)
         #ax.text(0.05, 0.04, transform=ax.transAxes, s="SFR = %.1f $M_{\odot} yr^{-1}$"%sfr)
-        ax.text(0.05, 0.10, transform=ax.transAxes, s="$D_0$ = %d $\pm$ %d"%(popt[2],perr[2]))
+        ax.text(0.05, 0.10, transform=ax.transAxes, s="$D_0$ = %.1f $\pm$ %.1f"%(popt[2],perr[2]))
         ax.text(0.05, 0.04, transform=ax.transAxes, s=r"$r_0$ = %.2f $\pm$ %.2f"%(popt[0],perr[0]))
-        ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %d $\pm$ %d"%(popt[3],perr[3]))
+        ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %.1f $\pm$ %.1f"%(popt[3],perr[3]))
         ax.text(0.65, 0.76, transform=ax.transAxes, s=r"$r_1$ = %.1f $\pm$ %.1f"%(popt[1],perr[1]))
         if redshift is not None:
             ax.text(x=0.8*impbinegs_short[-4], y=100, s=f"z={redshift:.2f}")
@@ -301,11 +302,19 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
 #	----------------------------------------------------------------------------------------------------------
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$']):
+def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$'],rval=None,pval=None):
 	#   Annotate the DM0 or r0 vs stellar mass subplot
+    
+    ax.yaxis.set_major_locator(MultipleLocator(0.5))
 
-    if yscale_log: ax.set_yscale('log')
-    #ax.set_ylim(ylim)
+    if "M_*" in xlabel:
+        ax.xaxis.set_major_locator(MultipleLocator(0.2))
+    else:
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+
+    if yscale_log: 
+        ax.set_yscale('log')
+    ax.set_ylim(ylim)
     if yticks is not None:
         ax.set_yticks(yticks, yticks)
     ax.set_ylabel(ylabel)
@@ -318,6 +327,8 @@ def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, ysc
         ax.text(x=0.05, y=0.86, s="%s $= %.2f \pm %.2f$"%(coeff_label[1], popt[0],perr[0]), transform=ax.transAxes)
     
     ax.text(x=0.05, y=0.93, s=rf"$\sigma$ = {madex:.2f} dex", transform=ax.transAxes)
+    ax.text(x=0.75, y=0.93, s=rf"$C_R$ = {rval:.2f}", transform=ax.transAxes)
+    ax.text(x=0.75, y=0.86, s=rf"$p$ = {pval:.4f}", transform=ax.transAxes)
 
     return ax
 
@@ -386,7 +397,7 @@ def fit_regres(df_fit, xcol, ycol, regres="linear"):
     return (popt,perr)
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5):
+def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5, min_lsfr_allowed=None,xlim=None,spc1=None,spc2=None):
     # Fit DM0 or r0 vs log stellar mass
     df = df.sort_values(by=xcol)
     color = 'b' # df['medlsm_offset'] # include this for color-coding by a given column
@@ -398,6 +409,11 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     # ------------now fitting D0-------------
     df_fit = df.copy()
+
+    # ----------- Removed snapshots with very low SFR from fitting --------
+    if 'sfr' in xcol:
+        unlucky = (df_fit[xcol] < min_lsfr_allowed) 
+        df_fit = df_fit[~unlucky]
 
     # ------------fit the parameter D0----------
     do_fit = True       
@@ -432,7 +448,9 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     mad = np.nanmedian(np.abs(df['devdex']))
     sigma		= np.nanstd(df['devdex'])
-    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'])
+    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'],rval=spc1['corr_x_r'], pval=spc1['corr_x_p'])
+    if xlim is not None:
+        ax.set_xlim(xlim)
 
     # ------------now fitting r0-------------
     if regres is not None:
@@ -453,7 +471,9 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     mad = np.nanmedian(np.abs(df['devdex2']))
     sigma		= np.nanstd(df['devdex2'])
-    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'])
+    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'],rval=spc2['corr_x_r'], pval=spc2['corr_x_p'])
+    if xlim is not None:
+        ax2.set_xlim(xlim)
 
     return popt, perr, popt2, perr2
 
@@ -558,8 +578,8 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 	#	Plot LoSDM vs impact factor for a given inclination range
 	
     fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
-    ax1	 	= fig.add_axes([0.08,0.15,0.42,0.83])
-    ax2	    = fig.add_axes([0.57,0.15,0.42,0.83])
+    ax1	 	= fig.add_axes([0.08,0.15,0.4,0.83])
+    ax2	    = fig.add_axes([0.58,0.15,0.4,0.83])
 
     df = df.dropna(subset=[xcol, y1col, y2col, x2col], axis=0)
 
@@ -567,20 +587,44 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
     spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
 
-    if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$) - 10" 
-    elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
-    elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
+    if 'lsm' in xcol: 
+        xlabel = r"log ($M_*/M_{\odot}$) - 10" 
+        xlims  = None
+    elif 'ssfr' in xcol: 
+        xlabel = r"log (sSFR/Gyr$^{-1}$)"
+        xlims  = [-2.4,-0.1]
+    elif 'sfr' in xcol: 
+        xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
+        xlims  = [-0.8, 1.8]    
+    if 'sfr_100' in xcol: 
+        xlabel = r"log (SFR$_{100}$/M$_{\odot}$ yr$^{-1}$)" 
+        xlims  = [-0.8, 1.8] 
 
-    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", None, None, 
-                                  y2col, ax2, r"log ($r_0$ / kpc)", None, None,
-                                  fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh)
+    if 'D0' in y1col: 
+        y1label = r"log ($D_0 \:/ \:pc \: cm^{-3})$"
+        ylims   = [0.4,3.7]
+    elif 'D1' in y1col: 
+        y1label = r"log ($D_1 \:/ \:pc \: cm^{-3})$"
+        ylims   = [0.7,2.6]
+
+    if 'r0' in y2col: 
+        y2label = r"log ($r_0$ / kpc)"
+        y2lims   = [-0.9,0.9]
+    elif 'r1' in y2col: 
+        y2label = r"log ($r_1$ / kpc)"
+        y2lims   = [0.7,2.6]
+
+    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, y1label, ylims, None, 
+                                  y2col, ax2, y2label, y2lims, None,
+                                  fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,
+                                  scale_fit_thresh=scale_fit_thresh,min_lsfr_allowed=None,xlim=xlims,spc1=spearmna_results1,spc2=spearman_results2)
     
     # ------------save figure-------------
-    figname = Path(outfilename + f"_xcol_{xcol}.pdf")
+    figname = Path(outfilename + f"_xcol_{xcol}_ycol_{y1col}.pdf")
     save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
     
     # --------------Multiparameter fit--------------------------------
-    if 'medsfr_100Myr' in xcol:
+    if 'mmedsfr_100Myr' in xcol:
         fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
         ax1	 	= fig.add_axes([0.09,0.15,0.40,0.83])
         ax2	 	= fig.add_axes([0.59,0.15,0.40,0.83])

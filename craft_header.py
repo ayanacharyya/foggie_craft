@@ -34,7 +34,7 @@ from uncertainties import ufloat
 
 #from mpi4py import MPI
 
-#import pingouin as pg
+import pingouin as pg
 
 from scipy import optimize as op
 from scipy import stats
