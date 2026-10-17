@@ -6,7 +6,8 @@ from collections import namedtuple
 #root_dir = "../"
 #root_dir = "../../Oct7/"
 # root_dir = '../../sep24/'
-root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
+#root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
+root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Oct7/'
 #root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 
