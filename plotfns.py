@@ -397,10 +397,13 @@ def fit_regres(df_fit, xcol, ycol, regres="linear"):
     return (popt,perr)
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5, min_lsfr_allowed=None,xlim=None,spc1=None,spc2=None):
+def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, ax3=None, colcol=None, clabel=None, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5, min_lsfr_allowed=None,xlim=None,spc1=None,spc2=None):
     # Fit DM0 or r0 vs log stellar mass
     df = df.sort_values(by=xcol)
-    color = 'b' # df['medlsm_offset'] # include this for color-coding by a given column
+    color = 'b' 
+    if colcol is not None:
+        color = df[colcol] # include this for color-coding by a given column    
+        print(f"Colourizing by {colcol}")
 
     # ------------plot SFMS--------------------
     if outfilename is not None:
@@ -441,10 +444,10 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     # ------------plot the parameter D0----------
     ax.plot(df[xcol], dm0fit(df[xcol]), 'k--')
-    #im = ax.scatter(df[xcol], df[ycol], c=color, lw=0.5) # include this for color-coding by a given column
-    ax.errorbar(df[xcol], np.log10(df[ycol]), df['e' + ycol]/(df[ycol]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
+    im = ax.scatter(df[xcol], np.log10(df[ycol]), marker='o', c=color, cmap='managua', s=20, zorder = 0) # include this for color-coding by a given column
+    ax.errorbar(df[xcol], np.log10(df[ycol]), df['e' + ycol]/(df[ycol]*np.log(10.0)), fmt='none', ecolor='c', lw=0.5, capsize=2, zorder=-5)
     if fit_robust: ax.errorbar(df_fit[xcol], np.log10(df_fit[ycol]), df_fit['e' + ycol]/(df_fit[ycol]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
-    if type(color) != str: plt.colorbar(im)
+    #if type(color) != str: plt.colorbar(im)
 
     mad = np.nanmedian(np.abs(df['devdex']))
     sigma		= np.nanstd(df['devdex'])
@@ -454,6 +457,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     # ------------now fitting r0-------------
     if (ycol2 == 'r1'):
+        df_unfit = df_fit[df_fit[ycol2] > 49.0]
         df_fit = df_fit[df_fit[ycol2] < 49.0]
 
     if regres is not None:
@@ -468,10 +472,14 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     # ------------plot the parameter r0----------
     ax2.plot(df[xcol], r0fit(df[xcol]), 'k--')
-    #ax2.scatter(df[xcol], df[ycol2], c=color, lw=0.5) # include this for color-coding by a given column
-    ax2.plot(df[xcol], np.log10(df[ycol2]), 'co', markersize=5, fillstyle='none', zorder=-6)
-    ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
+    im2 = ax2.scatter(df[xcol], np.log10(df[ycol2]), marker='o', c=color, cmap='managua', s=20, zorder = 0) # include this for color-coding by a given column
+    if (ycol2 == 'r1'):
+        ax2.scatter(df_unfit[xcol], np.log10(df_unfit[ycol2]), marker='o', ec='k', fc='w', s=25, zorder = 1)
+    #ax2.scatter(df[xcol], np.log10(df[ycol2]), 'co', markersize=5, fillstyle='none', zorder=-6)
+    ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='none', ecolor='c', markersize=5, lw=0.5, capsize=2, zorder=-5)
     if fit_robust: ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
+    if type(color) != str: 
+        plt.colorbar(im2, cax=ax3, label=clabel)
 
     mad = np.nanmedian(np.abs(df['devdex2']))
     sigma		= np.nanstd(df['devdex2'])
@@ -581,9 +589,10 @@ def plt_dmpars_fit_multipar(df, xcol, x2col, ycol, ax, xlabel, ylabel, ylim, yti
 def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0', x2col='medsfr', fit_robust=False, regres=None, fortalk=False, scale_fit_thresh=5):
 	#	Plot LoSDM vs impact factor for a given inclination range
 	
-    fig 	= plt.figure(figsize=(2.4 * fig_size, fig_size))
-    ax1	 	= fig.add_axes([0.08,0.15,0.4,0.83])
-    ax2	    = fig.add_axes([0.58,0.15,0.4,0.83])
+    fig 	= plt.figure(figsize=(3 * fig_size, fig_size))
+    ax1	 	= fig.add_axes([0.06,0.15,0.38,0.83])
+    ax2	    = fig.add_axes([0.52,0.15,0.38,0.83])
+    ax3	    = fig.add_axes([0.91,0.15,0.02,0.83])
 
     df = df.dropna(subset=[xcol, y1col, y2col, x2col], axis=0)
 
@@ -594,25 +603,25 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     if 'lsm' in xcol: 
         xlabel = r"log ($M_*/M_{\odot}$) - 10" 
         xlims  = None
-    if 'lgsm' in xcol: 
+    elif 'lgsm' in xcol: 
         xlabel = r"log ($M_{gas}/M_{\odot}$) - 10" 
         xlims  = None
-    elif 'ssfr' in xcol: 
-        xlabel = r"log (sSFR/Gyr$^{-1}$)"
-        xlims  = [-2.4,-0.1]
-    elif 'sfr' in xcol: 
+    if 'sfr' in xcol: 
         xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
-        xlims  = [-0.8, 1.8]    
+        xlims  = [-0.8, 2.1]    
     if 'sfr_100' in xcol: 
         xlabel = r"log (SFR$_{100}$/M$_{\odot}$ yr$^{-1}$)" 
-        xlims  = [-0.8, 1.8] 
+        xlims  = [-0.8, 2.1] 
+    if 'ssfr' in xcol: 
+            xlabel = r"log (sSFR/Gyr$^{-1}$)"
+            xlims  = [-2.4,-0.1]
 
     if 'D0' in y1col: 
         y1label = r"log ($D_0 \:/ \:pc \: cm^{-3})$"
-        ylims   = [0.4,3.7]
+        ylims   = [0.8,3.9]
     elif 'D1' in y1col: 
         y1label = r"log ($D_1 \:/ \:pc \: cm^{-3})$"
-        ylims   = [0.4,2.6]
+        ylims   = [0.8,2.9]
 
     if 'r0' in y2col: 
         y2label = r"log ($r_0$ / kpc)"
@@ -621,8 +630,19 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
         y2label = r"log ($r_1$ / kpc)"
         y2lims   = [0.7,2.6]
 
+    if 'lsm' in x2col: 
+        x2label = r"log ($M_*/M_{\odot}$) - 10" 
+    elif 'lgsm' in x2col: 
+        x2label = r"log ($M_{gas}/M_{\odot}$) - 10" 
+    if 'sfr' in x2col: 
+        x2label = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
+    if 'sfr_100' in x2col: 
+        x2label = r"log (SFR$_{100}$/M$_{\odot}$ yr$^{-1}$)" 
+    if 'ssfr' in x2col: 
+        x2label = r"log (sSFR/Gyr$^{-1}$)"
+
     popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, y1label, ylims, None, 
-                                  y2col, ax2, y2label, y2lims, None,
+                                  y2col, ax2, y2label, y2lims, None, ax3=ax3, colcol=x2col, clabel=x2label,
                                   fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,
                                   scale_fit_thresh=scale_fit_thresh,min_lsfr_allowed=None,xlim=xlims,spc1=spearmna_results1,spc2=spearman_results2)
     
