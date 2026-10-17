@@ -112,13 +112,13 @@ def plot_sfms(df, args, xcol='log_star_mass', ycol='sfr', colorcol=None):
         #ax.plot(df_sub[xcol], df_sub[ycol], lw=0.5, c=color_arr[index])
 
     # ----------annotating and saving-----------
-    ax.text(x=9.7, y=2.4, s=rf'{args.z_range[0]} $\leq z \less$ {args.z_range[1]}', ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
-    ax.text(x=9.7, y=2.2, s=f'#snapshots = {len(df)}', ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=8.2, y=2.2, s=rf'{args.z_range[0]} $\leq z \less$ {args.z_range[1]}', ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
+    ax.text(x=8.2, y=2.0, s=f'#snapshots = {len(df)}', ha='left', va='top', fontsize=args.fontsize / args.fontfactor)
     ax = annotate_axes(ax, label_dict[xcol], label_dict[ycol], args=args, label='', clabel=label_dict[colorcol] if colorcol is not None else '', hide_cbar=colorcol is None, p=p, cticks_integer=True)
-    ax.set_ylim(-0.6, 2.6)
-    ax.set_xlim(9.6, 11.6)
-    ax.set_xticks([10, 10.5, 11.0, 11.5])
-    ax.set_yticks([0, 1, 2])
+    ax.set_ylim(-2, 2.4)
+    ax.set_xlim(7.7, 11.7)
+    ax.set_xticks([8, 9, 10, 11])
+    ax.set_yticks([-1, 0, 1, 2])
 
     # ------plotting literature MS-----------
     z = np.mean(args.z_range)

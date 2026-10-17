@@ -11,6 +11,8 @@ from craft_utils import *
 import scipy.stats as spst
 import statsmodels.api as stm
 from matplotlib import colors
+from matplotlib.ticker import MultipleLocator
+
 setup_plot_style()
 
 #	----------------------------------------------------------------------------------------------------------
@@ -299,13 +301,89 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
     return (popt, perr, ax)
 
-#	----------------------------------------------------------------------------------------------------------
-#	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$']):
+#	----------------------------------------------------------------------------------------------------------	
+def pltdm_ind_imf_1d_cgm(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None, incrange=None):
+	#	Plot LoSDM vs impact factor for a given inclination range 
+	    
+    df['bin'] = pd.cut(df[bin_col], bins=impbinegs_cgm, include_lowest=True)
+    percentiles = [0.16, 0.25, 0.50, 0.75, 0.84] # Quantiles are 0 to 1 (so 16th percentile is 0.16)
+    stats = df.groupby('bin')[data_col].quantile(percentiles).unstack()
+    
+    stats.columns = [f'p{int(p*100)}' for p in percentiles]
+
+    dmavg	= stats['p50']
+    dmlower	= stats['p50'] - stats['p16']
+    dmhier	= stats['p84'] - stats['p50']
+
+    impx	= df.groupby('bin')[bin_col].quantile(0.50)
+
+    impx_fit = impx
+    dmavg_fit = dmavg
+
+    popt,pcov	= np.polyfit(impx_fit[np.isfinite(dmavg_fit)], np.log(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
+    perr 		= np.sqrt(np.diag(pcov))
+    print(popt,perr)
+
+    # ------------save the profile----------
+    data_arr = np.array([impx, dmavg, dmlower, dmhier])
+    np.save(outfilename + ".npy", data_arr)
+
+    # ------------plot the profile----------
+    if given_ax is None:
+        fig 	= plt.figure(figsize=(1.2 * fig_size, fig_size))
+        ax	 	= fig.add_axes([0.17,0.15,0.82,0.84])
+    else:
+        ax = given_ax
+
+    ax.plot(df[bin_col], df[data_col],'co',markersize=1,alpha=0.1,rasterized=True,fillstyle="none")
+    ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='b*',lw=1,markersize=6,capsize=2)
+    limparr      = np.linspace(0,impbinegs_cgm[-1]+5,1000)
+    #ax.plot(limparr, 10.0**schechter_log(limparr, *popt),'k--',lw=1)
+    ax.plot(limparr, np.exp(np.poly1d(popt)(limparr)),'k--',lw=1)
+    
+    ax.set_xscale("linear")
+    ax.set_yscale("log")
+    ax.set_ylim([0.2, 250])
+    ax.set_xlim([0,impbinegs_cgm[-1]/1.2])
+    #ax.set_yticks(dm_ticks, dm_ticks)
+    ax.set_ylabel("DM (pc cm$^{-3}$)")	
+    if (bin_col=="impf"):
+        ax.set_xlabel(r"$r$ (kpc)")
+    if (bin_col=="distmaj"):
+        ax.set_xlabel(r"$r_{min}$ (kpc)")
+    if (bin_col=="distmin"):
+        ax.set_xlabel(r"$r_{maj}$ (kpc)")
+
+    ax.set_xticks(impbinegs_cgm[1::2], impbinegs_cgm[1::2])
+    D0 = unp.exp(ufloat(popt[1], perr[1]))
+    r0 = -1./ufloat(popt[0], perr[0])
+    ax.text(0.05, 0.10, transform=ax.transAxes, s=r"$D_0$ = %.1f $\pm$ %.1f"%(unp.nominal_values(D0), unp.std_devs(D0)))
+    ax.text(0.05, 0.04, transform=ax.transAxes, s=r"$r_0$ = %.2f $\pm$ %.2f"%(unp.nominal_values(r0), unp.std_devs(r0)))
+    
+    if given_ax is None:
+        figname = Path(outfilename + ".pdf")
+        save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
+        if hide: plt.close()
+        else: plt.show()
+
+    return ([unp.nominal_values(r0), unp.nominal_values(D0)], [unp.std_devs(D0), unp.std_devs(r0)], ax)
+
+# ----------------------------------------------------------------------------------------------------------
+def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$'],rval=None,pval=None):
 	#   Annotate the DM0 or r0 vs stellar mass subplot
 
+    if 'D' in ylabel: # for D0
+        ax.yaxis.set_major_locator(MultipleLocator(0.5))
+    else: # for r0
+        ax.yaxis.set_major_locator(MultipleLocator(0.2))
+
+    if "M_*" in xlabel:
+        ax.xaxis.set_major_locator(MultipleLocator(0.2))
+    else:
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        
     if yscale_log: ax.set_yscale('log')
-    #ax.set_ylim(ylim)
+    ax.set_ylim(ylim)
     if yticks is not None:
         ax.set_yticks(yticks, yticks)
     ax.set_ylabel(ylabel)
@@ -318,6 +396,8 @@ def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, ysc
         ax.text(x=0.05, y=0.86, s="%s $= %.2f \pm %.2f$"%(coeff_label[1], popt[0],perr[0]), transform=ax.transAxes)
     
     ax.text(x=0.05, y=0.93, s=rf"$\sigma$ = {madex:.2f} dex", transform=ax.transAxes)
+    ax.text(x=0.75, y=0.93, s=rf"$C_R$ = {rval:.2f}", transform=ax.transAxes)
+    #ax.text(x=0.75, y=0.86, s=rf"$p$ = {pval:.4f}", transform=ax.transAxes)
 
     return ax
 
@@ -386,7 +466,7 @@ def fit_regres(df_fit, xcol, ycol, regres="linear"):
     return (popt,perr)
 
 #	----------------------------------------------------------------------------------------------------------
-def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5):
+def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, ax2, ylabel2, ylim2, yticks2, fit_robust=False, regres=None, outfilename=None, fortalk=False, scale_fit_thresh=5,spc1=None,spc2=None):
     # Fit DM0 or r0 vs log stellar mass
     df = df.sort_values(by=xcol)
     color = 'b' # df['medlsm_offset'] # include this for color-coding by a given column
@@ -432,7 +512,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     mad = np.nanmedian(np.abs(df['devdex']))
     sigma		= np.nanstd(df['devdex'])
-    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'])
+    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'], rval=spc1['corr_x_r'], pval=spc1['corr_x_p'])
 
     # ------------now fitting r0-------------
     if regres is not None:
@@ -453,7 +533,7 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     mad = np.nanmedian(np.abs(df['devdex2']))
     sigma		= np.nanstd(df['devdex2'])
-    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'])
+    ax2 = plt_dmpars_annotate(ax2, xlabel, ylabel2, ylim2, yticks2, popt2, perr2, sigma, coeff_label=['R', r'$\eta$'], rval=spc2['corr_x_r'], pval=spc2['corr_x_p'])
 
     return popt, perr, popt2, perr2
 
@@ -564,16 +644,17 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     df = df.dropna(subset=[xcol, y1col, y2col, x2col], axis=0)
 
     # ------printing (to screen) the full and partial Spearman Rank correlation coefficients and p-values------
-    spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
+    spearman_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
     spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
 
     if 'lsm' in xcol: xlabel = r"log ($M_*/M_{\odot}$) - 10" 
+    elif 'lgsm' in xcol: xlabel = r"log ($M_{\rm gas}/M_{\odot}$) - 10" 
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
     elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
 
-    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", None, None, 
-                                  y2col, ax2, r"log ($r_0$ / kpc)", None, None,
-                                  fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh)
+    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", [0.8, 2.7], None, 
+                                  y2col, ax2, r"log ($r_0$ / kpc)", [1.01, 1.98], None,
+                                  fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh, spc1=spearman_results1, spc2=spearman_results2)
     
     # ------------save figure-------------
     figname = Path(outfilename + f"_xcol_{xcol}.pdf")

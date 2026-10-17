@@ -12,6 +12,7 @@
                  run plots_for_frb_paper.py --plot_dm_fit --fit_robust
                  run plots_for_frb_paper.py --plot_dm_fit --regres linear
                  run plots_for_frb_paper.py --plot_dm_fit --mode indi
+                 run plots_for_frb_paper.py --plot_dm_fit --mode cgm --z 0.01,0.7
                  run plots_for_frb_paper.py --plot_dm_fit --fit_robust --resfile_prefix binby_lsm_lsfr
                  run plots_for_frb_paper.py --plot_dm_all_lsm --cmap tab10 --set_ylin
                  run plots_for_frb_paper.py --plot_dm_all_lsm
@@ -185,13 +186,14 @@ def plot_dm_impfac_all_lsm_bin(df_dmpars, args, cmap='tab10'):
     return fig
 
 # ------------------------------------------------------------------------------------------------
-def plot_dm_fit(df_dmpars, args):
+def plot_dm_fit(df_dmpars, args, is_cgm=False):
     '''
     Plot DM0 and r0 vs stellar mass in a single panel
     Saves plot
     Returns axis handle
     '''
     outfilename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}'
+    if is_cgm: outfilename += '_cgm'
     df_dmpars['log_ssfr'] = np.log10((10 ** df_dmpars['medlsm']) / df_dmpars['medsfr']) + 20
     df_dmpars['medlgsm_offset'] = df_dmpars['medlgsm'] - 10
     df_dmpars['medlsm_offset'] = df_dmpars['medlsm'] - 10
@@ -199,8 +201,9 @@ def plot_dm_fit(df_dmpars, args):
     df_dmpars['log_medsfr_100Myr'] = np.log10(df_dmpars['medsfr_100Myr'])
     
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
-    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlgsm_offset', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
 
     return res
 
@@ -450,9 +453,10 @@ if __name__ == '__main__':
     else:    
         # -------------determining directories------------------
         if args.mode == 'indi': catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc.csv'
+        elif args.mode == 'cgm': catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc_cgm.csv'
         else: catalog_name = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.csv'
         #df_dmpars = read_dataframe_txt(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
-        df_dmpars = read_dataframe_csv(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
+        df_dmpars = read_dataframe_csv(catalog_name, interval_cols=['inc_bin'] if args.mode == 'indi' or args.mode == 'cgm' else ['lsm_bin', 'lsfr_bin', 'inc_bin'])
 
         # -------------calling plotting functions------------------
         if args.plot_dm_lsm:
@@ -486,7 +490,7 @@ if __name__ == '__main__':
 
         if args.plot_dm_fit:
             df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe
-            ax = plot_dm_fit(df_dmpars, args)
+            ax = plot_dm_fit(df_dmpars, args, is_cgm='cgm' in args.mode)
         
         if args.make_latex_table:
             df_dmpars = df_dmpars[df_dmpars['inc_bin'] == pd.Interval(args.inc_range[0], args.inc_range[1])].reset_index(drop=True) # choosing the correct inclination bin from the dataframe

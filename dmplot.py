@@ -12,6 +12,8 @@
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
   run dmplot.py --mode indi --z_range 0,2 --inc 0,90 --hide --clobber
   run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
+  
+  run dmplot.py --mode cgm --z_range 0.01,0.7 --inc 0,90
 
   run dmplot.py --mode halo --halo 5036 --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode halo --halo 5036 --z_range 0,2 --fontsize 15
@@ -117,6 +119,61 @@ def execute_mode_indi(df_snap, args):
         if len(df_snap) > 10 and not args.multi_panel: plt.close('all')
 
     if args.multi_panel: save_fig(fig, args.fig_dir, f'{args.mode}_inc_{args.inc_range[0]}_{args.inc_range[1]}_multipanel_1d.pdf', args)
+
+    return
+
+# -----------------------------------------------------------------------------
+def execute_mode_cgm(df_snap, args):
+    '''
+    Function to execute mode indi
+    Returns nothing
+    THIS FUNCITON WORKS ON THE OLD VERSION OF LOSDMS WHICH HAVE ONLY FOUR COLUMNS
+    '''
+    print("\nPloting individual snaps...\n")
+    param_outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_indiv_allinc_cgm.csv'
+    if os.path.exists(param_outfile) and args.clobber:
+        os.remove(param_outfile)
+        print(f'Removed existing {param_outfile} because --clobber was used.')
+
+    if args.multi_panel:
+        nrows, ncols = get_grid_size(len(df_snap))
+        fig, axes = plt.subplots(nrows, ncols, figsize=(10, 8))
+        fig.subplots_adjust(left=0.07, bottom=0.07, right=0.98, top=0.98, wspace=0.01, hspace=0.01)
+
+    for i, snap in df_snap.iterrows():
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_150.npy'
+        dm_arr	= np.load(thisfile)
+        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm'])
+        print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
+        
+        print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
+        this_df = this_df[this_df['inc'].between(args.inc_range[0], args.inc_range[1])]
+
+        outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}_cgm/{snap["halo"]}_{snap["snap"]}'
+        
+        pars, epars, ax	= pfns.pltdm_ind_imf_1d_cgm(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, redshift=snap['redshift'])
+
+        if args.multi_panel:
+            if i // ncols < nrows - 1:
+                ax.tick_params(axis='x', which='major', labelsize=0, labelbottom=False)
+                ax.set_xlabel('')
+            if i % ncols > 0:
+                ax.tick_params(axis='y', which='major', labelsize=0, labelbottom=False)
+                ax.set_ylabel('')
+
+        # --------------initialise dataframe------------------        
+        fit_dict = {'inc_bin': f'{args.inc_range[0]}_{args.inc_range[1]}',
+                    'r0': pars[0],
+                    'er0': epars[0],
+                    'D0': pars[1],
+                    'eD0': epars[1],
+                    }
+        
+        combined_row = {**snap.to_dict(), **fit_dict}
+        df_out = pd.DataFrame(combined_row, index=[0])
+
+        df_out.to_csv(param_outfile, index=None, mode='a', header=not os.path.exists(param_outfile))
+        if len(df_snap) > 10 and not args.multi_panel: plt.close('all')
 
     return
 
@@ -748,7 +805,10 @@ if __name__ == '__main__':
     #	--------------------------	Read inputs	-------------------------------
     args = parse_args()
     if not args.keep: plt.close('all')
-    out_dir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
+    if 'cgm' in args.mode:
+        out_dir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}_cgm')
+    else:
+        out_dir = Path(f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_inc_{args.inc_range[0]}_{args.inc_range[1]}')
     out_dir.mkdir(exist_ok=True, parents=True)
 
     # ------------looping over inclination bins----------
@@ -787,6 +847,9 @@ if __name__ == '__main__':
                 if (args.mode=='indi'):
                     execute_mode_indi(df_snap, args)
                 
+                elif (args.mode=='cgm'):
+                    execute_mode_cgm(df_snap, args)
+
                 elif (args.mode=='halo') :
                     execute_mode_halo(df_snap, args)     
                     
