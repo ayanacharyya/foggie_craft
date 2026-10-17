@@ -220,7 +220,7 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     impx_fit = impx     #[start_impbinegs_indices:]
     dmavg_fit = dmavg   #[start_impbinegs_indices:]
 
-    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0), bounds=([0.0, 0.0, 0.0, 0.0], [5.0, 50.0, 1000, 1000]))
+    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0), bounds=([0.0, 0.0, 0.0, 0.0], [5.0, 50.0, 10000, 10000]))
     #popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
     perr 		= np.sqrt(np.diag(pcov))
     print(popt,perr)
@@ -323,12 +323,12 @@ def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, ysc
     ax.set_xlabel(xlabel)
 
     if len(popt) <= 2:
-        ax.text(x=0.05, y=0.79, s="%s$_{0} = %.2f \pm %.2f$"%(coeff_label[0], popt[1],perr[1]), transform=ax.transAxes)
+        ax.text(x=0.05, y=0.79, s="%s$_{00} = %.2f \pm %.2f$"%(coeff_label[0], popt[1],perr[1]), transform=ax.transAxes)
         ax.text(x=0.05, y=0.86, s="%s $= %.2f \pm %.2f$"%(coeff_label[1], popt[0],perr[0]), transform=ax.transAxes)
     
     ax.text(x=0.05, y=0.93, s=rf"$\sigma$ = {madex:.2f} dex", transform=ax.transAxes)
     ax.text(x=0.75, y=0.93, s=rf"$C_R$ = {rval:.2f}", transform=ax.transAxes)
-    ax.text(x=0.75, y=0.86, s=rf"$p$ = {pval:.4f}", transform=ax.transAxes)
+    #ax.text(x=0.75, y=0.86, s=rf"$p$ = {pval:.4f}", transform=ax.transAxes)
 
     return ax
 
@@ -448,11 +448,14 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
 
     mad = np.nanmedian(np.abs(df['devdex']))
     sigma		= np.nanstd(df['devdex'])
-    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['D', r'$\gamma$'],rval=spc1['corr_x_r'], pval=spc1['corr_x_p'])
+    ax = plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, sigma, coeff_label=['d', r'$\gamma$'],rval=spc1['corr_x_r'], pval=spc1['corr_x_p'])
     if xlim is not None:
         ax.set_xlim(xlim)
 
     # ------------now fitting r0-------------
+    if (ycol2 == 'r1'):
+        df_fit = df_fit[df_fit[ycol2] < 49.0]
+
     if regres is not None:
         popt2,perr2 = fit_regres(df_fit, xcol, ycol2, regres=regres)
     else:
@@ -466,7 +469,8 @@ def plt_dmpars_fit_par(df, xcol, ycol, ax, xlabel, ylabel, ylim, yticks, ycol2, 
     # ------------plot the parameter r0----------
     ax2.plot(df[xcol], r0fit(df[xcol]), 'k--')
     #ax2.scatter(df[xcol], df[ycol2], c=color, lw=0.5) # include this for color-coding by a given column
-    ax2.errorbar(df[xcol], np.log10(df[ycol2]), df['e' + ycol2]/(df[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
+    ax2.plot(df[xcol], np.log10(df[ycol2]), 'co', markersize=5, fillstyle='none', zorder=-6)
+    ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2, fillstyle='none', zorder=-5)
     if fit_robust: ax2.errorbar(df_fit[xcol], np.log10(df_fit[ycol2]), df_fit['e' + ycol2]/(df_fit[ycol2]*np.log(10.0)), fmt='bo', markersize=5, lw=0.5, capsize=2)
 
     mad = np.nanmedian(np.abs(df['devdex2']))
@@ -585,10 +589,13 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
 
     # ------printing (to screen) the full and partial Spearman Rank correlation coefficients and p-values------
     spearmna_results1 = print_sr_corr(df, xcol, y1col, xcol2=x2col)
-    spearman_results2 = print_sr_corr(df, xcol, y2col, xcol2=x2col)
+    spearman_results2 = print_sr_corr(df[df[y2col] < 49.0], xcol, y2col, xcol2=x2col)
 
     if 'lsm' in xcol: 
         xlabel = r"log ($M_*/M_{\odot}$) - 10" 
+        xlims  = None
+    if 'lgsm' in xcol: 
+        xlabel = r"log ($M_{gas}/M_{\odot}$) - 10" 
         xlims  = None
     elif 'ssfr' in xcol: 
         xlabel = r"log (sSFR/Gyr$^{-1}$)"
@@ -605,7 +612,7 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
         ylims   = [0.4,3.7]
     elif 'D1' in y1col: 
         y1label = r"log ($D_1 \:/ \:pc \: cm^{-3})$"
-        ylims   = [0.7,2.6]
+        ylims   = [0.4,2.6]
 
     if 'r0' in y2col: 
         y2label = r"log ($r_0$ / kpc)"

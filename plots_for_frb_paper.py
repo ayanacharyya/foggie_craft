@@ -207,6 +207,9 @@ def plot_dm_fit(df_dmpars, args):
     df_dmpars.loc[df_dmpars.index[nobulge], 'r0'] = np.nan
     df_dmpars.loc[df_dmpars.index[nobulge], 'er0'] = np.nan
 
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlgsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlgsm_offset', y1col='D1', y2col='r1', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
+
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D1', y2col='r1', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
 
