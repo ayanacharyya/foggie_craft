@@ -203,7 +203,7 @@ def plot_dm_fit(df_dmpars, args, is_cgm=False):
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlsm_offset', y1col='D0', y2col='r0', x2col='log_medsfr_100Myr', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=10)
     #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr_100Myr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
     res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='log_medsfr', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
-    res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlgsm_offset', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
+    #res = pfns.plt_dmpars(df_dmpars, outfilename, 3.0, xcol='medlgsm_offset', y1col='D0', y2col='r0', x2col='medlsm_offset', fit_robust=args.fit_robust, regres=args.regres, fortalk=args.fortalk, scale_fit_thresh=2)
 
     return res
 
@@ -279,8 +279,8 @@ def plot_multipanel_foggie(args):
     colist	= ['cornflowerblue','salmon', 'k']
     shlist	= ['aqua', 'coral','grey']
 
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 3.5, 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
-                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 220, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 2.5, 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 50, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
                 } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
     quant_arr = ['density', 'el_density']
 
@@ -415,7 +415,7 @@ def plot_multipanel_foggie(args):
 
         ax.set_yscale('log')
         ax.set_xscale('log')
-        ax.set_ylim(1e-5, 1e0)
+        ax.set_ylim(1e-6, 1e0)
         ax = annotate_axes(ax, 'Radius (kpc)', '$n_e$ (cm$^{-3}$)', args=args, xloc=0.6, 
                                label=f'z ={redshift_arr[index]:.2f}', 
                                hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)

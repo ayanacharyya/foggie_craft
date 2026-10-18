@@ -343,9 +343,14 @@ def pltdm_ind_imf_1d_cgm(df, lsm, sfr, parlims, outfilename, fig_size, hide=Fals
     
     ax.set_xscale("linear")
     ax.set_yscale("log")
+
     ax.set_ylim([0.2, 250])
-    ax.set_xlim([0,impbinegs_cgm[-1]/1.2])
+    #ax.set_xlim([0,impbinegs_cgm[-1]/1.2])
+    ax.set_xlim([0,impbinegs_cgm[-1]])
+
+    ax.set_xticks(impbinegs_cgm[1::2], [f'{item:.0f}' for item in impbinegs_cgm[1::2]])
     #ax.set_yticks(dm_ticks, dm_ticks)
+
     ax.set_ylabel("DM (pc cm$^{-3}$)")	
     if (bin_col=="impf"):
         ax.set_xlabel(r"$r$ (kpc)")
@@ -354,7 +359,6 @@ def pltdm_ind_imf_1d_cgm(df, lsm, sfr, parlims, outfilename, fig_size, hide=Fals
     if (bin_col=="distmin"):
         ax.set_xlabel(r"$r_{maj}$ (kpc)")
 
-    ax.set_xticks(impbinegs_cgm[1::2], impbinegs_cgm[1::2])
     D0 = unp.exp(ufloat(popt[1], perr[1]))
     r0 = -1./ufloat(popt[0], perr[0])
     ax.text(0.05, 0.10, transform=ax.transAxes, s=r"$D_0$ = %.1f $\pm$ %.1f"%(unp.nominal_values(D0), unp.std_devs(D0)))
@@ -366,7 +370,7 @@ def pltdm_ind_imf_1d_cgm(df, lsm, sfr, parlims, outfilename, fig_size, hide=Fals
         if hide: plt.close()
         else: plt.show()
 
-    return ([unp.nominal_values(r0), unp.nominal_values(D0)], [unp.std_devs(D0), unp.std_devs(r0)], ax)
+    return ([unp.nominal_values(r0), unp.nominal_values(D0)], [unp.std_devs(r0), unp.std_devs(D0)], ax)
 
 # ----------------------------------------------------------------------------------------------------------
 def plt_dmpars_annotate(ax, xlabel, ylabel, ylim, yticks, popt, perr, madex, yscale_log=False, coeff_label=['D', r'$\gamma$'],rval=None,pval=None):
@@ -652,8 +656,8 @@ def plt_dmpars(df, outfilename, fig_size, xcol='medlsm', y1col='D0', y2col='r0',
     elif 'ssfr' in xcol: xlabel = r"log (sSFR/yr$^{-1}$)" 
     elif 'sfr' in xcol: xlabel = r"log (SFR/M$_{\odot}$ yr$^{-1}$)" 
 
-    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", [0.8, 2.7], None, 
-                                  y2col, ax2, r"log ($r_0$ / kpc)", [1.01, 1.98], None,
+    popt, perr, popt2, perr2 = plt_dmpars_fit_par(df, xcol, y1col, ax1, xlabel, r"log ($D_0 \:/ \:pc \: cm^{-3})$", [1.05, 2.7], None, 
+                                  y2col, ax2, r"log ($r_0$ / kpc)", [1.25, 1.88], None,
                                   fit_robust=fit_robust, regres=regres, outfilename=None, fortalk=fortalk,scale_fit_thresh=scale_fit_thresh, spc1=spearman_results1, spc2=spearman_results2)
     
     # ------------save figure-------------
