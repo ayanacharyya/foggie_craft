@@ -6,8 +6,8 @@ from collections import namedtuple
 #root_dir = "../"
 #root_dir = "../../Oct7/"
 # root_dir = '../../sep24/'
-root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
-#root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Oct7/'
+#root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
+root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Oct7/'
 #root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 
@@ -52,5 +52,5 @@ all_lsfr_bin_edges	=[-3.0,0.0,0.5,1.0,1.5,2.0]
 min_max_lsm = 9.0                                           # the upper limit of lsm search window should be at least this, to ensure finding sufficient number of simulated galaxies
 obs_lsm_allowance = 0.2                                     # log stellar mass half-window for searching snapshots around observed stellar mass
 obs_lsfr_allowance = 0.2                                    # log SFR half-window for searching snapshots around observed SFR, only used --use_sfr mode
-obs_inc_allowance = 0.5                                       # inclination half-window for searching LoS
+obs_inc_allowance = 10                                       # inclination half-window (in degrees) for searching LoS
 obs_impf_frac_allow = 0.5                                   # fractional impact factor window for searching LoS

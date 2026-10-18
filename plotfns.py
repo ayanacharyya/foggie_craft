@@ -302,6 +302,56 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     return (popt, perr, ax)
 
 #	----------------------------------------------------------------------------------------------------------	
+def pltdm_impf_inc_2d(df, outfilename, fig_size, data_col='losdm', redshift_range=None, fortalk=False, hide=False):
+	#	Plot LoSDM vs inclination for a given mass-sfr bin 
+	    
+    df['inc'] = np.cos(np.radians(df['inc']))
+    percentiles = [16, 25, 50, 75, 84]
+    maps = {}
+    bin_col1, bin_col2 ='impf', 'inc' # bin_col1 will be on y-axis
+    incbinegs = np.linspace(0, 1, 11)
+
+    for p in percentiles:
+        ret = binned_statistic_2d(df[bin_col1], df[bin_col2], df[data_col], 
+                                  statistic=lambda x, p_val=p: np.nanpercentile(x, p_val) if len(x) > 0 else np.nan, 
+                                  bins=[impbinegs, incbinegs])
+        maps[f'p{p}'] = ret.statistic
+
+    dmavg	= maps['p50']	
+    
+    # ------------plot the profile----------
+    fig 	= plt.figure(figsize=(1.1 * fig_size, fig_size))
+    ax1	 	= fig.add_axes([0.2,0.13,0.75,0.72])
+    ax1c	= fig.add_axes([0.2,0.84,0.75,0.02])
+    
+    # -------------------display median data---------------
+    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="managua_r", norm=colors.PowerNorm(gamma=0.5))
+    
+    # --------------plot annotations---------------------
+    label_dict = {'inc': r'$\cos{(i)}$',
+                  'impf': 'Impact factor (kpc)',
+                  }
+
+    ax1.set_ylim(0, len(impbinegs)-3)
+    
+    #ax1.text(x=0.98, y=0.98, s=rf'{redshift_range[0]:.1f} $< z \leq$ {redshift_range[1]:.1f}', transform=ax1.transAxes, ha='right', va='top')
+    ax1.set_xticks(np.arange(0,len(incbinegs) - 1, 1) - 0.5, [f'{item:.1f}' for item in incbinegs[:-1]])
+    ax1.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5, impbinegs[:-1])
+    ax1.set_ylabel(label_dict[bin_col1])
+    ax1.set_xlabel(label_dict[bin_col2])
+
+
+    # ------------annotating colorbars-------------------
+    fig.colorbar(med, cax=ax1c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top', ticks=[10, 30, 100, 300])	
+
+    figname = Path(outfilename + ".png")
+    save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
+    if hide: plt.close()
+    else: plt.show(block=False)
+
+    return ax1
+
+#	----------------------------------------------------------------------------------------------------------	
 def pltdm_ind_imf_1d_cgm(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None, incrange=None):
 	#	Plot LoSDM vs impact factor for a given inclination range 
 	    

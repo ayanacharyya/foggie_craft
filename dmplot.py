@@ -32,6 +32,8 @@
   run dmplot.py --mode lsmzsfr --lsm all --inc 0,30
   run dmplot.py --mode lsmzsfr --lsm all --inc 80,90
   run dmplot.py --mode lsmzsfr --lsm 8.5,9.0,9.5,10.0,10.5,11.0,11.5 --lsfr=-3.0,0.0,0.5,1.0,1.5,2.0 --resfile_prefix binby_lsm_lsfr --multi_panel --fontsize 6
+
+  run dmplot.py --mode lsmzsfr_inc2d --lsm all --z 0.01,0.7
 '''
 
 #	--------------------------	Import modules	---------------------------
@@ -272,8 +274,28 @@ def execute_mode_lsmzsfr(df_snap, args, given_ax=None):
                            'ngal': len(df_snap),
                            }, index=[0])
     
-    outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.txt'
-    df_out.to_csv(outfile, mode='a', sep='\t', header=not os.path.exists(outfile), index=None)
+    outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}_allinc.csv'
+    df_out.to_csv(outfile, mode='a', header=not os.path.exists(outfile), index=None)
+
+    return ax
+
+def execute_mode_lsmzsfr_inc2d(df_snap, args):
+    '''
+    Function to execute mode lsmzsfr to plot 2D heatmap of inc vs impf
+    Returns axis handle
+    '''
+    combined_df = pd.DataFrame()
+    
+    for i, snap in df_snap.iterrows():
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_exp_300.npy'
+        dm_arr	= np.load(thisfile)
+        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm', 'radial_dist', 'azimuth'])
+        combined_df = pd.concat([combined_df, this_df], ignore_index=True)
+        
+    print(f"Total number of LoS = {len(combined_df)}")	
+
+    outfile = f'{args.resfile_prefix}_z_{args.z_range[0]}_{args.z_range[1]}/{args.mode}_lsm_{args.lsm_range[0]}_{args.lsm_range[1]}_lsfr_{args.lsfr_range[0]}_{args.lsfr_range[1]}_1d'
+    ax	= pfns.pltdm_impf_inc_2d(combined_df, outfile, 2.6, data_col='losdm', redshift_range=args.z_range, fortalk=args.fortalk, hide=args.hide)
 
     return ax
 
@@ -867,6 +889,9 @@ if __name__ == '__main__':
 
                 elif (args.mode=='plot_2d_radius_ratio') : # to compare r_min/r_max from 2D fitting
                     execute_mode_plot_2d_fit_radius_ratio(args)
+
+                elif (args.mode=='lsmzsfr_inc2d') : # to plot inc vs impf 2D heatmap with median DM as color
+                    ax = execute_mode_lsmzsfr_inc2d(df_snap, args)
 
                 elif (args.mode=='lsmzsfr'):      
                     # ---------------make the plots-----------------

@@ -328,7 +328,9 @@ if __name__ == '__main__':
                 box_width_kpc = ds.arr(box_width, 'kpc')
                 args.ncells = int(box_width / args.res)
                 box_center = ds.halo_center_kpc
-                box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+                box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., 
+                           box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., 
+                           box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
 
                 central_pixel = args.ncells / 2
                 args.kpc_per_pix = 2 * args.galrad / args.ncells

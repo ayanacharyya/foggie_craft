@@ -9,6 +9,7 @@
 
 """
 from foggie_header import *
+from mpi4py import MPI
 
 # ----------------------------------------------------------------
 import fnmatch

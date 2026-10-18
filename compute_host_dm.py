@@ -8,6 +8,7 @@
     Examples :   run compute_host_dm.py --use_sfr --input_cat frbcat0.txt --plot_compare --plot_dist --plot_scaling
                  run compute_host_dm.py --input_cat frbcat0.txt --plot_all
                  run compute_host_dm.py --input_cat fgcat0.txt
+                 run compute_host_dm.py --input_cat frbcat0.txt --z 0.01,0.7 --plot_dist --plot_scaling --clobber
 """
 from craft_header import *
 from craft_utils import *
@@ -90,6 +91,20 @@ def read_obs_catalog(filename, args, input_column_dict=None, add_columns=['dm_16
         print(f'Could not find {filename}..')
         df = pd.DataFrame()
 
+    # -------appending inclination information-------
+    inc_filename = args.root_dir / 'Selected_Galfit_Params.csv'
+    if os.path.exists(inc_filename):
+        print(f'Icnluding inclination information from {inc_filename}')
+        df_inc = pd.read_csv(inc_filename)
+        df_inc.rename(columns={'FRB':'id', 'Axis_ratio_b_over_a': 'b_a'}, inplace=True)
+        print(df.columns)
+        df = df.merge(df_inc[['id', 'b_a']], on='id', how='left')
+    else:
+        print(f'Could not add inclination information because did not find file {inc_filename}')
+
+    if 'b_a' in df:
+        df['inc'] = np.degrees(np.acos(df['b_a']))
+
     return df, filename
 
 # ------------------------------------------------------------------------------------------------
@@ -102,14 +117,14 @@ def get_param_ranges(obs):
     lsm_range = [obs['lsm'] - obs_lsm_allowance, max(obs['lsm'] + obs_lsm_allowance, min_max_lsm)]
 
     # ----------------determine SFR range-------------------
-    # lsfr_range = [-10, 10]
-    # if np.isfinite(obs['sfr_up']) and np.isfinite(obs['sfr_low']):
-    #     lsfr_range = [obs['sfr_low'], obs['sfr_up']]
-    # elif np.isfinite(obs['sfr_med']):
-    #     lsfr_range = [obs['sfr_med'] - obs_lsm_allowance, obs['sfr_med'] + obs_lsm_allowance]
-    # elif np.isfinite(obs['sfr_up']):
-    #     lsfr_range[1] = obs['sfr_up']
-    lsfr_range = [obs['sfr_to_use'] - obs_lsm_allowance, obs['sfr_to_use'] + obs_lsm_allowance]
+    lsfr_range = [-10, 10]
+    if np.isfinite(obs['sfr_med']):
+        lsfr_range = [obs['sfr_med'] - obs_lsm_allowance, obs['sfr_med'] + obs_lsm_allowance]
+    elif np.isfinite(obs['sfr_up']) and np.isfinite(obs['sfr_low']):
+        lsfr_range = [obs['sfr_low'], obs['sfr_up']]
+    elif np.isfinite(obs['sfr_up']):
+        lsfr_range[1] = obs['sfr_up']
+    # lsfr_range = [obs['sfr_to_use'] - obs_lsm_allowance, obs['sfr_to_use'] + obs_lsm_allowance]
     
     # -----------------------determine inclination range----------------------
     if 'inc' in obs and np.isfinite(obs['inc']):
@@ -134,12 +149,13 @@ def find_los_in_range(df_snap, inc_range, impf_range, args):
     combined_df = pd.DataFrame()
     
     for i, snap in df_snap.iterrows():
-        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_150.npy'
+        thisfile = args.los_dir / f'{snap["snap"]}_{snap["halo"]}_FRB_El_number_density_upto{args.rangekpc}kpc_res{args.reskpc}kpc_exp_300.npy'
         if os.path.exists(thisfile):
             dm_arr	= np.load(thisfile)
         else:
+            print(f'Skippig this because did not find LosDM file {thisfile}')
             continue
-        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm'])
+        this_df = pd.DataFrame(dm_arr, columns=['inc', 'impf', 'distmaj', 'losdm', 'radial_dist', 'azimuth'])
         this_df = this_df[(this_df['inc'].between(inc_range[0], inc_range[1])) & (this_df['impf'].between(impf_range[0], impf_range[1]))]
         combined_df = pd.concat([combined_df, this_df], ignore_index=True)
         
@@ -170,7 +186,7 @@ def get_fit_r0_d0(obs, args):
     return fit1d_D0, fit1d_r0, fit2d_D0, fit2d_r0
 
 # ------------------------------------------------------------------------------------------------
-def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sfr_med', 'impf', 'impf_low', 'impf_up', 'redshift', 'dm_16', 'dm_50', 'dm_84', 'dm_fit1d', 'dm_fit2d']):
+def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sfr_med', 'b_a', 'impf', 'impf_low', 'impf_up', 'redshift', 'dm_16', 'dm_50', 'dm_84']):
     '''
     Convert the input dataframe into a latex table
     Saves latex table
@@ -184,13 +200,14 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
                      'dm':r'\makecell{DM$_{\rm los}$\\($pc\: cm^{-3}$)}',
                      'dm_fit1d':r'\makecell{DM$_{\rm fit, 1D}$\\($pc\: cm^{-3}$)}',
                      'dm_fit2d':r'\makecell{DM$_{\rm fit, 2D}$\\($pc\: cm^{-3}$)}',
+                     'b_a': r'Axial ratio ($b/a$)',
                      }
 
     columns_with_err = ['dm']
     columns_with_percentiles = ['impf']
     columns_onedec = ['lsm']
-    columns_threedec = ['redshift']
-    columns_with_nans = ['sfr_med', 'dm_fit1d', 'dm_fit2d']
+    columns_threedec = ['redshift', 'b_a']
+    columns_with_nans = ['sfr_med']#, 'dm_fit1d', 'dm_fit2d']
 
     df_latex = df[columns_to_publish]
     df_latex = df_latex.rename(columns={'dm_50':'dm', 'dm_16': 'dm_low', 'dm_84':'dm_up'})
@@ -256,8 +273,8 @@ def plot_dm_distribution(df, args):
     '''
     fig, ax = plt.subplots(figsize=(3, 2.8), layout='constrained')
     delta_hist = 0.1
-    ydata, bins, _ = ax.hist(np.log10(df['dm_fit1d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='goldenrod', alpha=0.5)
-    ydata, bins, _ = ax.hist(np.log10(df['dm_fit2d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='salmon', alpha=0.5)
+    #ydata, bins, _ = ax.hist(np.log10(df['dm_fit1d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='goldenrod', alpha=0.5)
+    #ydata, bins, _ = ax.hist(np.log10(df['dm_fit2d']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='salmon', alpha=0.5)
     ydata, bins, _ = ax.hist(np.log10(df['dm_50']), bins=np.arange(1, 2 + delta_hist, delta_hist), color='cornflowerblue', alpha=0.5)
 
     bin_centers = (bins[1:] + bins[:-1]) / 2
@@ -278,28 +295,50 @@ def plot_dm_scaling(df, args):
     Saves the plot
     Returns figure handle
     '''
-    xcols = ['lsm', 'sfr_to_use', 'impf']
-    ycol = 'dm_fit1d'
-    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_to_use':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact factor (kpc)'}
+    df['inc'] = np.cos(np.radians(df['inc']))
+    xcols = ['lsm', 'sfr_to_use', 'impf', 'inc']
+    ycol = 'dm_50'
+    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_to_use':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact factor (kpc)', 'inc':r'$\cos{(i)}$'}
 
     df_high = df[df['lsm'] > 10.5]
     df_low = df[df['lsm'] <= 10.5]
 
-    # --------------looping over each panel-----------
-    fig, axes = plt.subplots(1, len(xcols), figsize=(9, 2.8), layout='constrained')
-    for index, xcol in enumerate(xcols):
-        #axes[index].errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, markersize=6, markeredgecolor='k', markerfacecolor='cornflowerblue')
-        axes[index].plot(df_high[xcol], df_high[ycol], 'bo', label=r'$\log(M_*/M_\odot$) > 10.5')
-        axes[index].plot(df_low[xcol], df_low[ycol], 'bo', fillstyle='none', label=r'$\log(M_*/M_\odot$) < 10.5')
+    # --------------setting up figure-----------
+    nrow = 2 # 1
+    ncol = 2 # len(xcols)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(9, 6), layout='constrained')
 
-        axes[index].set_yscale('log')
-        axes[index].set_yticks([1, 3, 10, 30], [1, 3, 10, 30])
-        #if 'log' not in label_dict[xcol]: axes[index].set_xscale('log')
-        axes[index] = annotate_axes(axes[index], label_dict[xcol], r'DM$_{\rm host}$ (pc cm$^{-3}$)', args=args, set_ticks=False, hide_yaxis=index)
-        if index == 1:
-            axes[index].legend(loc='upper left', fontsize=args.fontsize)
-    
-    save_fig(fig, args.fig_dir, f'DM_scaling.pdf', args)
+    # --------------looping over each panel-----------
+    for index, xcol in enumerate(xcols):
+        row, col = index % ncol, index // ncol
+        ax = axes[row][col] # axes[index]
+        ax.errorbar(df[xcol], df['dm_50'], yerr=[df['dm_50'] - df['dm_16'], df['dm_84'] - df['dm_50']], fmt='o', capsize=2, lw=0.5, markersize=6, markeredgecolor='k', markerfacecolor='cornflowerblue')
+        #ax.plot(df_high[xcol], df_high[ycol], 'bo', label=r'$\log(M_*/M_\odot$) > 10.5')
+        #ax.plot(df_low[xcol], df_low[ycol], 'bo', fillstyle='none', label=r'$\log(M_*/M_\odot$) < 10.5')
+
+        ax.set_ylim(1, 200)
+        ax.set_yscale('log')
+        ax.set_yticks([1, 3, 10, 30, 80], [1, 3, 10, 30, 80])
+        #if 'log' not in label_dict[xcol]: ax.set_xscale('log')
+        
+        ax = annotate_axes(ax, label_dict[xcol], r'DM$_{\rm host}$ (pc cm$^{-3}$)', args=args, set_ticks=False, hide_yaxis=col)
+
+        if xcol == 'impf':
+            ax.set_xscale('log')
+            ax.set_xticks([1, 3, 10, 30], [1, 3, 10, 30])
+
+        if 'sfr' in xcol or 'lsm' in xcol: # fit scaling relation
+            df_sub = df[np.isfinite(df['dm_50']) & np.isfinite(df[xcol])]
+            coeff, cov = np.polyfit(df_sub[xcol], np.log10(df_sub['dm_50']), deg=1, cov=True)
+            coeff_err = np.sqrt(np.diag(cov))
+            ax.plot(df_sub[xcol], 10 ** np.poly1d(coeff)(df_sub[xcol]), lw=0.5, ls='solid', c='k')
+            ax.text(0.9, 0.2, rf'$\gamma=${coeff[0]:.2f} $\pm$ {coeff_err[0]:.2f}', ha='right', va='bottom', transform=ax.transAxes)
+            if 'lsm' in xcol: 
+                ax.text(0.9, 0.1, r'$d_{00}=$' + f'{coeff[1] + 10:.2f}' + r'$\pm$' + f'{coeff_err[1]:.2f}', ha='right', va='bottom', transform=ax.transAxes)
+            else:
+                ax.text(0.9, 0.1, r'$d_{00}=$' + f'{coeff[1]:.2f}' + r'$\pm$' + f'{coeff_err[1]:.2f}', ha='right', va='bottom', transform=ax.transAxes)
+
+    save_fig(fig, args.fig_dir, f'DM_scaling.pdf', args, dpi=300)
     
     return fig
 
@@ -335,29 +374,39 @@ if __name__ == '__main__':
         for index, obs in df_obs.iterrows():
             print(f'\nDoing object {obs["id"]} ({index + 1}/{len(df_obs)})...')
             # ---------derive SFR from SFMS if it does not exist----------------
-            if np.isnan(obs['sfr_med']):
-                obs['sfr_to_use'] = get_SFMS_Popesso23(obs['lsm'], obs['redshift'])
-            else:
-                obs['sfr_to_use'] = obs['sfr_med']
-            df_obs.at[index, 'sfr_to_use'] = obs['sfr_to_use']
+            # if np.isnan(obs['sfr_med']) and np.isnan(obs['sfr_low']) and np.isnan(obs['sfr_up']):
+            #     obs['sfr_to_use'] = get_SFMS_Popesso23(obs['lsm'], obs['redshift'])
+            #     print(f'WARNING: Using Popesso SFR for this object {obs["id"]}')
+            # else:
+            #     obs['sfr_to_use'] = obs['sfr_med']
+            # df_obs.at[index, 'sfr_to_use'] = obs['sfr_to_use']
+            df_obs.at[index, 'sfr_to_use'] = obs['sfr_med']
 
             # --------------------------derive fitted DM------------------------
-            fit1d_D0, fit1d_r0, fit2d_D0, fit2d_r0 = get_fit_r0_d0(obs, args)
-            df_obs.at[index, 'dm_fit1d'] = schechter(obs['impf'], fit1d_r0, fit1d_D0) # update dataframe
-            df_obs.at[index, 'dm_fit2d'] = schechter(obs['impf'], fit2d_r0, fit2d_D0) # update dataframe
+            #fit1d_D0, fit1d_r0, fit2d_D0, fit2d_r0 = get_fit_r0_d0(obs, args)
+            df_obs.at[index, 'dm_fit1d'] = np.nan # schechter(obs['impf'], fit1d_r0, fit1d_D0) # update dataframe
+            df_obs.at[index, 'dm_fit2d'] = np.nan # schechter(obs['impf'], fit2d_r0, fit2d_D0) # update dataframe
 
             # ------------find snapshots--------------------------
             lsm_range, lsfr_range, inc_range, impf_range = get_param_ranges(obs)
-            df_sub = df_snap[(df_snap['log_star_mass'].between(lsm_range[0], lsm_range[1])) & (df_snap['log_sfr'].between(lsfr_range[0], lsfr_range[1]))].reset_index(drop=True)
+            df_sub_lsfr =  df_snap[df_snap['log_sfr'].between(lsfr_range[0], lsfr_range[1])].reset_index(drop=True)
+            df_sub_lsfr_lsm = df_sub_lsfr[df_sub_lsfr['log_star_mass'].between(lsm_range[0], lsm_range[1])]
+            
+            if len(df_sub_lsfr_lsm) == 0 and lsfr_range[1] != 10:
+                print(f'\n\nCAUTION: Imposing mass cut kills sample entirely for id {obs["id"]}, so going ahead with only SFR-cut')
+                df_sub = df_sub_lsfr
+                print (f'\t\tFound {len(df_sub)} snapshots, within log sfr range {lsfr_range}')
+            else:
+                df_sub = df_sub_lsfr_lsm
+                print (f'\t\tFound {len(df_sub)} snapshots, within log mass range {lsm_range}, log sfr range {lsfr_range}')
             
             if len(df_sub) < 1:
                 print(f'\n\nCAUTION: No simulated snapshots found for id {obs["id"]} in log SFR range {lsfr_range}, so skipping this object. Please re-run with increased obs_lsfr_allowance parameter in globalpars.py\n\n')
                 continue
-            print (f'\t\tFound {len(df_sub)} snapshots, within log mass range {lsm_range}, log sfr range {lsfr_range}')
             
             # --------------------reading in relevant LoS files of relevant snapshots-------------------
-            combined_df = find_los_in_range(df_snap, inc_range, impf_range, args)
-            stats = np.nanpercentile(combined_df['losdm'], (16, 50, 84))/2.0
+            combined_df = find_los_in_range(df_sub, inc_range, impf_range, args)
+            stats = np.nanpercentile(combined_df['losdm'], (16, 50, 84))
             df_obs.at[index, 'dm_16'], df_obs.at[index, 'dm_50'], df_obs.at[index, 'dm_84'] = list(stats) # update dataframe
 
 
