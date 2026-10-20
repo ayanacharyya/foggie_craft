@@ -18,7 +18,7 @@
                  run plots_for_frb_paper.py --plot_dm_all_lsm
                  run plots_for_frb_paper.py --make_latex_table --resfile_prefix binby_lsm_lsfr
                  run plots_for_frb_paper.py --make_latex_table --resfile_prefix all_lsm
-                 run plots_for_frb_paper.py --plot_foggie_snaps --system ayan_local --halo 2878 --upto_kpc 100 --reskpc 0.5
+                 run plots_for_frb_paper.py --plot_foggie_snaps --system ayan_local --halo 8508 --upto_kpc 100 --reskpc 0.5
 
 """
 from craft_header import *

@@ -79,7 +79,7 @@ def get_stellar_mass(args, refine_box=None):
 
     print(f'Obtained log stellar mass = {log_stellar_mass:.2f} within radius {disk_rad_kpc:.1f} kpc, for snap {args.halo}:{args.output}')
 
-    del ds
+    if 'ds'  in locals(): del ds
     del refine_box
     gc.collect()
 

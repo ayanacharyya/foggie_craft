@@ -7,8 +7,8 @@ from collections import namedtuple
 #root_dir = "../../Oct7/"
 # root_dir = '../../sep24/'
 #root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Jun20/'
-root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Oct7/'
-#root_dir = "/nobackupp19/aachary2/foggie_craft/"
+#root_dir = '/Users/acharyya/Library/CloudStorage/GoogleDrive-ayan.acharyya@inaf.it/My Drive/FOGGIE_CRAFT/Oct7/'
+root_dir = "/nobackupp19/aachary2/foggie_craft/"
 
 
 #datadir     =   root_dir                    #   Location of the FITS cubes
@@ -19,6 +19,7 @@ plotdir     =   root_dir + "plots/"        #   Location of the LoS DMs
 plotradial  =   plotdir + "radial_profiles/"                   # 
 
 los_extent_kpc = 100        # this is the extent (in kpc) till which LoS sampling is done
+#los_extent_kpc = 50        # this is the extent (in kpc) till which LoS sampling is done
 
 r_dist_disk =   "exp"       # event (FRB) radial distribution on the disk; options: exp / pse (default) / uni
 r_lim_disk  =   20          # Limiting radius on the disk for uniformly distributed FRB locations in kpc

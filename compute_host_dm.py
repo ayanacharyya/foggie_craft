@@ -298,7 +298,7 @@ def plot_dm_scaling(df, args):
     df['inc'] = np.cos(np.radians(df['inc']))
     xcols = ['lsm', 'sfr_to_use', 'impf', 'inc']
     ycol = 'dm_50'
-    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_to_use':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact factor (kpc)', 'inc':r'$\cos{(i)}$'}
+    label_dict = {'lsm':r'$\log(M_*/M_\odot$)', 'sfr_to_use':r'$\log$ SFR ($M_\odot$/yr)', 'impf':'Impact parameter (kpc)', 'inc':r'$\cos{(i)}$'}
 
     df_high = df[df['lsm'] > 10.5]
     df_low = df[df['lsm'] <= 10.5]
@@ -306,7 +306,7 @@ def plot_dm_scaling(df, args):
     # --------------setting up figure-----------
     nrow = 2 # 1
     ncol = 2 # len(xcols)
-    fig, axes = plt.subplots(nrow, ncol, figsize=(9, 6), layout='constrained')
+    fig, axes = plt.subplots(nrow, ncol, figsize=(5.2, 4), layout='constrained')
 
     # --------------looping over each panel-----------
     for index, xcol in enumerate(xcols):
@@ -327,7 +327,7 @@ def plot_dm_scaling(df, args):
             ax.set_xscale('log')
             ax.set_xticks([1, 3, 10, 30], [1, 3, 10, 30])
 
-        if 'sfr' in xcol or 'lsm' in xcol: # fit scaling relation
+        if 'sfr' in xcol: # fit scaling relation
             df_sub = df[np.isfinite(df['dm_50']) & np.isfinite(df[xcol])]
             coeff, cov = np.polyfit(df_sub[xcol], np.log10(df_sub['dm_50']), deg=1, cov=True)
             coeff_err = np.sqrt(np.diag(cov))

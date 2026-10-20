@@ -79,7 +79,7 @@ if __name__ == '__main__':
         if exmode in ['losdm', 'profile']:
             if not (exmode == 'profile' and os.path.exists(profile_pkl_filename)):
                 print("Reading "+fitsname)
-                necub,dkpc,theta0,phi0	=	fitld(fitsname,3.2)
+                necub,dkpc,theta0,phi0	=	fitld(datadir+fitsname,3.2)
                 print(f"Ne cube dimensions {necub.shape}")
                 print(f"Spatial resolutions (kpc) {dkpc}")
                 print(f"Orientation (deg) {np.rad2deg(theta0)},{np.rad2deg(phi0)}")

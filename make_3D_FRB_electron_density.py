@@ -344,7 +344,7 @@ if __name__ == '__main__':
                 all_data = ds.arbitrary_grid(left_edge=box.left_edge, right_edge=box.right_edge, dims=[args.ncells, args.ncells, args.ncells])
                 img_hdu_list = []
 
-                plot_width = box_width/5
+                plot_width = box_width/1.
                 ncell_buff = 800 # this buffer size is purely for visualising and saving the projected map
                 kpc_per_pix_proj = plot_width / ncell_buff
 
