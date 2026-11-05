@@ -53,7 +53,7 @@ from astropy import units as u
 import warnings
 warnings.filterwarnings("ignore")
 
-from astropy.cosmology import Planck18, FlatLambdaCDM
+from astropy.cosmology import FlatLambdaCDM 
 cosmo = FlatLambdaCDM(H0=69.5, Om0=0.285, Ob0=0.0461)
 
 

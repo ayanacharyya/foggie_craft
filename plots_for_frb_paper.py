@@ -279,8 +279,8 @@ def plot_multipanel_foggie(args):
     colist	= ['cornflowerblue','salmon', 'k']
     shlist	= ['aqua', 'coral','grey']
 
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 2.5, 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
-                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 50, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 2., 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 30, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
                 } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
     quant_arr = ['density', 'el_density']
 
@@ -351,7 +351,7 @@ def plot_multipanel_foggie(args):
 
             # --------read in the quantity------
             data = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].data
-            crpix = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CRPIX1']
+            crpix = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CRPIX1'] - 0.5
             cdelt = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CDELT1']
             crval = hdul[f'{quant_dict[quant][1]} FACE ON PROJ'].header['CRVAL1']
             if quant_dict[quant][7]: data = np.log10(data)
@@ -369,10 +369,10 @@ def plot_multipanel_foggie(args):
                                p=p, hide_cbar=True)
 
             if index2 > 0:
-                ax.set_xticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
+                ax.set_xticklabels(['%.0f' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
 
             if index == 0:
-                ax.set_yticklabels(['%.1F' % ((item - crpix) * cdelt + crval) for item in ax.get_yticks()], fontsize=args.fontsize)
+                ax.set_yticklabels(['%.0F' % ((item - crpix) * cdelt + crval) for item in ax.get_yticks()], fontsize=args.fontsize)
 
             # ---------------making colorbar------------------------
             if index == len(output_arr) - 1:

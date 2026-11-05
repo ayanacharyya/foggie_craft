@@ -197,7 +197,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     return popt, perr, rx0_indep, e_rx0_indep, ry0_indep, e_ry0_indep
 
 #	----------------------------------------------------------------------------------------------------------	
-def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None, incrange=None):
+def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, bin_col='impf', data_col='losdm', given_ax=None, nobj=None, lsfr_lims=None, fortalk=False, multifit_par_filename=None, redshift=None, incrange=None, low_mass=False):
 	#	Plot LoSDM vs impact factor for a given inclination range 
 	
     indices = np.where(impbinegs < df[bin_col].max())[0]
@@ -221,9 +221,12 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     impx_fit = impx     #[start_impbinegs_indices:]
     dmavg_fit = dmavg   #[start_impbinegs_indices:]
 
-    popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0), bounds=([0.0, 0.0, 0.0, 0.0], [5.0, 50.0, 1000, 1000]))
-    #popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
-    perr 		= np.sqrt(np.diag(pcov))
+    if low_mass: # then fit only one (i.e., disk) component, without core
+        popt,pcov	= curve_fit(schechter_log_onlydisk, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(10.0, 100.0), bounds=([0.0, 0.0], [50.0, 1000]))
+    else:
+        popt,pcov	= curve_fit(schechter_log, impx_fit[np.isfinite(dmavg_fit)], np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), p0=(1.0, 10.0, 100.0, 100.0), bounds=([0.0, 0.0, 0.0, 0.0], [5.0, 50.0, 1000, 1000]))
+        #popt,pcov	= np.polyfit(np.log10(impx_fit[np.isfinite(dmavg_fit)]), np.log10(dmavg_fit[np.isfinite(dmavg_fit)]), 1, cov=True)
+    perr 	= np.sqrt(np.diag(pcov))
     print(popt,perr)
 
     # ------------save the profile----------
@@ -240,9 +243,13 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
     ax.plot(df[bin_col], df[data_col],'co',markersize=1,alpha=0.1,rasterized=True,fillstyle="none")
     ax.errorbar(impx, dmavg, yerr=[dmlower,dmhier],fmt='b*',lw=1,markersize=6,capsize=2)
     limparr      = np.linspace(0,impbinegs_short[-1]+5,1000)
-    ax.plot(limparr, 10.0**schechter_log(limparr, *popt),'k--',lw=1)
-    #limparr      = np.linspace(-1,impbinegs_short[-1]+5,100)
-    #ax.plot((10.0**limparr), 10.0**np.poly1d(popt)(limparr),'k--',lw=1)
+
+    if low_mass:
+        ax.plot(limparr, 10.0**schechter_log_onlydisk(limparr, *popt),'k--',lw=1)
+    else:
+        ax.plot(limparr, 10.0**schechter_log(limparr, *popt),'k--',lw=1)
+        #limparr      = np.linspace(-1,impbinegs_short[-1]+5,100)
+        #ax.plot((10.0**limparr), 10.0**np.poly1d(popt)(limparr),'k--',lw=1)
     
     if multifit_par_filename is not None:
         popt_multipar = np.loadtxt(multifit_par_filename)
@@ -262,8 +269,12 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
 
     ax.set_xscale("asinh")
     ax.set_yscale("log")
-    ax.set_ylim([0.9,2500])
-    ax.set_xlim([0,impbinegs_short[-1]/1.2])
+    if low_mass:
+        ax.set_ylim([0.1,1100])
+        ax.set_xlim([0,impbinegs_short[-2]])
+    else:
+        ax.set_ylim([0.9,2500])
+        ax.set_xlim([0,impbinegs_short[-1]/1.2])
     #ax.set_yticks(dm_ticks, dm_ticks)
     ax.set_ylabel("DM (pc cm$^{-3}$)")	
     if (bin_col=="impf"):
@@ -277,14 +288,18 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         ax.set_xticks(impbinegs_short[:-1], impbinegs_short[:-1])
         nobj_text = '' if nobj is None else f' ({nobj})'
         #ax.text(x=0.4*impbinegs_short[1], y=300, s="%.2f < log ($M_* / M_{\odot}$) < %.2f%s"%(parlims[0],parlims[1], nobj_text))
-        #ax.text(0.05, 0.10, transform=ax.transAxes, s="log ($M_* / M_{\odot}$) = %.1f"%lsm)
+        ax.text(0.05, 0.90, transform=ax.transAxes, s="log ($M_* / M_{\odot}$) = %.1f"%lsm)
         #ax.text(0.05, 0.04, transform=ax.transAxes, s="SFR = %.1f $M_{\odot} yr^{-1}$"%sfr)
-        ax.text(0.05, 0.10, transform=ax.transAxes, s="$D_0$ = %.1f $\pm$ %.1f"%(popt[2],perr[2]))
-        ax.text(0.05, 0.04, transform=ax.transAxes, s=r"$r_0$ = %.2f $\pm$ %.2f"%(popt[0],perr[0]))
-        ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %.1f $\pm$ %.1f"%(popt[3],perr[3]))
-        ax.text(0.65, 0.76, transform=ax.transAxes, s=r"$r_1$ = %.1f $\pm$ %.1f"%(popt[1],perr[1]))
+        if low_mass:
+            ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %.1f $\pm$ %.1f"%(popt[1],perr[1]))
+            ax.text(0.65, 0.76, transform=ax.transAxes, s=r"$r_1$ = %.1f $\pm$ %.1f"%(popt[0],perr[0]))
+        else:
+            ax.text(0.05, 0.10, transform=ax.transAxes, s="$D_0$ = %.1f $\pm$ %.1f"%(popt[2],perr[2]))
+            ax.text(0.05, 0.04, transform=ax.transAxes, s=r"$r_0$ = %.2f $\pm$ %.2f"%(popt[0],perr[0]))
+            ax.text(0.65, 0.82, transform=ax.transAxes, s="$D_1$ = %.1f $\pm$ %.1f"%(popt[3],perr[3]))
+            ax.text(0.65, 0.76, transform=ax.transAxes, s=r"$r_1$ = %.1f $\pm$ %.1f"%(popt[1],perr[1]))
         if redshift is not None:
-            ax.text(x=0.8*impbinegs_short[-4], y=100, s=f"z={redshift:.2f}")
+            ax.text(0.05, 0.84, transform=ax.transAxes, s=f"z={redshift:.2f}")
         if incrange is not None:
             ax.text(0.5, 0.92, transform=ax.transAxes, s=r"%d$^{\circ}$ < i < %d$^{\circ}$"%(incrange[0], incrange[1]), weight="bold")
     else:
@@ -298,6 +313,10 @@ def pltdm_ind_imf_1d(df, lsm, sfr, parlims, outfilename, fig_size, hide=False, b
         save_fig(fig, figname.parent, figname.name, fortalk=fortalk)
         if hide: plt.close()
         else: plt.show()
+
+    if low_mass: # only r1 and D1 were fitted, so need to fill dummy values for r0, D0 before returning popt, perr
+        popt = [np.nan, popt[0], np.nan, popt[1]] # originally [r1, D1], now making it [r0, r1, D0, D1] by puttin gdummy values
+        perr = [np.nan, perr[0], np.nan, perr[1]]
 
     return (popt, perr, ax)
 

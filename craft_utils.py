@@ -126,6 +126,15 @@ def schechter_log (x, x0, x1, y0, y1):
     return (y)
 
 #	------------------------------------------------------------------------------------------------------
+def schechter_log_onlydisk (x, x1, y1):
+#   Return a Schechter function
+#	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc
+    
+    y = np.log10(y1 * np.exp(-(x/x1)**1)) 
+
+    return (y)
+
+#	------------------------------------------------------------------------------------------------------
 def schechter_newback (x, x0, y0, alpha):
 #   Return a Schechter function
 #	Arguments:	Radius, y0 (y value at delta_x), x0 (x value where y = y0/10) in kpc

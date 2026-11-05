@@ -9,7 +9,7 @@
     Started :    Jan 2026
     Examples :   run get_mass_sfr.py --system ayan_pleiades --do_all_halos
                  run get_mass_sfr.py --system ayan_pleiades --halo 2878
-                 run get_mass_sfr.py --system ayan_local --plot_sfh --fontsize 8
+                 run get_mass_sfr.py --system ayan_local --do_all_halos --plot_sfh --fontsize 8
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         halos = ['8508', '5036', '5016', '4123', '2392', '2878']
     else:
         halos = args.halo_arr
-    z_min, z_max, delta_z = 0, 2, 0.05
+    z_min, z_max, delta_z = 0, 0.7, 0.05
     redshift_list = np.arange(z_min, z_max + delta_z, delta_z)
 
     # ------------------reading existing file if any-------------------
@@ -127,8 +127,10 @@ if __name__ == '__main__':
         print_master(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option', args)
         fig, axes = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
         fig2, axes2 = plt.subplots(len(halos), 1, figsize=(10, 7), sharex=True, constrained_layout=True)
+        axes = np.atleast_1d(axes)
+        axes2 = np.atleast_1d(axes2)
         smooth_over_nsnap_arr = [1, 20]
-        col_arr = ['purple', 'orange', 'darkolivegreen', 'cornflowerblue', 'salmon']
+        col_arr = ['purple', 'darkolivegreen', 'orange', 'cornflowerblue', 'salmon']
     
     # ---------looping over halos-----------
     for index, thishalo in enumerate(halos):
@@ -146,7 +148,7 @@ if __name__ == '__main__':
                 sfr_df[f'sfr_smooth{smooth_over_snap}'] = sfr_df['sfr'].rolling(window=smooth_over_snap, center=True).mean()
                 
                 # ---------plotting smoothed sfh---------
-                axes[index].plot(sfr_df['time'], sfr_df[f'sfr_smooth{smooth_over_snap}'], c=col_arr[index2], lw=0.5 + 0.1*index2, label=f'{int(smooth_over_snap * 5)} Myr scale')
+                axes[index].plot(sfr_df['time'], sfr_df[f'sfr_smooth{smooth_over_snap}'], c=col_arr[index2], lw=0.5 + 1*index2, label=f'{int(smooth_over_snap * 5)} Myr scale')
                 
                 # -------annotating plots-----------
                 axes[index] = annotate_axes(axes[index], r'Time [Gyr]', r'SFR [M$_\odot$/yr]', fontsize=args.fontsize, label=f'{args.halo}: {halo_dict[args.halo]}', hide_xaxis=index < len(halos) - 1)
@@ -161,6 +163,7 @@ if __name__ == '__main__':
             # -----making legends---------
             if index == 3: axes[index].legend(loc='upper right', fontsize = args.fontsize)
             if index == 5: axes2[index].legend(loc='lower right', fontsize = args.fontsize, ncol=2)
+            if index == len(halos) - 1: axes[index].set_xlim(1, 14.)
 
             # ------plotting redshifts of interest---------
             for this_redshift in redshift_list:

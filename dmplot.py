@@ -11,6 +11,7 @@
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0
   run dmplot.py --mode indi --lsm 9.5,10.0 --lsfr=-1,0 --multi_panel
   run dmplot.py --mode indi --z_range 0,2 --inc 0,90 --hide --clobber
+  run dmplot.py --mode indi --lsm 8.6,9.4 --z_range 0,1 --inc 0,90 --sample low_mass # for dwarfs
   run dmplot.py --mode plot_indi --lsm 10.5,11.0 --lsfr=-0.3,0.4,1.1,1.8 --z_range 0,2 --fontsize 15
   
   run dmplot.py --mode cgm --z_range 0.01,0.7 --inc 0,90
@@ -96,7 +97,7 @@ def execute_mode_indi(df_snap, args):
         multifit_par_filename = f'{args.fig_dir}/{Path(args.resfile_prefix).stem}_z_{args.z_range[0]}_{args.z_range[1]}_DM0_r0_vs_lsm_inc_{args.inc_range[0]}_{args.inc_range[1]}_multifit_params.txt'
         if not os.path.exists(multifit_par_filename): multifit_par_filename = None
         
-        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename, redshift=snap['redshift'])
+        pars, epars, ax	= pfns.pltdm_ind_imf_1d(this_df, snap['log_star_mass'], snap['sfr'], args.lsm_range, outfile + '_1d', 2.6, hide=args.hide, bin_col='impf', data_col='losdm', given_ax=axes[i // ncols][i % ncols] if args.multi_panel else None, fortalk=args.fortalk, multifit_par_filename=multifit_par_filename, redshift=snap['redshift'], incrange=(args.inc_range[0], args.inc_range[1]),low_mass=args.sample == 'low_mass')
 
         if args.multi_panel:
             if i // ncols < nrows - 1:
@@ -110,8 +111,12 @@ def execute_mode_indi(df_snap, args):
         fit_dict = {'inc_bin': f'{args.inc_range[0]}_{args.inc_range[1]}',
                     'r0': pars[0],
                     'er0': epars[0],
-                    'D0': pars[1],
-                    'eD0': epars[1],
+                    'r1': pars[1],
+                    'er1': epars[1],
+                    'D0': pars[2],
+                    'eD0': epars[2],
+                    'D1': pars[3],
+                    'eD1': epars[3],
                     }
         
         combined_row = {**snap.to_dict(), **fit_dict}
@@ -858,7 +863,7 @@ if __name__ == '__main__':
                     nrow = index if len(args.lsfr_bins) > 1 else index // ncols
                     ncol = index2 if len(args.lsfr_bins) > 1 else index % ncols
                 #	-------------------------	Initialize	-----------------------------------
-                df_snap = read_snap_list(args)
+                df_snap = read_snap_list(args, filename="lsm_sfr_masses_upto_disk_withdwarf.csv")
                 if (len(df_snap) < 1):
                     print('\t\tNo snapshot found. Continuing to next loop iteration... ')
                     if args.multi_panel:
