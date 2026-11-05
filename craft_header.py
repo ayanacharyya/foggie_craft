@@ -32,7 +32,7 @@ from importlib import reload
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
 
-import pingouin as pg
+#import pingouin as pg
 
 from scipy import optimize as op
 from scipy import stats

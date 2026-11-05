@@ -152,7 +152,9 @@ if __name__ == '__main__':
                 
                 # -------annotating plots-----------
                 axes[index] = annotate_axes(axes[index], r'Time [Gyr]', r'SFR [M$_\odot$/yr]', fontsize=args.fontsize, label=f'{args.halo}: {halo_dict[args.halo]}', hide_xaxis=index < len(halos) - 1)
-            
+                axes[index].set_ylim(0.1, 300)
+                axes[index].set_yscale('log')
+
                 # -----plotting SFR at our redshifts----------
                 sfr_list = [sfr_df.loc[(sfr_df['redshift'] - this_redshift).abs().idxmin(), f'sfr_smooth{smooth_over_snap}'] for this_redshift in redshift_list]
                 axes2[index].plot(redshift_list, np.log10(sfr_list), 'o-', c=col_arr[index2], lw=0.5, label=f'{int(smooth_over_snap * 5)} Myr scale')
