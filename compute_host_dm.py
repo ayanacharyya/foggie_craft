@@ -206,8 +206,9 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
     columns_with_err = ['dm']
     columns_with_percentiles = ['impf']
     columns_onedec = ['lsm']
-    columns_threedec = ['redshift', 'b_a']
-    columns_with_nans = ['sfr_med']#, 'dm_fit1d', 'dm_fit2d']
+    columns_threedec = ['redshift']
+    columns_with_nans_onedec = ['sfr_med']#, 'dm_fit1d', 'dm_fit2d']
+    columns_with_nans_threedec = ['b_a']
 
     df_latex = df[columns_to_publish]
     df_latex = df_latex.rename(columns={'dm_50':'dm', 'dm_16': 'dm_low', 'dm_84':'dm_up'})
@@ -221,16 +222,19 @@ def make_latex_table(df, outfilename, args, columns_to_publish=['id', 'lsm', 'sf
         df_latex[col] = df_latex.apply(lambda row: rf'{row[col]:.1f} $^{{+{row[col+"_up"]:.1f}}}_{{-{row[col+"_low"]:.1f}}}$' if row[col+"_up"] > 0.1 and not np.isnan(row[col]) else rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
         df_latex.drop(columns=[col + '_low', col + '_up'], inplace=True)
 
-    for col in columns_with_nans:
-        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
-
     for col in columns_onedec:
         df_latex[col] = df_latex[col].map('{:.1f}'.format)
 
     for col in columns_threedec:
         df_latex[col] = df_latex[col].map('{:.3f}'.format)
 
-    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_percentiles, columns_onedec, columns_threedec, columns_with_nans, ['id']]))):
+    for col in columns_with_nans_onedec:
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.1f}' if not np.isnan(row[col]) else '-', axis=1)
+
+    for col in columns_with_nans_threedec:
+        df_latex[col] = df_latex.apply(lambda row: rf'{row[col] :.3f}' if not np.isnan(row[col]) else '-', axis=1)
+
+    for col in (set(df_latex.columns) - set(np.hstack([columns_with_err, columns_with_percentiles, columns_onedec, columns_threedec, columns_with_nans_onedec, columns_with_nans_threedec, ['id']]))):
         df_latex[col] = df_latex[col].map('{:.0f}'.format)
 
     df_latex = df_latex.rename(columns=colnames_dict)
