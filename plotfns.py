@@ -88,6 +88,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     
     # ------------plot the profile----------
     if given_ax is None:
+        '''
         fig 	= plt.figure(figsize=(2.6 * fig_size, fig_size))
         ax1	 	= fig.add_axes([0.05,0.12,0.30,0.72])
         ax1c	= fig.add_axes([0.05,0.83,0.30,0.02])
@@ -97,6 +98,25 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
 
         ax3	 	= fig.add_axes([0.65,0.12,0.30,0.72])
         ax3c	= fig.add_axes([0.65,0.83,0.30,0.02])
+        '''
+        '''
+        fig 	= plt.figure(figsize=(1.8 * fig_size, fig_size))
+        ax1	 	= fig.add_axes([0.1,0.12,0.43,0.72])
+        ax1c	= fig.add_axes([0.1,0.83,0.43,0.02])
+
+        ax2	 	= fig.add_axes([0.55,0.12,0.43,0.72])
+        ax2c	= fig.add_axes([0.55,0.83,0.43,0.02])
+        '''
+        
+        fig 	= plt.figure(figsize=(2.6 * fig_size, fig_size))
+        ax1	 	= fig.add_axes([0.07,0.12,0.28,0.72])
+        ax1c	= fig.add_axes([0.07,0.83,0.28,0.02])
+
+        ax2	 	= fig.add_axes([0.35,0.12,0.28,0.72])
+        ax2c	= fig.add_axes([0.35,0.83,0.28,0.02])
+
+        ax3	 	= fig.add_axes([0.70,0.12,0.28,0.70])
+
     else:
         ax1, ax2, ax3 = given_ax
     
@@ -126,15 +146,27 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     dmres = (dmavg - dmfit)
 
     # -------------------display median data---------------
-    med	= ax1.imshow(dmavg, origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.3))
+    med	= ax1.imshow(dmavg.transpose(), origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.5, vmin=0, vmax=400)) # the transpose() is to swap rmin and rmaj
     
     # -------------------display scatter data---------------
-    scatter = ax2.imshow(dmdiff, origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.3))
+    scatter = ax2.imshow(dmdiff.transpose(), origin='lower', interpolation='none', aspect='auto', cmap="Blues", norm=colors.PowerNorm(gamma=0.5, vmin=0, vmax=400))
 
     # -------------------display fit residuals---------------
-    residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.PowerNorm(gamma=1))
+    #residual = ax3.imshow(dmres, origin='lower', interpolation='none', aspect='auto', cmap="rainbow", norm=colors.PowerNorm(gamma=1))
+
+    # ---------double 1D plotting: aking a thin slice along each direction and radially plotting------------------
+    impbincen = (impbinegs[:-1] + impbinegs[1:])/2
+
+    ax3.fill_between(impbincen, dmavg[0,:] - dmdiff[0,:]/2, dmavg[0,:] + dmdiff[0,:]/2, color='aqua', alpha=0.2)
+    ax3.plot(impbincen, dmavg[0,:], c='cornflowerblue', marker='s', markersize=6, label=r'$r_{min}$')
+
+    ax3.fill_between(impbincen, dmavg[:,0] - dmdiff[:,0]/2, dmavg[:,0] + dmdiff[:,0]/2, color='coral', alpha=0.2)
+    ax3.plot(impbincen, dmavg[:,0], c='salmon', marker='s', markersize=6, label=r'$r_{maj}$')
+
+    ax3.legend(loc='best')
 
     # ---------double 1D fitting: aking a thin slice along each direction and radially fitting------------------
+    '''
     dmavg_slice_x   = dmavg[0,:]
     good_indices_x  = np.isfinite(dmavg_slice_x)
     dmavg_slice_x   = dmavg_slice_x[good_indices_x]
@@ -152,6 +184,8 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     #popt_y, pcov_y  = np.polyfit(np.log10(coords_y), np.log10(dmavg_slice_y), 0, cov=True)
     perr_y 		= np.sqrt(np.diag(pcov_y))
     ry0_indep, e_ry0_indep = popt_y[0], perr_y[0]
+    '''
+    rx0_indep, e_rx0_indep, ry0_indep, e_ry0_indep = [np.nan] * 4
 
     # --------------plot annotations---------------------
     label_dict = {'distmaj': r'$r_{min}$ (kpc)',
@@ -174,7 +208,7 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     ax2.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax2.set_yticklabels([])
     ax2.set_xlabel(label_dict[bin_col1])
-
+    '''
     ax3.text(x=0, y=len(impbinegs) - 1-1, s="Best fit residuals")
     #ax3.text(x=0, y=len(impbinegs) - 1-2, s=f'rx0_indep = {rx0_indep:.1f} +/- {e_rx0_indep:.1f}')
     #ax3.text(x=0, y=len(impbinegs) - 1-3, s=f'ry0_indep = {ry0_indep:.1f} +/- {e_ry0_indep:.1f}')
@@ -182,11 +216,20 @@ def pltdm_ind_imf_2d(df, lsm, sfr, inc_range, redshift, outfilename, fig_size, h
     ax3.set_yticks(np.arange(0,len(impbinegs) - 1, 1) - 0.5,impbinegs[:-1])
     ax3.set_yticklabels([])
     ax3.set_xlabel(label_dict[bin_col1])
+    '''
+    ax3.set_ylim(0, 410)
+    ax3.set_xscale('log', base=2)
+    #ax3.set_yscale('log')
+    ax3.set_xticks(impbincen, impbincen)
+    #ax3.set_yticks(dm_ticks, dm_ticks)
+    ax3.set_xlabel('Radius (kpc)')
+    ax3.set_ylabel('DM (pc cm$^{-3}$)')
 
     # ------------annotating colorbars-------------------
-    fig.colorbar(med, cax=ax1c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
-    fig.colorbar(scatter, cax=ax2c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
-    fig.colorbar(residual, cax=ax3c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')	
+    dm_ticks = [25, 50, 100, 200, 300]
+    fig.colorbar(med, cax=ax1c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top', ticks=dm_ticks)
+    fig.colorbar(scatter, cax=ax2c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top', ticks=dm_ticks)	
+    #fig.colorbar(residual, cax=ax3c, label="DM (pc cm$^{-3}$)", orientation='horizontal', location='top')
 
     if given_ax is None:
         figname = Path(outfilename + ".png")

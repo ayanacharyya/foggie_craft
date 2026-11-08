@@ -330,7 +330,7 @@ def execute_mode_projection(df_snap, args):
         print(f'{snap["snap"]}_{snap["halo"]}: Total number of LoS = {len(this_df)}')
         print("Plotting DMs within inclination ",args.inc_range[0], args.inc_range[1])
 
-        outfile = str(outdir / f'{snap["halo"]}_{snap["snap"]}')
+        outfile = str(outdir / f'{snap["halo"]}_{snap["snap"]}_2d_inc_{args.inc_range[0]}_{args.inc_range[1]}')
         
         data_col, bin_col1, bin_col2 = 'losdm', 'distmin', 'distmaj'
         popt, perr, rx0, e_rx0, ry0, e_ry0 = pfns.pltdm_ind_imf_2d(this_df, snap['log_star_mass'], snap['sfr'], args.inc_range, snap['redshift'], outfile, 3.2, hide=args.hide, bin_col1=bin_col1, bin_col2=bin_col2, data_col=data_col, given_ax=axes[i] if args.multi_panel else None, fortalk=args.fortalk)
