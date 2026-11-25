@@ -216,7 +216,8 @@ if __name__ == '__main__':
     
     # --------saving final figure---------
     if args.plot_sfh:
-        save_fig(fig, Path(args.output_dir) / 'plots', 'all_halos_sfh_hgm.png', args)
+        halo_text = 'all_halos' if args.do_all_halos else ','.join(args.halo_arr)
+        save_fig(fig, Path(args.output_dir) / 'plots', f'{halo_text}_sfh_hgm.png', args)
         print_master('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
     else:
         print_master(f'Saved dataframe as {output_dfname}', args)
