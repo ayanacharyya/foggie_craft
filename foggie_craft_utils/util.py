@@ -1591,7 +1591,8 @@ def parse_args(fast=False):
     parser.add_argument('--nooutliers', dest='nooutliers', action='store_true', default=False, help='discard outlier HII regions (according to D16 diagnostic)?, default is no')
     parser.add_argument('--xratio', metavar='xratio', type=str, action='store', default=None, help='ratio of lines to plot on X-axis; default is None')
     parser.add_argument('--yratio', metavar='yratio', type=str, action='store', default=None, help='ratio of lines to plot on Y-axis; default is None')
-    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=15, help='fontsize of plot labels, etc.; default is 15')
+    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=12, help='fontsize of plot labels, etc.; default is 15')
+    parser.add_argument('--fontfactor', metavar='fontsize', type=float, action='store', default=1.2, help='factor to reduce fontsize by; default is 1.2')
     parser.add_argument('--plot_metgrad', dest='plot_metgrad', action='store_true', default=False, help='make metallicity gradient plot?, default is no')
     parser.add_argument('--plot_phase_space', dest='plot_phase_space', action='store_true', default=False, help='make P-r phase space plot?, default is no')
     parser.add_argument('--plot_obsv_phase_space', dest='plot_obsv_phase_space', action='store_true', default=False, help='overlay observed P-r phase space on plot?, default is no')
@@ -1690,9 +1691,9 @@ def parse_args(fast=False):
     parser.add_argument('--nzbins', metavar='nzbins', type=int, action='store', default=10, help='number of redshift bins on heatmap? default is 10')
 
     # ------- args added for datashader_movie.py ------------------------------
-    parser.add_argument('--xcol', metavar='xcol', type=str, action='store', default='rad', help='x axis quantity; default is rad')
-    parser.add_argument('--ycol', metavar='ycol', type=str, action='store', default='metal', help='y axis quantity; default is metal')
-    parser.add_argument('--colorcol', metavar='colorcol', type=str, action='store', default='vrad', help='x axis quantity; default is vrad')
+    parser.add_argument('--xcol', metavar='xcol', type=str, action='store', default='density', help='x axis quantity; default is density')
+    parser.add_argument('--ycol', metavar='ycol', type=str, action='store', default='temp', help='y axis quantity; default is temp')
+    parser.add_argument('--colorcol', metavar='colorcol', type=str, action='store', default='edensity', help='x axis quantity; default is edensity')
     parser.add_argument('--clobber_plot', dest='clobber_plot', action='store_true', default=False, help='overwrite existing plots with same name?, default is no')
     parser.add_argument('--overplot_stars', dest='overplot_stars', action='store_true', default=False, help='overplot young stars?, default is no')
     parser.add_argument('--overplot_absorbers', dest='overplot_absorbers', action='store_true', default=False, help='overplot HI absorbers (from Claire)?, default is no')
@@ -1863,7 +1864,6 @@ def parse_args(fast=False):
     args.obs_wave_range = np.array([float(item) for item in args.obs_wave_range.split(',')])
     args.base_wave_range = np.array([float(item) for item in args.base_wave_range.split(',')])
     args.test_pixel = np.array([int(item) for item in args.test_pixel.split(',')]) if args.test_pixel is not None else None
-    args.colorcol = [item for item in args.colorcol.split(',')]
 
     args.mergeHII_text = '_mergeHII=' + str(args.mergeHII) + 'kpc' if args.mergeHII is not None else '' # to be used as filename suffix to denote whether HII regions have been merged
     args.without_outlier = '_no_outlier' if args.nooutliers else '' # to be used as filename suffix to denote whether outlier HII regions (as per D16 density criteria) have been discarded

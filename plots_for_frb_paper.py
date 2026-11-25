@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
     Title :      plots_for_frb_paper
-    Notes :      Make various plots to be used for the FRB paper
+    Notes :      Make various plots to be used for the FRB paper; this runs in the pyt312 env
     Output :     Plots as PDF
     Author :     Ayan Acharyya
     Started :    31-03-26
@@ -278,22 +278,23 @@ def plot_multipanel_foggie(args):
     inc_ranges	=	np.array([[0,10], [80,90]])
     colist	= ['cornflowerblue','salmon', 'k']
     shlist	= ['aqua', 'coral','grey']
+    rad_zoomed = 3. # kpc
 
-    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5, 2., 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
-                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0, 30, 'cornflowerblue', 'viridis', False, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
+    quant_dict = {'density':['density', 'Gas density', 'Msun/pc**3', -1.5 if args.halo == '8508' else -1.0, 2.0 if args.halo == '8508' else 3.0, 'cornflowerblue', 'cividis', True, 'Msun/pc**2', r'Projected gas density / M$_\odot$ pc$^{-2}$'], 
+                'el_density':['El_number_density', 'Electron density', 'cm**-3', 0 if args.halo == '8508' else 0.5, 2.0 if args.halo == '8508' else 2.5, 'cornflowerblue', 'viridis', True, 'pc*cm**-3', r'Projected electron density / pc cm$^{-3}$']
                 } # for each quantity: [yt field, label in plots, units, lower limit in log, upper limit in log, color for scatter plot, colormap, whether to take log, units for projection plot, units to display in projection plot]
     quant_arr = ['density', 'el_density']
 
     # ------plotting onto a matplotlib figure--------------
     ncols = len(redshift_arr)
-    fig = plt.figure(figsize=(1.6 * ncols, 7.))
+    fig = plt.figure(figsize=(1.5 * ncols, 8.))
 
     # ------- 1. Outer & Sub GridSpec Setup -------
     outer_gs = fig.add_gridspec(
-        nrows=3, ncols=1, 
-        height_ratios=[1.1, 1.1, 1.0], 
-        hspace=0.2, 
-        left=0.07, right=0.98, top=0.92, bottom=0.07
+        nrows=4, ncols=1, 
+        height_ratios=[1.0, 1.0, 1.0, 1.0], 
+        hspace=0.35, 
+        left=0.07, right=0.98, top=0.95, bottom=0.05
     )
 
     # Top GridSpec has 4 rows: [Cbar 0, Plot Row 0, Cbar 1, Plot Row 1]
@@ -309,18 +310,26 @@ def plot_multipanel_foggie(args):
         wspace=0.0, hspace=0.0
     )
 
-    bot_gs = outer_gs[2].subgridspec(1, ncols, wspace=0.0)
+    top_gs3 = outer_gs[2].subgridspec(
+        nrows=2, ncols=ncols, 
+        height_ratios=[0.05, 1.0], 
+        wspace=0.0, hspace=0.0
+    )
+
+    bot_gs = outer_gs[3].subgridspec(1, ncols, wspace=0.0)
 
     # Axes mapping to preserve axes[row, col] indexing
-    axes = np.empty((3, ncols), dtype=object)
+    axes = np.empty((4, ncols), dtype=object)
     for col in range(ncols):
         axes[0, col] = fig.add_subplot(top_gs1[1, col]) # Plot Row 0
         axes[1, col] = fig.add_subplot(top_gs2[1, col]) # Plot Row 1
-        axes[2, col] = fig.add_subplot(bot_gs[0, col]) # Plot Row 2 (Radial Profiles)
+        axes[2, col] = fig.add_subplot(top_gs3[1, col]) # Plot Row 2
+        axes[3, col] = fig.add_subplot(bot_gs[0, col]) # Plot Row 3 (Radial Profiles)
 
     # Colorbar axes spanning all columns
     cax0 = fig.add_subplot(top_gs1[0, :])
     cax1 = fig.add_subplot(top_gs2[0, :])
+    cax2 = fig.add_subplot(top_gs3[0, :])
 
     # -----------determine snapshot list from redshift list---------
     args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
@@ -363,26 +372,83 @@ def plot_multipanel_foggie(args):
             ax.xaxis.set_major_locator(plt.MaxNLocator(5))
             ax.yaxis.set_major_locator(plt.MaxNLocator(5))
 
-            ax = annotate_axes(ax, 'Offset (kpc)', 'Offset (kpc)', args=args, xloc=0.05, 
+            ax = annotate_axes(ax, '', 'Offset (kpc)', args=args, xloc=0.05, 
                                #label=rf'$\log$(M/M$_\odot$) = {log_mstar:.2f}' if index2 else rf'$\log$ SFR = {sfr:.2f}',# rf'$\log$(SFR/M$_\odot$ yr$^{-1}$) = {sfr:.2f}', 
-                               hide_xaxis=index2 == 0, hide_yaxis=index, bbox=True, set_ticks=False, 
+                               hide_xaxis=False, hide_yaxis=index, bbox=True, set_ticks=False, 
                                p=p, hide_cbar=True)
 
-            if index2 > 0:
-                ax.set_xticklabels(['%.0f' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
-
             if index == 0:
+                ax.set_yticks(ax.get_yticks()[2:-1])
                 ax.set_yticklabels(['%.0F' % ((item - crpix) * cdelt + crval) for item in ax.get_yticks()], fontsize=args.fontsize)
+
+            #if index2 > 0:
+            ax.set_xticks(ax.get_xticks()[2:-1])
+            ax.set_xticklabels(['%.0f' % ((item - crpix) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
 
             # ---------------making colorbar------------------------
             if index == len(output_arr) - 1:
-                cax = [cax0, cax1][index2]
+                cax = [cax0, cax1, cax2][index2]
                 cbar = fig.colorbar(p, cax=cax, orientation='horizontal')
                 cax.xaxis.set_ticks_position('top')
                 cax.xaxis.set_label_position('top')
                 cbar.ax.tick_params(labelsize=args.fontsize, width=1.2, length=3)
                 clabel = fr'Log ({quant_dict[quant][9]})' if quant_dict[quant][7] else quant_dict[quant][9]
                 cbar.set_label(clabel, fontsize=args.fontsize)
+
+            # ---------plot zoomed in projection for electron density--------------------
+            if quant == 'el_density':
+                cx, cy = data.shape[0] // 2, data.shape[1] // 2
+                ncells = int(round(rad_zoomed / cdelt))
+                data_zoomed = data[cx - ncells : cx + ncells, cy - ncells : cy + ncells] # central +/- rad_zoomed kpc
+                crpix_zoomed = rad_zoomed / cdelt
+
+                # -------draws a box to zoom in on and connects the next panel with lines---------
+                if index == 0:
+                    x0 = cx - ncells - 0.5
+                    rect = Rectangle((x0, x0), 2 * ncells, 2 * ncells, linewidth=0.5, edgecolor='r', facecolor='none')
+                    ax.add_patch(rect)
+                    ax2 = axes[index2+1, index]
+
+                    # Bottom-left of zoom box in ax1 -> Top-left of ax2 (0, 1)
+                    con1 = ConnectionPatch(xyA=(x0, x0), coordsA='data', axesA=ax, xyB=(0, 1), coordsB='axes fraction', axesB=ax2, color='r', linewidth=0.5, linestyle='solid')
+
+                    # Bottom-right of zoom box in ax1 -> Top-right of ax2 (1, 1)
+                    con2 = ConnectionPatch(xyA=(x0 + 2 * ncells, x0), coordsA='data', axesA=ax, xyB=(1, 1), coordsB='axes fraction', axesB=ax2, color='r', linewidth=0.5, linestyle='solid')
+
+                    fig.add_artist(con1)
+                    fig.add_artist(con2)
+                ax = axes[index2+1, index]
+                
+                p = ax.imshow(data_zoomed, cmap=cmap, vmin=clim[0]+1.0, vmax=clim[1]+0.5)
+                #ax.plot(crpix_zoomed, crpix_zoomed, markersize=5, marker='x', c='k')
+
+                # ---------------prepping axes------------------------
+                ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+                ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+
+                ax = annotate_axes(ax, 'Offset (kpc)', 'Offset (kpc)', args=args, xloc=0.05, 
+                                #label=rf'$\log$(M/M$_\odot$) = {log_mstar:.2f}' if index2 else rf'$\log$ SFR = {sfr:.2f}',# rf'$\log$(SFR/M$_\odot$ yr$^{-1}$) = {sfr:.2f}', 
+                                hide_xaxis=index2 == 0, hide_yaxis=index, bbox=True, set_ticks=False, 
+                                p=p, hide_cbar=True)
+
+                ticks = [-np.ceil(rad_zoomed/2), 0, np.ceil(rad_zoomed/2)]
+                if index2 > 0:
+                    ax.set_xticks([(item - crval) / cdelt + crpix_zoomed for item in ticks])
+                    ax.set_xticklabels(['%.0f' % ((item - crpix_zoomed) * cdelt + crval) for item in ax.get_xticks()], fontsize=args.fontsize)
+
+                if index == 0:
+                    ax.set_yticks([(item - crval) / cdelt + crpix_zoomed for item in ticks])
+                    ax.set_yticklabels(['%.0F' % ((item - crpix_zoomed) * cdelt + crval) for item in ax.get_yticks()], fontsize=args.fontsize)
+
+                # ---------------making colorbar------------------------
+                if index == len(output_arr) - 1:
+                    cax = [cax0, cax1, cax2][index2 + 1]
+                    cbar = fig.colorbar(p, cax=cax, orientation='horizontal')
+                    cax.xaxis.set_ticks_position('top')
+                    cax.xaxis.set_label_position('top')
+                    cbar.ax.tick_params(labelsize=args.fontsize, width=1.2, length=3)
+                    clabel = fr'Log ({quant_dict[quant][9]})' if quant_dict[quant][7] else quant_dict[quant][9]
+                    cbar.set_label(clabel, fontsize=args.fontsize)
 
         # ----------read in radial electron density profile-------
         fitsname = fitsname.stem
@@ -397,7 +463,7 @@ def plot_multipanel_foggie(args):
             cube = pkl.load(file_obj) # load the pickle file
 
         # ----------plot gas and electron density projections-------
-        ax = axes[2, index]
+        ax = axes[3, index]
         
         for i in range(0,len(inc_ranges)):
             inclim	= inc_ranges[i]
@@ -419,6 +485,8 @@ def plot_multipanel_foggie(args):
         ax = annotate_axes(ax, 'Radius (kpc)', '$n_e$ (cm$^{-3}$)', args=args, xloc=0.6, 
                                label=f'z ={redshift_arr[index]:.2f}', 
                                hide_xaxis=False, hide_yaxis=index, bbox=False, set_ticks=False)
+        if index == 0:
+            ax.legend(loc='best', fontsize = args.fontsize/args.fontfactor)
 
     # ---------------saving fig------------------------
     if args.fortalk:

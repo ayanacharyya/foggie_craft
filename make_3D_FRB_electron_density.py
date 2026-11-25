@@ -4,6 +4,7 @@
 
     Title :      make_3D_FRB_electron_density
     Notes :      Make a 3D Fixed Resolution Buffer (FRB) for gas density and electron number density and save as a multi-extension fits file, and optionally plot along a chosen line of sight
+                 Run this script in astroconda env
     Output :     3D data cube as fits file, and optionally png figures
     Author :     Ayan Acharyya
     Started :    Aug 2024

@@ -392,6 +392,10 @@ density_color_map_clumps = sns.blend_palette(
 
 ################################# discrete colormaps
 
+############# electron density (Ayan)
+edensity_colors = sns.blend_palette(("white", "#FFA07A", "#FF6347", "#9370DB", "#663399"), n_colors=10)
+edensity_discrete_cmap = mpl.colors.ListedColormap(edensity_colors)
+
 
 ############# ionization fraction
 def categorize_by_fraction(f_ion):
@@ -1071,6 +1075,7 @@ def categorize_by_o7(no7):
         val = np.log10(no7_max) - (np.log10(no7_max)-np.log10(no7_min))/(np.size(o7_color_labels)-1.)*i
         o7[no7 < val] = o7_color_labels[-1 - i]
     return o7
+
 
 #############################################################
 
