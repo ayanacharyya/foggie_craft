@@ -11,11 +11,15 @@
     Examples :   run make_phase_plot.py --system ayan_pleiades --halo 8508 --upto_kpc 100 --do_all_sims --use_cen_smoothed
                  run make_phase_plot.py --system ayan_hd --halo 4123 --upto_kpc 100 --output RD0038,RD0042 --use_cen_smoothed --xcol density --ycol temp --colorcol metal
                  run make_phase_plot.py --system ayan_local --halo 8508 --upto_kpc 100 --output RD0027 --use_cen_smoothed
+                 run make_phase_plot.py --system ayan_local --do_all_halos --upto_kpc 100 --use_cen_smoothed --weight edensity
+                 run make_phase_plot.py --system ayan_local --halo 2878 --output RD0037 --upto_kpc 100 --use_cen_smoothed --weight edensity
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
 from yt.visualization.fits_image import FITSImageData
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpi4py import MPI
+
 plt.rcParams['axes.linewidth'] = 1
 
 start_time = datetime.now()
@@ -108,94 +112,155 @@ islog_dict = {'rad': False, 'metal': True, 'vrad': False, 'density': True, 'temp
 
 # -----main code-----------------
 if __name__ == '__main__':
+    '''
     args = parse_args()
     if not args.keep: plt.close('all')
 
     # --------getting all snapshot IDs-------------
-    if args.do_all_sims: list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
-    else: list_of_sims = list(itertools.product([args.halo], args.output_arr))
+
     total_snaps = len(list_of_sims)
+    '''
+    args = parse_args()
+    if not args.keep: plt.close('all')
+    if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
+    else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
+    smooth_over_snap = 20
+    
+    # ----------getting list of snapshots-----------
+    if args.do_all_halos:
+        halos = ['8508', '5036', '5016', '4123', '2392', '2878']
+    else:
+        halos = args.halo_arr
 
-    # -------------loop over snapshots-----------------
-    for index in range(len(list_of_sims)):
-        start_time_this_snapshot = datetime.now()
-        this_sim = list_of_sims[index]
-        args.output = this_sim[1]
-        print('Doing snapshot ' + this_sim[1] + ' of halo ' + this_sim[0] + ' which is ' + str(index + 1) + ' out of the total ' + str(total_snaps) + ' snapshots...')
 
-        # --------determining corresponding text suffixes and figname-------------
-        args.fig_dir = args.output_dir + 'plots/'
-        Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
+    # ---------looping over halos-----------
+    for index, thishalo in enumerate(halos):
+        print_master(f'Starting halo {thishalo}..', args)
+        args.halo = thishalo
+        # --------preparing to read in this halo-----------------
+        if args.do_all_sims:
+            list_of_sims = get_all_sims_for_this_halo(args) # all snapshots of this particular halo
+        elif args.output == 'RD0042': # i.e. the default, no output has been specified
+            z_min, z_max, delta_z = 0, 2, 0.05
+            redshift_list = np.arange(z_min, z_max + delta_z, delta_z)
 
-        args.fits_dir = args.output_dir + 'data/'
-        Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
-
-        args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
-
-        # ------tailoring the simulation box for individual snapshot analysis--------
-        if args.upto_kpc is not None:
-            if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
-            else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+            df_halo = pd.read_csv(args.code_dir + f'halo_infos/00{args.halo}/nref11c_nref9f/halo_cen_smoothed', sep=r'\s*\|\s*', engine='python')
+            df_halo = df_halo.dropna(axis=1, how='all')[['snap', 'redshift']]
+            output_list = []
+            for redshift in redshift_list:
+                idx = (df_halo['redshift'] - redshift).abs().idxmin()
+                output_list.append(df_halo.loc[idx, 'snap'])
+            output_list.sort()
+            list_of_sims = list(itertools.product([args.halo], output_list))    
         else:
-            args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
-            args.galrad = args.re * args.upto_re  # kpc
+            list_of_sims = list(itertools.product([args.halo], args.output_arr))    
 
-        # ----------to initialise axes limits and colormaps-----------------------
-        args.xcolname = 'log_' + args.xcol if islog_dict[args.xcol] else args.xcol
-        args.ycolname = 'log_' + args.ycol if islog_dict[args.ycol] else args.ycol
-        args.colorcolname = 'log_' + args.colorcol if islog_dict[args.colorcol] else args.colorcol
-        args.outfilename = Path(args.output_dir) / 'data' / f'{args.output}_{args.halo}_list_{args.xcol}_{args.ycol}_{args.colorcol}{args.upto_text}.fits'
+        # --------domain decomposition; for mpi parallelisation-------------
+        total_snaps = len(list_of_sims)
 
-        bounds_dict.update(rad=(0, np.ceil(args.galrad * (1 + args.current_redshift)) if args.docomoving else args.galrad)) # if comoving is used, put plot limits to maximum radius, i.e. physical radius at z = 0
-        args.xmin = np.log10(bounds_dict[args.xcol][0]) if islog_dict[args.xcol] else bounds_dict[args.xcol][0]
-        args.xmax = np.log10(bounds_dict[args.xcol][1]) if islog_dict[args.xcol] else bounds_dict[args.xcol][1]
-        args.ymin = np.log10(bounds_dict[args.ycol][0]) if islog_dict[args.ycol] else bounds_dict[args.ycol][0]
-        args.ymax = np.log10(bounds_dict[args.ycol][1]) if islog_dict[args.ycol] else bounds_dict[args.ycol][1]
-        args.cmin = np.log10(bounds_dict[args.colorcol][0]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][0]
-        args.cmax = np.log10(bounds_dict[args.colorcol][1]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][1]
-        args.colormap = colormap_dict[args.colorcol]
+        comm = MPI.COMM_WORLD
+        ncores = comm.size
+        rank = comm.rank
+        print(f"RAW DEBUG: Process system PID {os.getpid()} reports Rank {rank} out of {ncores} total cores.")
+        print_master('Total number of MPI ranks = ' + str(ncores) + '. Starting at: {:%Y-%m-%d %H:%M:%S}'.format(datetime.now()), args)
+        comm.Barrier() # wait till all cores reached here and then resume
+
+        split_at_cpu = total_snaps - ncores * int(total_snaps/ncores)
+        nper_cpu1 = int(total_snaps / ncores)
+        nper_cpu2 = nper_cpu1 + 1
+        if rank < split_at_cpu:
+            core_start = rank * nper_cpu2
+            core_end = (rank+1) * nper_cpu2 - 1
+        else:
+            core_start = split_at_cpu * nper_cpu2 + (rank - split_at_cpu) * nper_cpu1
+            core_end = split_at_cpu * nper_cpu2 + (rank - split_at_cpu + 1) * nper_cpu1 - 1
+
+        # -------------loop over snapshots-----------------
+        print_mpi('Operating on snapshots ' + str(core_start + 1) + ' to ' + str(core_end + 1) + ', i.e., ' + str(core_end - core_start + 1) + ' out of ' + str(total_snaps) + ' snapshots', args)
         
-        # -----------loading/building the dataframe-----------------
-        if not os.path.exists(args.outfilename) or args.clobber:
-            # -------loading in snapshot-------------------
-            halos_df_name = args.code_path + 'halo_infos/00' + this_sim[0] + '/' + args.run + '/'
-            halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
-            ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
+        for index in range(core_start + args.start_index, core_end + 1):
+            start_time_this_snapshot = datetime.now()
+            this_sim = list_of_sims[index]
+            args.output = this_sim[1]
+            print('Doing snapshot ' + this_sim[1] + ' of halo ' + this_sim[0] + ' which is ' + str(index + 1) + ' out of the total ' + str(total_snaps) + ' snapshots...')
 
-            # --------assigning additional keyword args-------------
-            args.current_redshift = ds.current_redshift
-            args.current_time = ds.current_time.in_units('Gyr').tolist()
+            # --------determining corresponding text suffixes and figname-------------
+            args.fig_dir = args.output_dir + 'plots/'
+            Path(args.fig_dir).mkdir(parents=True, exist_ok=True)
 
-            # extract the required box
-            box_width = args.galrad * 2  # in kpc
-            box_width_kpc = ds.arr(box_width, 'kpc')
-            box_center = ds.halo_center_kpc
-            box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., 
-                    box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., 
-                    box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+            args.fits_dir = args.output_dir + 'data/'
+            Path(args.fits_dir).mkdir(parents=True, exist_ok=True)
 
-            # ----------to make dataframe from dataset-----------------------
-            df = get_df_from_ds(box, args)
-            Table.from_pandas(df).write(args.outfilename, format='fits', overwrite=True)
-            #df.to_parquet(str(Path(args.outfilename).with_suffix('.parquet')))
-            print(f'Saved dataframe in {args.outfilename}')
-        else:
-            print(f'Reading from existing {args.outfilename}')
-            df = Table.read(args.outfilename, format='fits', memmap=True).to_pandas()
-            #df.read_parquet(str(Path(args.outfilename).with_suffix('.parquet')))
+            args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
 
-        # -----------prepping dataframe--------------
-        print(f'Prepping dataframe..')
-        for col in df.columns:
-            if islog_dict[col]:
-                df[col] = np.log10(df[col])
+            # ------tailoring the simulation box for individual snapshot analysis--------
+            if args.upto_kpc is not None:
+                if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+                else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+            else:
+                args.re = get_re_from_coldgas(args) if args.use_gasre else get_re_from_stars(ds, args)
+                args.galrad = args.re * args.upto_re  # kpc
 
-        # ----------to make datashader plot-----------------------
-        fig = make_datashader_plot_mpl(df, args)
+            # ----------to initialise axes limits and colormaps-----------------------
+            args.xcolname = 'log_' + args.xcol if islog_dict[args.xcol] else args.xcol
+            args.ycolname = 'log_' + args.ycol if islog_dict[args.ycol] else args.ycol
+            args.colorcolname = 'log_' + args.colorcol if islog_dict[args.colorcol] else args.colorcol
+            args.outfilename = Path(args.output_dir) / 'data' / f'{args.output}_{args.halo}_list_{args.xcol}_{args.ycol}_{args.colorcol}{args.upto_text}.fits'
 
-        # --------------------
-        if not ('pleiades' in args.system or args.hide_plot): plt.show(block=False)
-        print('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds))
+            bounds_dict.update(rad=(0, np.ceil(args.galrad * (1 + args.current_redshift)) if args.docomoving else args.galrad)) # if comoving is used, put plot limits to maximum radius, i.e. physical radius at z = 0
+            args.xmin = np.log10(bounds_dict[args.xcol][0]) if islog_dict[args.xcol] else bounds_dict[args.xcol][0]
+            args.xmax = np.log10(bounds_dict[args.xcol][1]) if islog_dict[args.xcol] else bounds_dict[args.xcol][1]
+            args.ymin = np.log10(bounds_dict[args.ycol][0]) if islog_dict[args.ycol] else bounds_dict[args.ycol][0]
+            args.ymax = np.log10(bounds_dict[args.ycol][1]) if islog_dict[args.ycol] else bounds_dict[args.ycol][1]
+            args.cmin = np.log10(bounds_dict[args.colorcol][0]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][0]
+            args.cmax = np.log10(bounds_dict[args.colorcol][1]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][1]
+            args.colormap = colormap_dict[args.colorcol]
+            
+            # -----------loading/building the dataframe-----------------
+            if not os.path.exists(args.outfilename) or args.clobber:
+                # -------loading in snapshot-------------------
+                halos_df_name = args.code_path + 'halo_infos/00' + this_sim[0] + '/' + args.run + '/'
+                halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
+                try:
+                    ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
+                except FileNotFoundError:
+                    print(f'This snapshot {args.halo}:{args.output} was not found, so skipping it..')
+                    continue
+
+                # --------assigning additional keyword args-------------
+                args.current_redshift = ds.current_redshift
+                args.current_time = ds.current_time.in_units('Gyr').tolist()
+
+                # extract the required box
+                box_width = args.galrad * 2  # in kpc
+                box_width_kpc = ds.arr(box_width, 'kpc')
+                box_center = ds.halo_center_kpc
+                box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., 
+                        box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., 
+                        box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+
+                # ----------to make dataframe from dataset-----------------------
+                df = get_df_from_ds(box, args)
+                Table.from_pandas(df).write(args.outfilename, format='fits', overwrite=True)
+                #df.to_parquet(str(Path(args.outfilename).with_suffix('.parquet')))
+                print(f'Saved dataframe in {args.outfilename}')
+            else:
+                print(f'Reading from existing {args.outfilename}')
+                df = Table.read(args.outfilename, format='fits', memmap=True).to_pandas()
+                #df.read_parquet(str(Path(args.outfilename).with_suffix('.parquet')))
+
+            # -----------prepping dataframe--------------
+            print(f'Prepping dataframe..')
+            for col in df.columns:
+                if islog_dict[col]:
+                    df[col] = np.log10(df[col])
+
+            # ----------to make datashader plot-----------------------
+            fig = make_datashader_plot_mpl(df, args)
+
+            # --------------------
+            if not ('pleiades' in args.system or args.hide_plot): plt.show(block=False)
+            print('This snapshots completed in %s' % timedelta(seconds=(datetime.now() - start_time_this_snapshot).seconds))
 
     # -----------------------------------------------------------------------------------
     print('\nCompleted ' + str(total_snaps) + ' snapshots in %s' % timedelta(seconds=(datetime.now() - start_time).seconds))

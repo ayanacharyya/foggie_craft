@@ -4,6 +4,7 @@
 
     Title :      get_hotgas_sfr
     Notes :      Derive hot gas masses and SFRs for a list of FOGGIE snapshots
+                 Run this script in astroconda env
     Output :     Pandas dataframe
     Author :     Ayan Acharyya
     Started :    Nov 2026
