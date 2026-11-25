@@ -103,38 +103,38 @@ if __name__ == '__main__':
         # ---------make SFH plots-------------
         if args.plot_sfh:
             df = df_existing[df_existing['halo'].astype(str) == thishalo]
+            df = df.sort_values(by='time')
             ax = axes[index]
             # ---------plotting smoothed sfh---------
-            ax.plot(df['time'], df['sfr'], c=col_arr[0], lw=0.5 , label=f'5 Myr scale')
-            ax.plot(df['time'], df[f'sfr_{int(5 * smooth_over_snap)}Myr'], c=col_arr[1], lw=1.5, label=f'{int(smooth_over_snap * 5)} Myr scale')
-            ax.scatter(df['time'], df['sfr'], c=col_arr[0], lw=0.5, s=50)
+            ax.plot(df['time'], df['sfr'], c=col_arr[0], lw=1, label=f'5 Myr SFR')
+            #ax.plot(df['time'], df[f'sfr_{int(5 * smooth_over_snap)}Myr SFR'], c=col_arr[4], lw=1.5, label=f'{int(smooth_over_snap * 5)} Myr scale')
 
             # -------annotating plots-----------
             ax = annotate_axes(ax, r'Time [Gyr]', '', args=args, label=f'{args.halo}: {halo_dict[args.halo]}', hide_xaxis=index < len(halos) - 1)
-            #ax.set_ylim(0.1, 300)
-            ax.set_ylim(1, 30)
+            #ax.set_ylim(1, 200)
             ax.set_yscale('log')
 
             # -----making legends---------
             if index == 0:
                 ax.legend(loc='upper right', fontsize = args.fontsize)
-                fig.text(0.01, 0.5, r'SFR [M$_\odot$/yr]', ha='left', va='center', fontsize=args.fontsize, rotation=90)
+                fig.text(0.01, 0.5, r'SFR [M$_\odot$/yr]', ha='left', va='center', fontsize=args.fontsize, rotation=90, c='k')
             if index == len(halos) - 1:
-                ax.set_xlim(1, 14.)
+                ax.set_xlim(3, 14)
 
             # -----plotting gas mass with SFH----------
             ax2 = ax.twinx()
-            ax2.plot(df['time'], df['log_hot_gas_mass'], c=col_arr[2], lw=0.5)
-            ax2.scatter(df['time'], df['log_hot_gas_mass'], c=col_arr[2], lw=0.5, s=50)
+            ax2.plot(df['time'], df['log_hot_gas_mass'], c=col_arr[1], lw=1, label=f'Hot gas mass')
 
             # -------annotating plots-----------
             ax2.yaxis.set_major_locator(ticker.MaxNLocator(nbins=3, prune='both'))
             ax2.yaxis.set_minor_locator(ticker.AutoMinorLocator(4))
             ax2.tick_params(axis='y', which='major', labelsize=args.fontsize, labelright=True)
-            ax2.set_ylim(8, 11)
+            #ax2.set_ylim(9.5, 10.5)
             if index == 0:
-                fig.text(0.99, 0.5, r'$\log$ Gas mass [M$_*$/M$_\odot$] at T > 10$^4$ K', ha='right', va='center', fontsize=args.fontsize, rotation=90)
-
+                fig.text(0.999, 0.5, r'$\log$ Gas mass [M$_*$/M$_\odot$] at T > 10$^4$ K', ha='right', va='center', fontsize=args.fontsize, rotation=90, c='k')
+            if index == len(halos) - 1:
+                ax2.legend(loc='lower right', fontsize = args.fontsize)
+        
         # --------determining snapshots-----------
         else:
             # --------preparing to read in this halo-----------------

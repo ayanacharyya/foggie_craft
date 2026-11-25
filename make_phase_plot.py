@@ -95,7 +95,7 @@ def make_datashader_plot_mpl(df, args):
     # ---------to annotate and save the figure----------------------
     colorby_text = f'_colorby_{args.colorcolname}' if args.weight is None or args.weight not in df.columns else ''
     weightby_text = f'_weightby_{args.colorcolname}' if args.weight is not None and args.weight in df.columns else ''
-    figname = Path(args.output_dir) / 'plots' / f'{args.output}_{args.halo}_phaseplot_{args.ycolname}_vs_{args.xcolname}{colorby_text}{weightby_text}{args.upto_text}.png'
+    figname = Path(args.output_dir) / 'plots/phase_plots' / f'{args.output}_{args.halo}_phaseplot_{args.ycolname}_vs_{args.xcolname}{colorby_text}{weightby_text}{args.upto_text}.png'
     fig.savefig(figname)
     print(f'Saved plot as {figname}')    
     plt.show(block=False)
@@ -112,14 +112,6 @@ islog_dict = {'rad': False, 'metal': True, 'vrad': False, 'density': True, 'temp
 
 # -----main code-----------------
 if __name__ == '__main__':
-    '''
-    args = parse_args()
-    if not args.keep: plt.close('all')
-
-    # --------getting all snapshot IDs-------------
-
-    total_snaps = len(list_of_sims)
-    '''
     args = parse_args()
     if not args.keep: plt.close('all')
     if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
@@ -131,7 +123,6 @@ if __name__ == '__main__':
         halos = ['8508', '5036', '5016', '4123', '2392', '2878']
     else:
         halos = args.halo_arr
-
 
     # ---------looping over halos-----------
     for index, thishalo in enumerate(halos):
