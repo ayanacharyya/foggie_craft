@@ -9,10 +9,10 @@
     Author :     Ayan Acharyya
     Started :    Nov 2026
     Examples :   run make_phase_plot.py --system ayan_pleiades --halo 8508 --upto_kpc 100 --do_all_sims --use_cen_smoothed
-                 run make_phase_plot.py --system ayan_hd --halo 4123 --upto_kpc 100 --output RD0038,RD0042 --use_cen_smoothed --xcol density --ycol temp --colorcol metal
+                 run make_phase_plot.py --system ayan_hd --halo 4123 --upto_kpc 100 --output RD0038,RD0042 --use_cen_smoothed --xcol density --ycol temp --colorcol edensity
                  run make_phase_plot.py --system ayan_local --halo 8508 --upto_kpc 100 --output RD0027 --use_cen_smoothed
                  run make_phase_plot.py --system ayan_local --do_all_halos --upto_kpc 100 --use_cen_smoothed --weight edensity
-                 run make_phase_plot.py --system ayan_local --halo 2878 --output RD0037 --upto_kpc 100 --use_cen_smoothed --weight edensity
+                 run make_phase_plot.py --system ayan_local --halo 2878 --output RD0038 --upto_kpc 100 --use_cen_smoothed --weight edensity
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
@@ -33,7 +33,7 @@ def get_df_from_ds(ds, args):
     :return: dataframe
     '''
     print('\nCreating datframe..')
-    all_fields = [args.xcol, args.ycol, args.colorcol]
+    all_fields = [args.xcol, args.ycol, args.col_to_color]
     if args.weight is not None:
         all_fields += [args.weight]
     df = pd.DataFrame()
@@ -45,60 +45,58 @@ def get_df_from_ds(ds, args):
     return df
 
 # --------------------------------------------------------------------------------
-def make_datashader_plot_mpl(df, args):
+def make_datashader_plot_mpl(df_input, args):
     '''
     Function to make data shader plot of y_field vs x_field, colored in bins of color_field
     This function is based on foggie.render.shade_maps.render_image()
     :return figure
     '''
     print(f'Making datashader plot..')
+    df = df_input.copy()
+    
     # --------to make the main datashader plot--------------------------
     fig, ax = plt.subplots(1, figsize=(6, 5), constrained_layout=True)
-    color_key = [to_hex(item) for item in args.colormap.colors]
-    if args.weight is not None and args.weight in df.columns:
-        #if islog_dict[args.ycol]: df[args.ycol] = 10 ** df[args.ycol] # converting back to linear because they were already in log
-        if islog_dict[args.weight]: df[args.weight] = 10 ** df[args.weight] # converting back to linear because they were already in log
-        #df[args.ycol] = df[args.ycol] * df[args.weight] * len(df[args.weight]) / np.sum(df[args.weight])
-        #if islog_dict[args.ycol]: df[args.ycol] = np.log10(df[args.ycol]) # converting back to log because the plot needs log
+    
+    if hasattr(args.colormap, 'colors'): color_key = [to_hex(item) for item in args.colormap.colors]
+    else: color_key = args.colormap
+    
+    is_weighted = args.weight is not None and args.weight in df.columns
 
-        artist = dsshow(df, dsh.Point(args.xcol, args.ycol), dsh.sum(args.weight), 
-                        norm='log', cmap='rainbow', aspect = 'auto', ax=ax,
-                        x_range=(args.xmin, args.xmax), y_range=(args.ymin, args.ymax)
-                    )
+    if is_weighted:
+        color_strategy = dsh.sum(args.col_to_color)
+        clabel_prefix = 'Summed'
+        col_text = 'weightby'
     else:
-        artist = dsshow(df, dsh.Point(args.xcol, args.ycol), dsh.mean(args.colorcol), 
-                        norm='linear', cmap=color_key, aspect = 'auto', ax=ax,
-                        x_range=(args.xmin, args.xmax), y_range=(args.ymin, args.ymax), vmin=args.cmin, vmax=args.cmax 
-                    )
+        color_strategy = dsh.mean(args.col_to_color)
+        clabel_prefix = 'Mean'
+        col_text = 'colorby'
+
+    if islog_dict[args.col_to_color]: df[args.col_to_color] = 10 ** df[args.col_to_color] # converting back to linear because they were already in log
+    artist = dsshow(df, dsh.Point(args.xcol, args.ycol), color_strategy, 
+                    norm='log' if islog_dict[args.col_to_color] else 'linear', cmap=color_key, aspect = 'auto', ax=ax,
+                    x_range=(args.xmin, args.xmax), y_range=(args.ymin, args.ymax),
+                    vmin=args.cmin, vmax=args.cmax,
+                )
+
     # ------to make the axes-------------
     xlabel = f'{label_dict[args.xcol]} [{unit_dict[args.xcol]}]'
     ylabel = f'{label_dict[args.ycol]} [{unit_dict[args.ycol]}]'
-    clabel = f'{label_dict[args.colorcol]} [{unit_dict[args.colorcol]}]'
+    clabel = f'{clabel_prefix} {label_dict[args.col_to_color]} [{unit_dict[args.col_to_color]}]'
     if islog_dict[args.xcol]: xlabel = 'Log ' + xlabel
     if islog_dict[args.ycol]: ylabel = 'Log ' + ylabel
-    if islog_dict[args.colorcol]: clabel = 'Log ' + clabel
 
     ax = annotate_axes(ax, xlabel, ylabel, args=args)
-    logT = 4.
-    ax.axhline(logT, lw=1, ls='--', c='k', label=f'T=10^{logT:.0f} K')
-    ax.legend(loc='lower left', fontsize = args.fontsize / args.fontfactor)
+    ax.set_yticks([2, 4, 6, 8])
 
     # ------to make the colorbar axis-------------
-    if args.weight is None or args.weight not in df.columns:
-        cax_xpos, cax_ypos, cax_width, cax_height = 0.6, 0.9, 0.3, 0.035
-        cax = fig.add_axes([cax_xpos, cax_ypos, cax_width, cax_height])
-        plt.colorbar(artist, cax=cax, orientation='horizontal')
-
-        cax.set_xticklabels(['%.0F' % index for index in cax.get_xticks()], fontsize=args.fontsize / args.fontfactor)
-        fig.text(cax_xpos + cax_width / 2, cax_ypos + cax_height + 0.005, clabel, ha='center', va='bottom', fontsize=args.fontsize / args.fontfactor)
-
+    cax_xpos, cax_ypos, cax_width, cax_height = 0.6, 0.9, 0.3, 0.035
+    cax = fig.add_axes([cax_xpos, cax_ypos, cax_width, cax_height])
+    plt.colorbar(artist, cax=cax, orientation='horizontal')
+    cax.set_xticklabels(['%.0F' % index for index in cax.get_xticks()], fontsize=args.fontsize / args.fontfactor)
+    fig.text(cax_xpos + cax_width / 2, cax_ypos + cax_height + 0.005, clabel, ha='center', va='bottom', fontsize=args.fontsize / args.fontfactor)
+    
     # ---------to annotate and save the figure----------------------
-    colorby_text = f'_colorby_{args.colorcolname}' if args.weight is None or args.weight not in df.columns else ''
-    weightby_text = f'_weightby_{args.colorcolname}' if args.weight is not None and args.weight in df.columns else ''
-    figname = Path(args.output_dir) / 'plots/phase_plots' / f'{args.output}_{args.halo}_phaseplot_{args.ycolname}_vs_{args.xcolname}{colorby_text}{weightby_text}{args.upto_text}.png'
-    fig.savefig(figname)
-    print(f'Saved plot as {figname}')    
-    plt.show(block=False)
+    save_fig(fig, Path(args.output_dir) / 'plots/phase_plots', f'{args.output}_{args.halo}_phaseplot_{args.ycolname}_vs_{args.xcolname}_{col_text}_{args.col_to_color}{args.upto_text}.png', args)
 
     return fig
 
@@ -106,8 +104,8 @@ def make_datashader_plot_mpl(df, args):
 field_dict = {'rad': ('gas', 'radius_corrected'), 'metal': ('gas', 'metallicity'), 'vrad': ('gas', 'radial_velocity_corrected'), 'density':('gas', 'density'), 'temp':('gas', 'temperature'), 'edensity':('gas', 'El_number_density')}
 unit_dict = {'rad': 'kpc', 'metal': r'Zsun', 'vrad': 'km/s', 'density':'g/cm**3', 'temp':'K', 'edensity':'cm**-3'}
 label_dict = {'rad': 'Radius (kpc)', 'metal': 'Log Metallicity (Zsun)', 'vrad': 'Radial velocity (km/s)', 'density':'Gas density', 'temp':'Temperature', 'edensity':'Electron number density'}
-bounds_dict = {'metal': (-2, 1), 'vrad': (-400, 400), 'density': (1e-30, 1e-22), 'temp': (1e1, 1e8), 'edensity': (1e-6, 1e-1)}
-colormap_dict = {'vrad': outflow_inflow_discrete_cmap, 'temp': temperature_discrete_cmap, 'density': density_discrete_cmap, 'metal': metal_discrete_cmap, 'edensity': edensity_discrete_cmap}
+bounds_dict = {'metal': (-2, 1), 'vrad': (-400, 400), 'density': (1e-30, 1e-22), 'temp': (1e1, 2e8), 'edensity': (1e-6, 2)}
+colormap_dict = {'vrad': outflow_inflow_discrete_cmap, 'temp': temperature_discrete_cmap, 'density': density_discrete_cmap, 'metal': metal_discrete_cmap, 'edensity': 'terrain'}#edensity_discrete_cmap}
 islog_dict = {'rad': False, 'metal': True, 'vrad': False, 'density': True, 'temp': True, 'edensity': True}
 
 # -----main code-----------------
@@ -116,7 +114,6 @@ if __name__ == '__main__':
     if not args.keep: plt.close('all')
     if args.system == "ayan_pleiades": args.code_dir = '/nobackupp19/aachary2/ayan_codes/foggie/foggie/'
     else: args.code_dir = '/Users/acharyya/Work/astro/ayan_codes/foggie/foggie/'
-    smooth_over_snap = 20
     
     # ----------getting list of snapshots-----------
     if args.do_all_halos:
@@ -195,17 +192,18 @@ if __name__ == '__main__':
             # ----------to initialise axes limits and colormaps-----------------------
             args.xcolname = 'log_' + args.xcol if islog_dict[args.xcol] else args.xcol
             args.ycolname = 'log_' + args.ycol if islog_dict[args.ycol] else args.ycol
-            args.colorcolname = 'log_' + args.colorcol if islog_dict[args.colorcol] else args.colorcol
-            args.outfilename = Path(args.output_dir) / 'data' / f'{args.output}_{args.halo}_list_{args.xcol}_{args.ycol}_{args.colorcol}{args.upto_text}.fits'
+            if args.weight is None: args.col_to_color = args.colorcol
+            else: args.col_to_color = args.weight
+            args.outfilename = Path(args.output_dir) / 'data' / f'{args.output}_{args.halo}_list_{args.xcol}_{args.ycol}_{args.col_to_color}{args.upto_text}.fits'
 
             bounds_dict.update(rad=(0, np.ceil(args.galrad * (1 + args.current_redshift)) if args.docomoving else args.galrad)) # if comoving is used, put plot limits to maximum radius, i.e. physical radius at z = 0
             args.xmin = np.log10(bounds_dict[args.xcol][0]) if islog_dict[args.xcol] else bounds_dict[args.xcol][0]
             args.xmax = np.log10(bounds_dict[args.xcol][1]) if islog_dict[args.xcol] else bounds_dict[args.xcol][1]
             args.ymin = np.log10(bounds_dict[args.ycol][0]) if islog_dict[args.ycol] else bounds_dict[args.ycol][0]
             args.ymax = np.log10(bounds_dict[args.ycol][1]) if islog_dict[args.ycol] else bounds_dict[args.ycol][1]
-            args.cmin = np.log10(bounds_dict[args.colorcol][0]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][0]
-            args.cmax = np.log10(bounds_dict[args.colorcol][1]) if islog_dict[args.colorcol] else bounds_dict[args.colorcol][1]
-            args.colormap = colormap_dict[args.colorcol]
+            args.cmin = bounds_dict[args.col_to_color][0]
+            args.cmax = bounds_dict[args.col_to_color][1]
+            args.colormap = colormap_dict[args.col_to_color]
             
             # -----------loading/building the dataframe-----------------
             if not os.path.exists(args.outfilename) or args.clobber:

@@ -10,7 +10,7 @@
     Started :    Nov 2026
     Examples :   run get_hotgas_sfr.py --system ayan_pleiades --do_all_halos
                  run get_hotgas_sfr.py --system ayan_pleiades --halo 2878
-                 run get_hotgas_sfr.py --system ayan_local --do_all_halos
+                 run get_hotgas_sfr.py --system ayan_local --do_all_halos --upto_kpc 10
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
@@ -44,15 +44,30 @@ def get_cgm_gas_masses(args):
     halos_df_name += 'halo_cen_smoothed' if args.use_cen_smoothed else 'halo_c_v'
     ds, refine_box = load_sim(args, region='refine_box', do_filter_particles=True, disk_relative=False, halo_c_v_name=halos_df_name)
 
-    gas_masses = refine_box[('gas', 'mass')]
+    #box = refine_box
+
+    # ------tailoring the simulation box for individual snapshot analysis--------
+    if args.docomoving: args.galrad = args.upto_kpc / (1 + args.current_redshift) / 0.695  # fit within a fixed comoving kpc h^-1, 0.695 is Hubble constant
+    else: args.galrad = args.upto_kpc  # fit within a fixed physical kpc
+    
+    #-------extract the required box-------
+    box_width = args.galrad * 2  # in kpc
+    box_width_kpc = ds.arr(box_width, 'kpc')
+    box_center = ds.halo_center_kpc
+    box = ds.r[box_center[0] - box_width_kpc / 2.: box_center[0] + box_width_kpc / 2., 
+            box_center[1] - box_width_kpc / 2.: box_center[1] + box_width_kpc / 2., 
+            box_center[2] - box_width_kpc / 2.: box_center[2] + box_width_kpc / 2., ]
+
+    # -------extract masses-----------
+    gas_masses = box[('gas', 'mass')]
     gas_mass = np.sum(gas_masses).in_units('Msun')
-    gas_temps = refine_box[('gas', 'temperature')]
+    gas_temps = box[('gas', 'temperature')]
     hot_mask = gas_temps > ds.quan(1e4, 'K')
     hot_gas_mass = np.sum(gas_masses[hot_mask]).in_units('Msun')
     del gas_masses, gas_temps, hot_mask
     '''
-    gas_mass = refine_box.quantities.total_quantity(('gas', 'mass')).in_units('Msun')
-    hot_gas = refine_box.cut_region(["obj[('gas', 'temperature')].in_units('K') > 1e4"])
+    gas_mass = box.quantities.total_quantity(('gas', 'mass')).in_units('Msun')
+    hot_gas = box.cut_region(["obj[('gas', 'temperature')].in_units('K') > 1e4"])
     hot_gas_mass = hot_gas.quantities.total_quantity(('gas', 'mass')).in_units('Msun')
     '''
     return gas_mass, hot_gas_mass
@@ -66,7 +81,8 @@ if __name__ == '__main__':
     smooth_over_snap = 20
     
    # ---------initialising output dataframe-------------
-    output_dfname = args.output_dir + 'data/hgm_sfr_upto_cgm.csv'
+    args.upto_text = '_upto%.1Fckpchinv' % args.upto_kpc if args.docomoving else '_upto%.1Fkpc' % args.upto_kpc
+    output_dfname = args.output_dir + f'data/hgm_sfr{args.upto_text}.csv'
     columns = ['halo', 'snap', 'redshift', 'sfr', f'sfr_{int(5 * smooth_over_snap)}Myr', 'log_gas_mass', 'log_hot_gas_mass']
 
     # ----------getting list of snapshots-----------
@@ -192,7 +208,7 @@ if __name__ == '__main__':
                     sfr_smooth = sfr_df[sfr_df['output'] == args.output][f'sfr_smooth{smooth_over_snap}'].values[0]
                     args.current_redshift = sfr_df[sfr_df['output'] == args.output]['redshift'].values[0]
                     print_mpi(f'{args.halo}, {args.output}, {args.current_redshift}, {sfr}, {sfr_smooth}', args) ##
-                    
+                                        
                     try:
                         # ------determining gas mass--------                
                         gas_mass, hot_gas_mass = get_cgm_gas_masses(args)
