@@ -89,7 +89,7 @@ def make_datashader_plot_mpl(df_input, args):
     ax.set_yticks([2, 4, 6, 8])
 
     # ------to make the colorbar axis-------------
-    cax_xpos, cax_ypos, cax_width, cax_height = 0.6, 0.9, 0.3, 0.035
+    cax_xpos, cax_ypos, cax_width, cax_height = 0.58, 0.9, 0.3, 0.035
     cax = fig.add_axes([cax_xpos, cax_ypos, cax_width, cax_height])
     plt.colorbar(artist, cax=cax, orientation='horizontal')
     cax.set_xticklabels(['%.0F' % index for index in cax.get_xticks()], fontsize=args.fontsize / args.fontfactor)

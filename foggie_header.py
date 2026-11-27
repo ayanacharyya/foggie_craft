@@ -39,11 +39,15 @@ plt.rcParams['xtick.top'] = True
 
 from matplotlib import colors as mplcolors
 from matplotlib import patheffects as fx
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, Normalize
 from matplotlib import image as mpimg
 from matplotlib.path import Path as mpl_Path
 from matplotlib import cm as mpl_cm
 from matplotlib import ticker
+from matplotlib import gridspec
+from matplotlib import text as mpltext
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 import mplcyberpunk
 
 
