@@ -175,16 +175,6 @@ def _draw_selection_panel(dst_ax, df, args, selector=None, include_cbar=True):
         vmin=vmin_plot, vmax=vmax_plot,
     )
 
-    xlabel = f'{label_dict[args.xcol]} [{unit_dict[args.xcol]}]'
-    ylabel = f'{label_dict[args.ycol]} [{unit_dict[args.ycol]}]'
-    if islog_dict[args.xcol]:
-        xlabel = 'Log ' + xlabel
-    if islog_dict[args.ycol]:
-        ylabel = 'Log ' + ylabel
-
-    dst_ax = annotate_axes(dst_ax, xlabel, ylabel, args=args)
-    dst_ax.set_yticks([2, 4, 6, 8])
-
     if include_cbar:
         word_arr = f'{clabel_prefix} {label_dict[args.col_to_color]} [{unit_dict[args.col_to_color]}]'.split(' ')
         newline_at = int(np.ceil(len(word_arr) / 2))
@@ -207,6 +197,16 @@ def _draw_selection_panel(dst_ax, df, args, selector=None, include_cbar=True):
         if mask_data is not None and np.any(mask_data > 0):
             dst_ax.imshow(mask_data, cmap=plt.cm.Greys_r, alpha=selector.alpha_other, interpolation='bilinear', extent=(args.xmin, args.xmax, args.ymin, args.ymax),
                 zorder=10, aspect='auto', vmin=0, vmax=1, origin='lower')
+
+    xlabel = f'{label_dict[args.xcol]} [{unit_dict[args.xcol]}]'
+    ylabel = f'{label_dict[args.ycol]} [{unit_dict[args.ycol]}]'
+    if islog_dict[args.xcol]:
+        xlabel = 'Log ' + xlabel
+    if islog_dict[args.ycol]:
+        ylabel = 'Log ' + ylabel
+
+    dst_ax = annotate_axes(dst_ax, xlabel, ylabel, args=args)
+    dst_ax.set_yticks([2, 4, 6, 8])
 
 # ------------------------------------------------------------------
 def make_projections(box_cut, args, identifier, df=None, selector=None, range_selector=None, npix_proj=512):
@@ -321,9 +321,8 @@ def make_projections(box_cut, args, identifier, df=None, selector=None, range_se
 
     # ------save combined figure once----------
     selcol_text = f'_selcol_{args.col_to_color}' if args.selcol else ''
-    outfile_rootname = f'{args.output}_{args.halo}_dsh_combined_projection_xyz{args.upto_text}_from_{args.ycolname}_vs_{args.xcolname}{selcol_text}_lasso{identifier}'
-    saveplot(fig, args, outfile_rootname, outputdir=str(args.fig_dir) + '/')
-    plt.show(block=False)
+    outfile_rootname = f'{args.output}_{args.halo}_dsh_combined_projection_xyz{args.upto_text}_from_{args.ycolname}_vs_{args.xcolname}{selcol_text}_lasso{identifier}.png'
+    save_fig(fig, Path(args.fig_dir), outfile_rootname, args)
 
     return fig
 
