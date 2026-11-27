@@ -63,7 +63,7 @@ from scipy.interpolate import LinearNDInterpolator as LND
 from scipy.special import erf
 from scipy.optimize import curve_fit, fminbound
 from scipy.ndimage import gaussian_filter
-from scipy.stats import binned_statistic
+from scipy.stats import binned_statistic, pearsonr, spearmanr
 
 from astropy.io import ascii, fits
 from astropy.table import Table

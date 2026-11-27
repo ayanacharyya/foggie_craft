@@ -11,6 +11,8 @@
     Examples :   run get_hotgas_sfr.py --system ayan_pleiades --do_all_halos
                  run get_hotgas_sfr.py --system ayan_pleiades --halo 2878
                  run get_hotgas_sfr.py --system ayan_local --do_all_halos --upto_kpc 10
+                 run get_hotgas_sfr.py --system ayan_local --do_all_halos --upto_kpc 10 --plot_sfh
+                 run get_hotgas_sfr.py --system ayan_local --do_all_halos --upto_kpc 10 --plot_sf_hgm
 """
 from foggie_header import *
 from craft_utils import annotate_axes, save_fig
@@ -105,14 +107,17 @@ if __name__ == '__main__':
 
     # -------setup SFH figure-------
     if args.plot_sfh and os.path.exists(output_dfname):
-        print_master(f'Will plot SFH and hot gas mass, so will not compute masses; to compute masses run without the --plot_sfh option', args)
+        print_master(f'Will plot SFH, so will not compute masses; to compute masses run without the --plot_sfh option', args)
         fig, axes = plt.subplots(len(halos), 1, figsize=(10, 1.5 + 1 * len(halos)), sharex=True)
         fig.subplots_adjust(top=0.98, bottom=0.2 if len(halos) == 1 else 0.07, left=0.07, right=0.93, wspace=0., hspace=0.05)
         axes = np.atleast_1d(axes)
         smooth_over_nsnap_arr = [1, 20]
         col_arr = ['purple', 'darkolivegreen', 'orange', 'cornflowerblue', 'salmon', 'crimson']
-        
-        fig2, axs = plt.subplots(1, figsize=(6, 5), constrained_layout=True)
+
+    elif args.plot_sf_hgm and os.path.exists(output_dfname):
+        print_master(f'Will plot SFR vs hot gas mass, so will not compute masses; to compute masses run without the --plot_sf_hgm option', args)
+        fig, ax = plt.subplots(1, figsize=(6, 5), constrained_layout=True)
+        col_arr = ['purple', 'darkolivegreen', 'orange', 'cornflowerblue', 'salmon', 'crimson']
 
     # ---------looping over halos-----------
     for index, thishalo in enumerate(halos):
@@ -154,12 +159,29 @@ if __name__ == '__main__':
             if index == len(halos) - 1:
                 ax2.legend(loc='lower right', fontsize = args.fontsize)
             
+        # ---------make SFH plots-------------
+        if args.plot_sf_hgm:
+            df = df_existing[df_existing['halo'].astype(str) == thishalo]
+            df = df.sort_values(by='time')
+            
             # ---------make SFR vs mass scatter plots-------------
-            axs.scatter(df['sfr'], df['log_hot_gas_mass'], s=70, lw=1.5, c=col_arr[index], edgecolor='k', label=f'Halo {args.halo}')
+            ax.scatter(df['sfr'], df['log_hot_gas_mass'], s=30, lw=0.5, c=col_arr[index], edgecolor='k', label=f'Halo {args.halo}')
             if index == len(halos) - 1:
-                axs = annotate_axes(axs, r'SFR [M$_\odot$/yr]', r'$\log$ Gas mass [M$_*$/M$_\odot$] at T > 10$^4$ K', args=args)
-                axs.set_xscale('log')
-                axs.legend(loc='lower right', fontsize = args.fontsize)
+                ax = annotate_axes(ax, r'SFR [M$_\odot$/yr]', r'$\log$ Gas mass [M$_*$/M$_\odot$] at T > 10$^4$ K', args=args)
+                ax.set_xscale('log')
+                ax.legend(loc='lower right', fontsize = args.fontsize / args.fontfactor)
+
+                # to cpmpute correlation
+                x = df_existing['sfr'].to_numpy(dtype=float)
+                y = df_existing['log_hot_gas_mass'].to_numpy(dtype=float)
+
+                mask = np.isfinite(x) & np.isfinite(y)
+                x_clean, y_clean = x[mask], y[mask]
+
+                # Pearson r (and p-value); swap to spearmanr(x_clean, y_clean) if preferred
+                r, pval = pearsonr(x_clean, y_clean)
+
+                ax.text(0.1, 0.9, f'$r = {r:.2f}$', transform=ax.transAxes, ha='left', va='top', fontsize=args.fontsize)
 
         # --------determining snapshots-----------
         else:
@@ -244,7 +266,10 @@ if __name__ == '__main__':
     if args.plot_sfh:
         halo_text = 'all_halos' if args.do_all_halos else ','.join(args.halo_arr)
         save_fig(fig, Path(args.output_dir) / 'plots', f'{halo_text}_sfh_hgm{args.upto_text}.png', args)
-        save_fig(fig2, Path(args.output_dir) / 'plots', f'{halo_text}_sf_vs_hgm{args.upto_text}.png', args)
+        print_master('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
+    elif args.plot_sf_hgm:
+        halo_text = 'all_halos' if args.do_all_halos else ','.join(args.halo_arr)
+        save_fig(fig, Path(args.output_dir) / 'plots', f'{halo_text}_sf_vs_hgm{args.upto_text}.png', args)
         print_master('Completed in %s' % timedelta(seconds=(datetime.now() - start_time).seconds), args)
     else:
         print_master(f'Saved dataframe as {output_dfname}', args)

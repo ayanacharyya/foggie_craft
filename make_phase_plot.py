@@ -55,7 +55,7 @@ def make_datashader_plot_mpl(df_input, args):
     df = df_input.copy()
     
     # --------to make the main datashader plot--------------------------
-    fig, ax = plt.subplots(1, figsize=(6, 5), constrained_layout=True)
+    fig, ax = plt.subplots(1, figsize=(5.5, 5), constrained_layout=True)
     
     if hasattr(args.colormap, 'colors'): color_key = [to_hex(item) for item in args.colormap.colors]
     else: color_key = args.colormap
@@ -81,7 +81,9 @@ def make_datashader_plot_mpl(df_input, args):
     # ------to make the axes-------------
     xlabel = f'{label_dict[args.xcol]} [{unit_dict[args.xcol]}]'
     ylabel = f'{label_dict[args.ycol]} [{unit_dict[args.ycol]}]'
-    clabel = f'{clabel_prefix} {label_dict[args.col_to_color]} [{unit_dict[args.col_to_color]}]'
+    word_arr = f'{clabel_prefix} {label_dict[args.col_to_color]} [{unit_dict[args.col_to_color]}]'.split(' ')
+    newline_at = int(np.ceil(len(word_arr) / 2))
+    clabel = f'{" ".join(word_arr[:newline_at])}\n{" ".join(word_arr[newline_at:])}'
     if islog_dict[args.xcol]: xlabel = 'Log ' + xlabel
     if islog_dict[args.ycol]: ylabel = 'Log ' + ylabel
 
@@ -89,7 +91,7 @@ def make_datashader_plot_mpl(df_input, args):
     ax.set_yticks([2, 4, 6, 8])
 
     # ------to make the colorbar axis-------------
-    cax_xpos, cax_ypos, cax_width, cax_height = 0.58, 0.9, 0.3, 0.035
+    cax_xpos, cax_ypos, cax_width, cax_height = 0.58, 0.85, 0.3, 0.035
     cax = fig.add_axes([cax_xpos, cax_ypos, cax_width, cax_height])
     plt.colorbar(artist, cax=cax, orientation='horizontal')
     cax.set_xticklabels(['%.0F' % index for index in cax.get_xticks()], fontsize=args.fontsize / args.fontfactor)

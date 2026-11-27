@@ -1591,7 +1591,7 @@ def parse_args(fast=False):
     parser.add_argument('--nooutliers', dest='nooutliers', action='store_true', default=False, help='discard outlier HII regions (according to D16 diagnostic)?, default is no')
     parser.add_argument('--xratio', metavar='xratio', type=str, action='store', default=None, help='ratio of lines to plot on X-axis; default is None')
     parser.add_argument('--yratio', metavar='yratio', type=str, action='store', default=None, help='ratio of lines to plot on Y-axis; default is None')
-    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=12, help='fontsize of plot labels, etc.; default is 15')
+    parser.add_argument('--fontsize', metavar='fontsize', type=int, action='store', default=15, help='fontsize of plot labels, etc.; default is 15')
     parser.add_argument('--fontfactor', metavar='fontsize', type=float, action='store', default=1.2, help='factor to reduce fontsize by; default is 1.2')
     parser.add_argument('--plot_metgrad', dest='plot_metgrad', action='store_true', default=False, help='make metallicity gradient plot?, default is no')
     parser.add_argument('--plot_phase_space', dest='plot_phase_space', action='store_true', default=False, help='make P-r phase space plot?, default is no')
@@ -1842,7 +1842,8 @@ def parse_args(fast=False):
     parser.add_argument('--do_only_plot', dest='do_only_plot', action='store_true', default=False, help='Only plot the FRB, without saving it?, default is no')
 
     # ------- args added for get_mass_sfr.py ------------------------------
-    parser.add_argument('--plot_sfh', dest='plot_sfh', action='store_true', default=False, help='Plot the SFH of every halo?, default is no')
+    parser.add_argument('--plot_sfh', dest='plot_sfh', action='store_true', default=False, help='Plot the SFH?, default is no')
+    parser.add_argument('--plot_sf_hgm', dest='plot_sf_hgm', action='store_true', default=False, help='Plot the SFR vs hot gas mass?, default is no')
 
     # ------- wrap up and processing args ------------------------------
     args = parser.parse_args()
